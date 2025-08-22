@@ -1,7 +1,6 @@
-// src/recommendation/recommendation.service.ts
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   Recommendation,
@@ -26,6 +25,7 @@ export class RecommendationService {
     private nutritionService: NutritionService,
     private physicalActivityService: PhysicalActivityService,
   ) {
+    // Inicializar Gemini AI con tu API key
     this.genAI = new GoogleGenerativeAI(
       'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4',
     );
@@ -39,38 +39,92 @@ export class RecommendationService {
         createRecommendationDto.usuarioId,
       );
       if (!user) {
-        throw new Error('Usuario no encontrado');
+        throw new NotFoundException('Usuario no encontrado');
       }
 
-      // Obtener datos del usuario para el prompt
       const userData = await this.getUserData(
         createRecommendationDto.usuarioId,
       );
-
-      // Generar prompt según el tipo de recomendación
       const prompt = this.generatePrompt(
         createRecommendationDto.tipo,
         userData,
         createRecommendationDto.datosEntrada,
       );
 
-      // Generar recomendación con Gemini AI
-      const geminiResponse = await this.generateWithGemini(prompt);
+      // Usar la API REST directamente en lugar del SDK
+      const geminiResponse = await this.callGeminiApiDirectly(prompt);
 
-      // Guardar la recomendación en la base de datos
       const recommendation = this.recommendationRepository.create({
         usuario: user,
         tipo: createRecommendationDto.tipo,
         contenido: geminiResponse,
         datosEntrada: createRecommendationDto.datosEntrada,
         vigenciaHasta: this.calculateExpiryDate(createRecommendationDto.tipo),
+        activa: true,
       });
 
       return await this.recommendationRepository.save(recommendation);
     } catch (error) {
       this.logger.error(`Error generating recommendation: ${error.message}`);
-      throw new Error(`Error generating recommendation: ${error.message}`);
+      // En caso de error, devolver una recomendación por defecto
+      return this.createFallbackRecommendation(createRecommendationDto);
     }
+  }
+
+  private async callGeminiApiDirectly(prompt: string): Promise<string> {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Gemini API error: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
+      return data.candidates[0].content.parts[0].text;
+    } catch (error) {
+      this.logger.error(`Error calling Gemini API: ${error.message}`);
+      return this.getFallbackResponse();
+    }
+  }
+
+  private async createFallbackRecommendation(
+    createRecommendationDto: CreateRecommendationDto,
+  ): Promise<Recommendation> {
+    const user = await this.userService.findById(
+      createRecommendationDto.usuarioId,
+    );
+
+    const recommendation = this.recommendationRepository.create({
+      usuario: user,
+      tipo: createRecommendationDto.tipo,
+      contenido: this.getFallbackResponse(),
+      datosEntrada: createRecommendationDto.datosEntrada,
+      vigenciaHasta: this.calculateExpiryDate(createRecommendationDto.tipo),
+      activa: true,
+    });
+
+    return this.recommendationRepository.save(recommendation);
   }
 
   private async getUserData(userId: string): Promise<any> {

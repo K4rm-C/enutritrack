@@ -12,12 +12,10 @@ import {
 import { RecommendationService } from './recommendation.service';
 import { CreateRecommendationDto } from './dto/create-recommendation.dto';
 import { Recommendation } from './models/recommendation.model';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RecommendationType } from './models/recommendation.model';
 import { CookieAuthGuard } from 'src/auth/guards/cookie-auth.guard';
 
 @Controller('recommendations')
-@UseGuards(JwtAuthGuard)
 export class RecommendationController {
   constructor(private readonly recommendationService: RecommendationService) {}
   @UseGuards(CookieAuthGuard)

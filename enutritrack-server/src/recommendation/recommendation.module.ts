@@ -1,5 +1,5 @@
 // src/recommendation/recommendation.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RecommendationService } from './recommendation.service';
 import { RecommendationController } from './recommendation.controller';
@@ -12,7 +12,7 @@ import { PhysicalActivityModule } from '../activity/activity.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Recommendation]),
-    UserModule,
+    forwardRef(() => UserModule),
     MedicalHistoryModule,
     NutritionModule,
     PhysicalActivityModule,

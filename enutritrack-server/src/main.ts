@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use(cookieParser());
   // Configurar CORS
   app.enableCors({
     origin: 'http://localhost:5174',
@@ -22,7 +23,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.use(cookieParser());
   // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Enutritrack API')
