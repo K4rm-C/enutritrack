@@ -957,7 +957,7 @@ const Dashboard = () => {
     actividad: false,
     configuracion: false,
   });
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const userInfo = {
     nombre: user.nombre || "Alfredo Pérez",
@@ -979,8 +979,8 @@ const Dashboard = () => {
     });
   };
 
-  const logout = () => {
-    alert("Sesión cerrada");
+  const logout_ = async () => {
+    await logout();
     setUserMenuOpen(false);
   };
 
@@ -1283,7 +1283,7 @@ const Dashboard = () => {
             </div>
 
             <button
-              onClick={logout}
+              onClick={logout_}
               className={`w-full flex items-center px-3 py-2.5 text-sm font-medium text-red-600 ${
                 darkMode ? "hover:bg-red-900/20" : "hover:bg-red-50"
               } rounded-xl transition-all duration-200 group`}
@@ -1464,7 +1464,7 @@ const Dashboard = () => {
                           </p>
                         </div>
                         <button
-                          onClick={logout}
+                          onClick={logout_}
                           className={`flex items-center w-full px-4 py-2 text-sm text-red-600 ${
                             darkMode ? "hover:bg-red-900/20" : "hover:bg-red-50"
                           } transition-colors`}
