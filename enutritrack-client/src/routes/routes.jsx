@@ -14,6 +14,7 @@ import Dashboard from "../pages/dashboard";
 import Layout from "../components/layout/layout";
 
 // Components/Forms
+import Profile from "../components/profile";
 import NutritionTracker from "../components/nutrition-tracker";
 import ActivityTracker from "../components/activity-tracker";
 import Recommendations from "../components/recommendations";
@@ -38,6 +39,7 @@ const AppRoutes = () => {
                       <Route element={<ProtectedRoutes />}>
                         <Route path="/" element={<Layout />}>
                           <Route path="dashboard" element={<Dashboard />} />
+                          <Route path="perfil" element={<Profile />} />
                           <Route
                             path="nutrition"
                             element={<NutritionTracker />}

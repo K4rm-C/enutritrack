@@ -1,35 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, createContext, useContext } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./sidebar";
 import Header from "./header";
 
+// Create Dark Mode Context
+const DarkModeContext = createContext();
+
+export const useDarkMode = () => {
+  const context = useContext(DarkModeContext);
+  if (!context) {
+    throw new Error("useDarkMode must be used within DarkModeProvider");
+  }
+  return context;
+};
+
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Header */}
-        <Header onMenuClick={() => setSidebarOpen(true)} />
-
-        {/* Page content */}
-        <main className="min-h-screen">
+    <DarkModeContext.Provider value={{ darkMode, setDarkMode }}>
+      <div
+        className={`min-h-screen flex transition-colors duration-300 ${
+          darkMode ? "bg-gray-900" : "bg-gray-50"
+        }`}
+      >
+        <div className="max-w-8xl mx-auto">
           <Outlet />
-        </main>
+        </div>
       </div>
-    </div>
+    </DarkModeContext.Provider>
   );
 };
 
