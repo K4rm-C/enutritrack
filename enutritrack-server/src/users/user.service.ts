@@ -3,11 +3,12 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import * as bcrypt from 'bcrypt';
 import { CouchbaseService } from '../couchbase/couchbase.service';
 
 @Injectable()
 export class UsersService {
-  private readonly USER_SERVICE_URL = 'http://localhost:4000';
+  private readonly USER_SERVICE_URL = 'http://localhost:3000';
 
   constructor(
     private httpService: HttpService,
@@ -364,6 +365,17 @@ export class UsersService {
       return retrievedValue === testValue;
     } catch (error) {
       console.error('Redis connection test failed:', error);
+      return false;
+    }
+  }
+  async validatePassword(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
+    try {
+      return await bcrypt.compare(plainPassword, hashedPassword);
+    } catch (error) {
+      console.error('Error comparing passwords:', error);
       return false;
     }
   }

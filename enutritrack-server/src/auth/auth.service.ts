@@ -5,88 +5,52 @@ import { firstValueFrom } from 'rxjs';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { CouchbaseService } from '../couchbase/couchbase.service';
+import { UsersService } from '../users/user.service';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  private readonly AUTH_SERVICE_URL = 'http://localhost:4000'; // URL del microservicio
+  private readonly AUTH_SERVICE_URL = 'http://localhost:3000'; // URL del microservicio
 
   constructor(
     private httpService: HttpService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private couchbaseService: CouchbaseService,
+    private jwtService: JwtService,
+    private userService: UsersService,
   ) {}
 
-  async login(credentials: { email: string; password: string }) {
-    // Hacer login en el microservicio
-    const response = await firstValueFrom(
-      this.httpService.post(`${this.AUTH_SERVICE_URL}/auth/login`, credentials),
-    );
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.userService.findByEmail(email);
 
-    const { access_token, user } = response.data;
+    if (user && (await bcrypt.compare(password, user.contraseñaHash))) {
+      const { contraseñaHash, ...result } = user;
+      return result;
+    }
+    return null;
+  }
 
-    // Almacenar token en Redis para validaciones rápidas (1 hora)
-    await this.cacheManager.set(
-      `auth:token:${access_token}`,
-      {
-        userId: user.id,
+  async login(user: any) {
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      nombre: user.nombre,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
         email: user.email,
         nombre: user.nombre,
       },
-      3600,
-    );
-
-    // Registrar sesión en Couchbase para auditoría
-    const sessionData = {
-      userId: user.id,
-      email: user.email,
-      token: access_token,
-      loginTime: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
-      userAgent: '', // Puedes añadir más información si está disponible
-      ipAddress: '',
-      active: true,
-    };
-
-    try {
-      await this.couchbaseService.upsertDocument(
-        `session::${user.id}::${Date.now()}`,
-        sessionData,
-      );
-    } catch (error) {
-      console.warn('Error saving session to Couchbase:', error);
-    }
-
-    return {
-      access_token,
-      user,
     };
   }
 
   async validateToken(token: string) {
-    // Primero verificar en Redis cache
-    const cachedToken = await this.cacheManager.get(`auth:token:${token}`);
-
-    if (cachedToken) {
-      console.log('Token found in cache');
-      return cachedToken;
-    }
-
-    console.log('Token not in cache, validating with microservice');
-
-    // Si no está en cache, validar con el microservicio
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.AUTH_SERVICE_URL}/auth/validate`, {
-          token,
-        }),
-      );
-
-      const tokenData = response.data;
-
-      // Guardar en cache para futuras validaciones
-      await this.cacheManager.set(`auth:token:${token}`, tokenData, 3600);
-
-      return tokenData;
+      return this.jwtService.verify(token);
     } catch (error) {
       throw new UnauthorizedException('Token inválido');
     }

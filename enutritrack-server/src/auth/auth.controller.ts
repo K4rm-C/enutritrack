@@ -24,18 +24,14 @@ export class AuthController {
     @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
   ) {
-    // El LocalAuthGuard ya validó las credenciales, req.user contiene los datos
-    const loginResult = await this.authService.login({
-      email: (req.user as any).email,
-      password: '', // No necesitamos enviar la contraseña otra vez
-    });
+    // El usuario ya está validado por LocalAuthGuard
+    const loginResult = await this.authService.login(req.user);
 
-    // Establecer la cookie con el token
     res.cookie('access_token', loginResult.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000, // 1 día
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     return { user: loginResult.user };
