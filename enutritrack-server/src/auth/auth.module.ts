@@ -4,18 +4,26 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { UserModule } from '../users/users.module';
-import { JwtStrategy } from './strategies/jwt.strategies';
+import { UsersModule } from '../users/user.module';
+import { JwtStrategy } from '../auth/strategies/jwt.strategies';
 import { LocalStrategy } from './strategies/local.strategies';
+import { RedisModule } from '../redis/redis.module';
+import { CouchbaseModule } from '../couchbase/couchbase.module';
+import { HttpModule } from '@nestjs/axios';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
-    UserModule,
+    CacheModule.register(), // ← Agregar esto
+    HttpModule,
+    UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: 'tu_clave_secreta_super_segura',
-      signOptions: { expiresIn: '24h' },
+      secret: 'jwtSecretKey',
+      signOptions: { expiresIn: '1h' },
     }),
+    RedisModule, // Añadir RedisModule
+    CouchbaseModule, // Añadir CouchbaseModule
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],
   controllers: [AuthController],

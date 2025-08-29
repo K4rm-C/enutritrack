@@ -25,7 +25,7 @@ async function bootstrap() {
   );
   // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('Enutritrack API')
+    .setTitle('Enutritrack Backend API')
     .setDescription('API para el sistema de nutrición preventiva')
     .setVersion('1.0')
     .addBearerAuth()
@@ -33,6 +33,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(3000);
+  await app.listen(3001);
 }
 bootstrap();

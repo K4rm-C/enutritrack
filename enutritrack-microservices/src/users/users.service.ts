@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,7 +26,7 @@ export class UserService {
 
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(
-      createUserDto.contraseña, // ← Cambié a contraseña
+      createUserDto.contraseña,
       saltRounds,
     );
 
@@ -33,16 +34,17 @@ export class UserService {
     const user = this.userRepository.create({
       nombre: createUserDto.nombre,
       email: createUserDto.email,
-      contraseñaHash: hashedPassword, // ← propiedad de la entidad
-      fechaNacimiento: new Date(createUserDto.fecha_nacimiento), // ← propiedad
-      genero: createUserDto.género, // ← propiedad
+      contraseñaHash: hashedPassword,
+      fechaNacimiento: new Date(createUserDto.fecha_nacimiento),
+      genero: createUserDto.género,
       altura: createUserDto.altura,
-      pesoActual: createUserDto.peso_actual, // ← propiedad
-      objetivoPeso: createUserDto.objetivo_peso, // ← propiedad
-      nivelActividad: createUserDto.nivel_actividad, // ← propiedad
+      pesoActual: createUserDto.peso_actual,
+      objetivoPeso: createUserDto.objetivo_peso,
+      nivelActividad: createUserDto.nivel_actividad,
     });
 
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+    return savedUser;
   }
 
   async findByEmail(email: string): Promise<User | undefined> {
@@ -55,9 +57,13 @@ export class UserService {
     return user ?? undefined;
   }
 
+  async findAll(): Promise<User[]> {
+    return await this.userRepository.find();
+  }
+
   async update(id: string, updateData: Partial<User>): Promise<User> {
     // Verificar si el usuario existe
-    const existingUser = await this.findById(id);
+    const existingUser = await this.userRepository.findOne({ where: { id } });
     if (!existingUser) {
       throw new NotFoundException('User not found');
     }
@@ -65,16 +71,32 @@ export class UserService {
     // Si se está actualizando el email, verificar que no exista otro usuario con el mismo email
     if (updateData.email && updateData.email !== existingUser.email) {
       const userWithEmail = await this.findByEmail(updateData.email);
-      if (userWithEmail) {
+      if (userWithEmail && userWithEmail.id !== id) {
         throw new ConflictException('User with this email already exists');
       }
     }
 
+    // Actualizar en PostgreSQL
     await this.userRepository.update(id, updateData);
-    return this.findById(id) as Promise<User>; // Ya verificamos que existe
+    const updatedUser = await this.userRepository.findOne({ where: { id } });
+
+    if (!updatedUser) {
+      throw new InternalServerErrorException('User not found after update');
+    }
+
+    return updatedUser;
   }
 
-  // src/user/user.service.ts
+  async remove(id: string): Promise<{ affected: number }> {
+    const result = await this.userRepository.delete(id);
+
+    if (result.affected === 0) {
+      throw new NotFoundException('User not found');
+    }
+
+    return { affected: result.affected ?? 0 };
+  }
+
   async validatePassword(
     plainPassword: string,
     hashedPassword: string,
