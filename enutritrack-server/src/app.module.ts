@@ -8,8 +8,8 @@ import { HttpModule } from '@nestjs/axios';
 import { UsersModule } from './users/user.module';
 /* import { NutritionModule } from './nutrition/nutrition.module';
 import { ActivityModule } from './activity/activity.module';
-import { MedicalHistoryModule } from './medical-history/medical-history.module';
-import { RecommendationModule } from './recommendation/recommendation.module'; */
+import { MedicalHistoryModule } from './medical-history/medical-history.module'; */
+import { RecommendationModule } from './recommendation/recommendation.module';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { CouchbaseModule } from './couchbase/couchbase.module';
@@ -39,8 +39,8 @@ import { TestModule } from './test/test.module';
     AuthModule,
     /*     NutritionModule,
     ActivityModule,
-    MedicalHistoryModule,
-    RecommendationModule, */
+    MedicalHistoryModule, */
+    RecommendationModule,
     TestModule,
   ],
 })
