@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/auth/auth.context";
 import Perfil from "../components/profile";
+import Recomendaciones from "../components/recommendations";
 
 // Dark Mode Context
 const DarkModeContext = createContext();
@@ -960,8 +961,8 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
 
   const userInfo = {
-    nombre: user.nombre || "Alfredo Pérez",
-    email: user.email || "alfredojosepererezmeza124@gmail.com",
+    nombre: user.nombre,
+    email: user.email,
   };
 
   const toggleSidebar = () => {
@@ -1083,6 +1084,9 @@ const Dashboard = () => {
     }
     if (activeContent === "perfil") {
       return <Perfil darkMode={darkMode} />;
+    }
+    if (activeContent === "recomendaciones") {
+      return <Recomendaciones darkMode={darkMode} />;
     }
     return <GenericContent title={getPageTitle()} darkMode={darkMode} />;
   };
