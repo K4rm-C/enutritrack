@@ -17,18 +17,20 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: any) {
-    // Crear usuario en el microservicio
+    console.log('Enviando al microservicio:', createUserDto);
+
     const response = await firstValueFrom(
       this.httpService.post(`${this.USER_SERVICE_URL}/users`, createUserDto),
     );
 
     const savedUser = response.data;
+    console.log('Usuario creado en microservicio:', savedUser);
 
-    // Guardar perfil completo en Couchbase (documento JSON)
     const userProfile = {
       id: savedUser.id,
       nombre: savedUser.nombre,
       email: savedUser.email,
+      contraseñaHash: savedUser.contraseñaHash,
       fechaNacimiento: savedUser.fechaNacimiento,
       genero: savedUser.genero,
       altura: savedUser.altura,
@@ -45,21 +47,23 @@ export class UsersService {
         `user::${savedUser.id}`,
         userProfile,
       );
+      console.log('Usuario guardado en Couchbase');
 
-      // Guardar en cache Redis por 1 hora
-      await this.cacheManager.set(`user:${savedUser.id}`, userProfile, 3600);
+      const userForCache = { ...userProfile };
+      delete userForCache.contraseñaHash;
 
-      // Guardar índice de email en cache
+      await this.cacheManager.set(`user:${savedUser.id}`, userForCache, 3600);
+
       await this.cacheManager.set(
         `email:${savedUser.email}`,
         savedUser.id,
         3600,
       );
+      console.log('Usuario guardado en cache Redis');
     } catch (error) {
       console.warn('Error saving to cache/couchbase:', error);
     }
 
-    // Invalidar cache de lista de usuarios
     await this.cacheManager.del('users:all');
 
     return savedUser;
@@ -68,7 +72,6 @@ export class UsersService {
   async findAll() {
     const cacheKey = 'users:all';
 
-    // Intentar obtener del cache
     let users = await this.cacheManager.get(cacheKey);
 
     if (!users) {
@@ -92,7 +95,6 @@ export class UsersService {
   async findOne(id: string) {
     const cacheKey = `user:${id}`;
 
-    // Primero intentar obtener de Redis (caché)
     let user = await this.cacheManager.get(cacheKey);
 
     if (user) {
@@ -102,11 +104,9 @@ export class UsersService {
 
     console.log(`Cache miss para user ${id} - buscando en Couchbase`);
 
-    // Si no está en Redis, intentar obtener de Couchbase
     try {
       const userDoc = await this.couchbaseService.getDocument(`user::${id}`);
       if (userDoc) {
-        // Guardar en cache Redis para próximas consultas
         await this.cacheManager.set(cacheKey, userDoc, 3600);
         console.log(
           `Usuario ${id} encontrado en Couchbase y guardado en cache`,
@@ -121,21 +121,18 @@ export class UsersService {
       `Usuario ${id} no encontrado en cache ni Couchbase - consultando microservicio`,
     );
 
-    // Si no está en caché ni en Couchbase, consultar microservicio
     const response = await firstValueFrom(
       this.httpService.get(`${this.USER_SERVICE_URL}/users/${id}`),
     );
 
     user = response.data;
 
-    // Si se encuentra, crear perfil completo y guardar en Couchbase y Redis
     if (user) {
       const userProfile = {
-        // Changed from [] to {}
         id: response.data.id,
-        nombre: response.data.nombre, // Fixed typo: oombre → nombre
+        nombre: response.data.nombre,
         email: response.data.email,
-        fechaNacimiento: response.data.fechaNacimiento, // Fixed typo: fechaMacimiento → fechaNacimiento
+        fechaNacimiento: response.data.fechaNacimiento,
         genero: response.data.genero,
         altura: response.data.altura,
         pesoActual: response.data.pesoActual,
@@ -157,22 +154,31 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(email: string) {
-    // Intentar obtener ID del usuario desde cache
+  async findByEmailWithPassword(email: string) {
+    console.log(`Buscando usuario por email con contraseña: ${email}`);
+
     const userId = await this.cacheManager.get(`email:${email}`);
 
     if (userId) {
       console.log(
         `Email ${email} encontrado en cache, buscando usuario ${userId}`,
       );
-      return this.findOne(userId as string);
+
+      try {
+        const userDoc = await this.couchbaseService.getDocument(
+          `user::${userId}`,
+        );
+        if (userDoc && userDoc.contraseñaHash) {
+          console.log(`Usuario ${userId} encontrado en Couchbase con hash`);
+          return userDoc;
+        }
+      } catch (error) {
+        console.warn('Error buscando en Couchbase:', error);
+      }
     }
 
-    console.log(
-      `Email ${email} no encontrado en cache, consultando microservicio`,
-    );
+    console.log(`Consultando microservicio para ${email}`);
 
-    // Consultar microservicio
     const response = await firstValueFrom(
       this.httpService.get(`${this.USER_SERVICE_URL}/users/email/${email}`),
     );
@@ -180,14 +186,26 @@ export class UsersService {
     const user = response.data;
 
     if (user) {
-      // Guardar índice de email en cache
       await this.cacheManager.set(`email:${email}`, user.id, 3600);
 
-      // También asegurar que el usuario esté en cache
-      await this.findOne(user.id);
+      if (!user.contraseñaHash) {
+        console.error(`Usuario ${email} no tiene contraseñaHash`);
+        return null;
+      }
+
+      return user;
     }
 
-    return user;
+    return null;
+  }
+
+  async findByEmail(email: string) {
+    const user = await this.findByEmailWithPassword(email);
+    if (user) {
+      const { contraseñaHash, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    }
+    return null;
   }
 
   async update(id: string, updateUserDto: any) {
@@ -200,7 +218,6 @@ export class UsersService {
 
     const updatedUser = response.data;
 
-    // Actualizar perfil en Couchbase
     try {
       const existingProfile = await this.couchbaseService.getDocument(
         `user::${id}`,
@@ -224,10 +241,8 @@ export class UsersService {
 
       await this.couchbaseService.upsertDocument(`user::${id}`, userProfile);
 
-      // Actualizar cache Redis
       await this.cacheManager.set(`user:${id}`, userProfile, 3600);
 
-      // Si cambió el email, actualizar índice
       if (updateUserDto.email) {
         await this.cacheManager.set(`email:${updateUserDto.email}`, id, 3600);
       }
@@ -235,14 +250,12 @@ export class UsersService {
       console.warn('Error updating cache/couchbase:', error);
     }
 
-    // Invalidar cache de lista de usuarios
     await this.cacheManager.del('users:all');
 
     return updatedUser;
   }
 
   async remove(id: string) {
-    // Obtener datos del usuario antes de eliminar para limpiar cache
     let userEmail = null;
     try {
       const user = await this.findOne(id);
@@ -255,7 +268,6 @@ export class UsersService {
       this.httpService.delete(`${this.USER_SERVICE_URL}/users/${id}`),
     );
 
-    // Limpiar de Couchbase
     try {
       await this.couchbaseService.removeDocument(`user::${id}`);
     } catch (error) {
@@ -273,7 +285,6 @@ export class UsersService {
   }
 
   private async calculateNutritionalProfile(user: any): Promise<any> {
-    // Lógica simplificada para calcular perfil nutricional
     const bmr = this.calculateBMR(user);
     const tdee = this.calculateTDEE(bmr, (user as any).nivelActividad);
 
@@ -289,7 +300,6 @@ export class UsersService {
   }
 
   private calculateBMR(user: any): number {
-    // Fórmula Mifflin-St Jeor
     if ((user as any).genero === 'masculino') {
       return (
         10 * (user as any).pesoActual +
@@ -335,7 +345,6 @@ export class UsersService {
     return age;
   }
 
-  // Métodos para probar conexiones
   async testCouchbaseConnection(): Promise<boolean> {
     try {
       const testDoc = {

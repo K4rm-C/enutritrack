@@ -1,12 +1,13 @@
 // src/nutrition/dto/create-food-record.dto.ts
-import { IsEnum, IsNumber, IsString, IsUUID, IsDate } from 'class-validator';
+import { IsEnum, IsNumber, IsString, IsUUID } from 'class-validator';
 import { MealType } from '../models/nutrition.model';
+import { Transform } from 'class-transformer';
 
 export class CreateFoodRecordDto {
   @IsUUID()
   usuarioId: string;
 
-  @IsDate()
+  @Transform(({ value }) => new Date(value))
   fecha: Date;
 
   @IsEnum(MealType)

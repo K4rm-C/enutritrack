@@ -6,9 +6,9 @@ import { HttpModule } from '@nestjs/axios';
 
 // Módulos locales (proxy a microservicios)
 import { UsersModule } from './users/user.module';
-/* import { NutritionModule } from './nutrition/nutrition.module';
-import { ActivityModule } from './activity/activity.module';
-import { MedicalHistoryModule } from './medical-history/medical-history.module'; */
+import { NutritionModule } from './nutrition/nutrition.module';
+import { PhysicalActivityModule } from './activity/activity.module';
+import { MedicalHistoryModule } from './medical-history/medical-history.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
@@ -23,7 +23,7 @@ import { TestModule } from './test/test.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
-      port: 5432,
+      port: 5433,
       username: 'postgres',
       password: '1234',
       database: 'enutritrack',
@@ -37,9 +37,9 @@ import { TestModule } from './test/test.module';
     HttpModule,
     RedisModule,
     AuthModule,
-    /*     NutritionModule,
-    ActivityModule,
-    MedicalHistoryModule, */
+    NutritionModule,
+    PhysicalActivityModule,
+    MedicalHistoryModule,
     RecommendationModule,
     TestModule,
   ],

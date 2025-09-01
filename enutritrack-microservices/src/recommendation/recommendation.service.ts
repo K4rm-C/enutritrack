@@ -25,9 +25,9 @@ export class RecommendationService {
     private nutritionService: NutritionService,
     private physicalActivityService: PhysicalActivityService,
   ) {
-    // Inicializar Gemini AI con tu API key
+    // Inicializar Gemini AI con tu API key (debería estar en variables de entorno)
     this.genAI = new GoogleGenerativeAI(
-      'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4',
+      process.env.GEMINI_API_KEY || 'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4',
     );
   }
 
@@ -63,7 +63,12 @@ export class RecommendationService {
         activa: true,
       });
 
-      return await this.recommendationRepository.save(recommendation);
+      const savedRecommendation =
+        await this.recommendationRepository.save(recommendation);
+      this.logger.log(
+        `Recommendation created with ID: ${savedRecommendation.id}`,
+      );
+      return savedRecommendation;
     } catch (error) {
       this.logger.error(`Error generating recommendation: ${error.message}`);
       // En caso de error, devolver una recomendación por defecto
@@ -74,7 +79,7 @@ export class RecommendationService {
   private async callGeminiApiDirectly(prompt: string): Promise<string> {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY || 'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4'}`,
         {
           method: 'POST',
           headers: {
@@ -213,19 +218,6 @@ export class RecommendationService {
     }
   }
 
-  private async generateWithGemini(prompt: string): Promise<string> {
-    try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
-    } catch (error) {
-      this.logger.error(`Error with Gemini AI: ${error.message}`);
-      // Respuesta de respaldo en caso de error
-      return this.getFallbackResponse();
-    }
-  }
-
   private getFallbackResponse(): string {
     return `Recomendación de salud personalizada:
 
@@ -277,7 +269,7 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
     return this.recommendationRepository.find({
       where: {
         usuario: { id: userId },
-        tipo, // Now tipo is of type RecommendationType
+        tipo,
         activa: true,
         vigenciaHasta: MoreThan(now),
       },

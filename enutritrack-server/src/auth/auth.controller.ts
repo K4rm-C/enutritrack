@@ -1,4 +1,3 @@
-// backend/src/auth/auth.controller.ts
 import {
   Controller,
   Post,
@@ -14,17 +13,26 @@ import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { CookieAuthGuard } from './guards/cookie-auth.guard';
 
+// DTO para login
+interface LoginDto {
+  email: string;
+  password: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @UseGuards(LocalAuthGuard)
   @Post('login')
+  @UseGuards(LocalAuthGuard)
   async login(
     @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
   ) {
-    // El usuario ya está validado por LocalAuthGuard
+    if (!req.user) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
     const loginResult = await this.authService.login(req.user);
 
     res.cookie('access_token', loginResult.access_token, {
@@ -37,22 +45,45 @@ export class AuthController {
     return { user: loginResult.user };
   }
 
+  @Post('login-manual')
+  async loginManual(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: express.Response,
+  ) {
+    const user = await this.authService.validateUser(
+      loginDto.email,
+      loginDto.password,
+    );
+
+    if (!user) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    const loginResult = await this.authService.login(user);
+
+    res.cookie('access_token', loginResult.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    return { user: loginResult.user };
+  }
+
   @Post('logout')
-  @UseGuards(CookieAuthGuard)
   async logout(
     @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
   ) {
     const token = req.cookies?.access_token;
-    const userId = (req.user as any)?.id;
-
+    const userId = (req.user as any)?.sub;
+    // Limpiar cookie
+    res.clearCookie('access_token');
     // Limpiar token del cache y Couchbase
     if (token) {
       await this.authService.logout(token, userId);
     }
-
-    // Limpiar cookie
-    res.clearCookie('access_token');
 
     return { message: 'Logout exitoso' };
   }
@@ -73,25 +104,12 @@ export class AuthController {
     }
   }
 
-  // Endpoint adicional para obtener información del usuario actual
   @Get('me')
   @UseGuards(CookieAuthGuard)
   async getCurrentUser(@Req() req: express.Request) {
-    const token = req.cookies?.access_token;
-
-    if (!token) {
-      throw new UnauthorizedException('Token no proporcionado');
-    }
-
-    try {
-      const user = await this.authService.getUserFromToken(token);
-      return { user };
-    } catch (error) {
-      throw new UnauthorizedException('Token inválido');
-    }
+    return { user: req.user };
   }
 
-  // Endpoint para refrescar el token (opcional)
   @Post('refresh')
   @UseGuards(CookieAuthGuard)
   async refreshToken(
@@ -106,17 +124,17 @@ export class AuthController {
     }
 
     try {
-      // Generar nuevo token llamando al microservicio
-      const loginResult = await this.authService.login({
+      const payload = {
         email: (user as any).email,
-        password: '', // Solo para refrescar, no necesitamos contraseña
-      });
+        sub: (user as any).sub,
+        nombre: (user as any).nombre,
+      };
 
-      // Limpiar token anterior
-      await this.authService.logout(currentToken, (user as any).id);
+      const newToken = this.authService.generateToken(payload);
 
-      // Establecer nueva cookie
-      res.cookie('access_token', loginResult.access_token, {
+      await this.authService.logout(currentToken, (user as any).sub);
+
+      res.cookie('access_token', newToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -125,18 +143,21 @@ export class AuthController {
 
       return {
         message: 'Token refrescado exitosamente',
-        user: loginResult.user,
+        user: {
+          id: (user as any).sub,
+          email: (user as any).email,
+          nombre: (user as any).nombre,
+        },
       };
     } catch (error) {
       throw new UnauthorizedException('Error al refrescar token');
     }
   }
 
-  // Endpoint para obtener sesiones activas del usuario
   @Get('sessions')
   @UseGuards(CookieAuthGuard)
   async getUserSessions(@Req() req: express.Request) {
-    const userId = (req.user as any)?.id;
+    const userId = (req.user as any)?.sub;
 
     if (!userId) {
       throw new UnauthorizedException('Usuario no válido');
@@ -146,21 +167,19 @@ export class AuthController {
     return { sessions };
   }
 
-  // Endpoint para cerrar todas las sesiones
   @Post('logout-all')
   @UseGuards(CookieAuthGuard)
   async logoutAll(
     @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
   ) {
-    const userId = (req.user as any)?.id;
+    const userId = (req.user as any)?.sub;
     const currentToken = req.cookies?.access_token;
 
     if (!userId) {
       throw new UnauthorizedException('Usuario no válido');
     }
 
-    // Cerrar todas las sesiones del usuario
     await this.authService.logout(currentToken, userId);
 
     // Limpiar cookie actual

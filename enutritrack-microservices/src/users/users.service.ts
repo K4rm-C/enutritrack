@@ -18,19 +18,24 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // Verificar si el email ya existe
     const existingUser = await this.findByEmail(createUserDto.email);
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
 
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(
-      createUserDto.contraseña,
-      saltRounds,
-    );
+    let hashedPassword: string;
 
-    // Mapear manualmente los nombres de columna a propiedades
+    if (createUserDto.contraseña) {
+      hashedPassword = createUserDto.contraseña;
+      console.log('Usando contraseña ya hasheada desde backend');
+    } else if (createUserDto.contraseña) {
+      const saltRounds = 10;
+      hashedPassword = await bcrypt.hash(createUserDto.contraseña, saltRounds);
+      console.log('Hasheando contraseña en microservicio');
+    } else {
+      throw new Error('No password provided');
+    }
+
     const user = this.userRepository.create({
       nombre: createUserDto.nombre,
       email: createUserDto.email,
@@ -44,6 +49,7 @@ export class UserService {
     });
 
     const savedUser = await this.userRepository.save(user);
+    console.log('Usuario guardado en base de datos:', savedUser.id);
     return savedUser;
   }
 
@@ -68,7 +74,6 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    // Si se está actualizando el email, verificar que no exista otro usuario con el mismo email
     if (updateData.email && updateData.email !== existingUser.email) {
       const userWithEmail = await this.findByEmail(updateData.email);
       if (userWithEmail && userWithEmail.id !== id) {

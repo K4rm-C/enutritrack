@@ -5,11 +5,7 @@ import { CouchbaseModule } from '../couchbase/couchbase.module';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [
-    UsersModule, // Importar UsersModule para tener acceso a UserService
-    CouchbaseModule, // Importar CouchbaseModule
-    RedisModule, // Importar RedisModule
-  ],
+  imports: [UsersModule, CouchbaseModule, RedisModule],
   controllers: [TestController],
 })
 export class TestModule {}

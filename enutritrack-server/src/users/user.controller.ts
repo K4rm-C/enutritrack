@@ -16,7 +16,6 @@ import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(CookieAuthGuard)
   @Post()
   create(@Body() createUserDto: any) {
     return this.usersService.create(createUserDto);

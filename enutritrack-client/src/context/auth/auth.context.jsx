@@ -5,6 +5,7 @@ import {
   logoutRequest,
   validateTokenRequest,
 } from "../../api/auth/auth.api";
+import Cookies from "js-cookie";
 
 const AuthContext = createContext();
 
@@ -36,13 +37,12 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await logoutRequest();
-      setUser(null);
-      setIsAuthenticated(false);
     } catch (error) {
-      console.log(error);
-      // Incluso si hay error, limpiamos el estado local
-      setUser(null);
+      console.log("Error al cerrar sesión en el servidor:", error);
+    } finally {
+      Cookies.remove("access_token");
       setIsAuthenticated(false);
+      setUser(null);
     }
   };
 

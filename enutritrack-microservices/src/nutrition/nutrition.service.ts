@@ -27,6 +27,7 @@ export class NutritionService {
 
     const foodRecord = this.foodRecordRepository.create({
       ...createFoodRecordDto,
+      fecha: createFoodRecordDto.fecha || new Date(),
       usuario: user,
     });
 

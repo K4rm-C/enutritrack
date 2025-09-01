@@ -14,16 +14,16 @@ import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
-    CacheModule.register(), // ← Agregar esto
+    CacheModule.register(),
     HttpModule,
     UsersModule,
     PassportModule,
     JwtModule.register({
       secret: 'jwtSecretKey',
-      signOptions: { expiresIn: '1h' },
+      signOptions: { expiresIn: '24h' },
     }),
-    RedisModule, // Añadir RedisModule
-    CouchbaseModule, // Añadir CouchbaseModule
+    RedisModule,
+    CouchbaseModule,
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],
   controllers: [AuthController],

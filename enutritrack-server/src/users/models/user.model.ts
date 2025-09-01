@@ -1,4 +1,3 @@
-// src/user/entities/user.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { FoodRecord } from '../../nutrition/models/nutrition.model';
 import { MedicalHistory } from '../../medical-history/model/medical-history.model';

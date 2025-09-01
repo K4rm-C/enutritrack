@@ -49,7 +49,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.redisClient.expire(key, seconds);
   }
 
-  // Añadir este método para buscar claves por patrón
   async keys(pattern: string): Promise<string[]> {
     return this.redisClient.keys(pattern);
   }

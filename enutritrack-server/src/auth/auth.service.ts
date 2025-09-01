@@ -11,7 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  private readonly AUTH_SERVICE_URL = 'http://localhost:3000'; // URL del microservicio
+  private readonly AUTH_SERVICE_URL = 'http://localhost:3000';
 
   constructor(
     private httpService: HttpService,
@@ -22,59 +22,127 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userService.findByEmail(email);
+    try {
+      console.log(`Validando usuario: ${email}`);
 
-    if (user && (await bcrypt.compare(password, user.contraseñaHash))) {
+      const user = await this.userService.findByEmailWithPassword(email);
+
+      if (!user) {
+        console.log(`Usuario no encontrado: ${email}`);
+        return null;
+      }
+
+      console.log(`Usuario encontrado: ${email}, verificando contraseña`);
+
+      if (!user.contraseñaHash) {
+        console.log(`Usuario ${email} no tiene hash de contraseña`);
+        return null;
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.contraseñaHash,
+      );
+
+      if (!isPasswordValid) {
+        console.log(`Contraseña incorrecta para usuario: ${email}`);
+        return null;
+      }
+
+      console.log(`Contraseña válida para usuario: ${email}`);
+
       const { contraseñaHash, ...result } = user;
       return result;
+    } catch (error) {
+      console.error('Error en validateUser:', error);
+      return null;
     }
-    return null;
   }
 
   async login(user: any) {
+    console.log('Iniciando login para usuario:', user?.email);
+
+    if (!user || !user.email || !user.id) {
+      console.error('Datos de usuario inválidos:', user);
+      throw new UnauthorizedException('Datos de usuario inválidos');
+    }
+
     const payload = {
       email: user.email,
       sub: user.id,
       nombre: user.nombre,
     };
 
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        nombre: user.nombre,
-      },
-    };
+    try {
+      const token = this.jwtService.sign(payload);
+
+      console.log(`Token generado exitosamente para usuario: ${user.email}`);
+
+      // Guardar token en cache con TTL
+      await this.cacheManager.set(
+        `auth:token:${token}`,
+        { userId: user.id, email: user.email },
+        24 * 60 * 60, // 24 horas en SEGUNDOS (no milisegundos)
+      );
+
+      return {
+        access_token: token,
+        user: {
+          id: user.id,
+          email: user.email,
+          nombre: user.nombre,
+        },
+      };
+    } catch (error) {
+      console.error('Error generando token:', error);
+      throw new UnauthorizedException('Error al generar token de acceso');
+    }
+  }
+
+  generateToken(payload: any): string {
+    return this.jwtService.sign(payload);
   }
 
   async validateToken(token: string) {
     try {
-      return this.jwtService.verify(token);
+      const decoded = this.jwtService.verify(token);
+
+      const cachedToken = await this.cacheManager.get(`auth:token:${token}`);
+      if (!cachedToken) {
+        throw new UnauthorizedException('Token revocado o expirado');
+      }
+
+      return decoded;
     } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      console.error('Error validando token:', error);
       throw new UnauthorizedException('Token inválido');
     }
   }
 
   async logout(token: string, userId?: string): Promise<void> {
     try {
-      // Eliminar token de Redis
-      await this.cacheManager.del(`auth:token:${token}`);
-
-      // Marcar sesiones como inactivas en Couchbase si tenemos userId
-      if (userId) {
-        // Esto requeriría una búsqueda más compleja en Couchbase
-        // Por simplicidad, solo eliminamos del cache
-        await this.markSessionsInactive(userId);
+      if (token) {
+        await this.cacheManager.del(`auth:token:${token}`);
       }
 
-      // Opcional: notificar al microservicio
+      if (userId) {
+        await this.markSessionsInactive(userId);
+      }
       try {
         await firstValueFrom(
-          this.httpService.post(`${this.AUTH_SERVICE_URL}/auth/logout`, {
-            token,
-            userId,
-          }),
+          this.httpService.post(
+            `${this.AUTH_SERVICE_URL}/auth/logout`,
+            {
+              token,
+              userId,
+            },
+            {
+              timeout: 5000, // 5 segundos timeout
+            },
+          ),
         );
       } catch (error) {
         console.warn('Error notifying microservice about logout:', error);
@@ -85,7 +153,6 @@ export class AuthService {
   }
 
   async getUserSessions(userId: string) {
-    // Obtener sesiones activas del usuario desde cache
     try {
       const sessions = await this.cacheManager.get(`user:sessions:${userId}`);
       if (sessions) {
@@ -95,42 +162,45 @@ export class AuthService {
       console.warn('Error getting sessions from cache:', error);
     }
 
-    // Si no está en cache, podrías consultar Couchbase
-    // Para simplicidad, devolvemos array vacío
     return [];
   }
 
   private async markSessionsInactive(userId: string) {
-    // Lógica para marcar sesiones como inactivas en Couchbase
-    // Esto es opcional y depende de tus requisitos
     try {
-      // Eliminar sesiones del cache del usuario
       await this.cacheManager.del(`user:sessions:${userId}`);
     } catch (error) {
       console.warn('Error marking sessions inactive:', error);
     }
   }
 
-  // Método para limpiar tokens expirados (puedes ejecutarlo periódicamente)
   async cleanupExpiredTokens() {
-    // Esta lógica dependería de cómo implementes la limpieza
-    // Redis maneja TTL automáticamente, pero Couchbase podría necesitar limpieza manual
     console.log('Cleaning up expired tokens...');
   }
 
-  // Método de utilidad para obtener información del usuario desde el token
   async getUserFromToken(token: string) {
-    const tokenData = await this.validateToken(token);
-
-    // Opcionalmente, obtener información completa del usuario
-    // desde el microservicio de usuarios
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(`http://localhost:4001/users/${tokenData.userId}`),
-      );
-      return response.data;
+      const tokenData = await this.validateToken(token);
+
+      try {
+        const response = await firstValueFrom(
+          this.httpService.get(
+            `${this.AUTH_SERVICE_URL}/users/${tokenData.sub}`,
+            {
+              timeout: 5000,
+            },
+          ),
+        );
+        return response.data;
+      } catch (error) {
+        console.warn('Error fetching user from microservice:', error);
+        return {
+          id: tokenData.sub,
+          email: tokenData.email,
+          nombre: tokenData.nombre,
+        };
+      }
     } catch (error) {
-      return tokenData; // Devolver solo los datos del token si falla
+      throw new UnauthorizedException('Token inválido');
     }
   }
 }

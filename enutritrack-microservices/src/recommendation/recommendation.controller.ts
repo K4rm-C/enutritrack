@@ -1,4 +1,3 @@
-// src/recommendation/recommendation.controller.ts
 import {
   Controller,
   Post,
@@ -8,30 +7,73 @@ import {
   Delete,
   UseGuards,
   ParseEnumPipe,
+  Logger,
+  HttpStatus,
+  HttpException,
+  Patch,
 } from '@nestjs/common';
 import { RecommendationService } from './recommendation.service';
 import { CreateRecommendationDto } from './dto/create-recommendation.dto';
-import { Recommendation } from './models/recommendation.model';
-import { RecommendationType } from './models/recommendation.model';
-import { CookieAuthGuard } from 'src/auth/guards/cookie-auth.guard';
+import {
+  Recommendation,
+  RecommendationType,
+} from './models/recommendation.model';
+import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 
 @Controller('recommendations')
 export class RecommendationController {
+  private readonly logger = new Logger(RecommendationController.name);
+
   constructor(private readonly recommendationService: RecommendationService) {}
+
+  // Endpoint de salud para verificar que el servicio funciona
+  @Get('health')
+  health() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      service: 'recommendations',
+    };
+  }
+
   @UseGuards(CookieAuthGuard)
   @Post()
   async create(
     @Body() createRecommendationDto: CreateRecommendationDto,
   ): Promise<Recommendation> {
-    return this.recommendationService.generateRecommendation(
-      createRecommendationDto,
-    );
+    try {
+      this.logger.log(
+        `Creating recommendation for user: ${createRecommendationDto.usuarioId}`,
+      );
+      return await this.recommendationService.generateRecommendation(
+        createRecommendationDto,
+      );
+    } catch (error) {
+      this.logger.error(`Error creating recommendation: ${error.message}`);
+      throw new HttpException(
+        'Error al crear recomendación',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
+
   @UseGuards(CookieAuthGuard)
   @Get('user/:userId')
   async findByUser(@Param('userId') userId: string): Promise<Recommendation[]> {
-    return this.recommendationService.findByUser(userId);
+    try {
+      this.logger.log(`Fetching recommendations for user: ${userId}`);
+      return await this.recommendationService.findByUser(userId);
+    } catch (error) {
+      this.logger.error(
+        `Error fetching user recommendations: ${error.message}`,
+      );
+      throw new HttpException(
+        'Error al obtener recomendaciones',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
+
   @UseGuards(CookieAuthGuard)
   @Get('user/:userId/type/:type')
   async findByUserAndType(
@@ -39,41 +81,111 @@ export class RecommendationController {
     @Param('type', new ParseEnumPipe(RecommendationType))
     type: RecommendationType,
   ): Promise<Recommendation[]> {
-    return this.recommendationService.findActiveByUserAndType(userId, type);
+    try {
+      this.logger.log(`Fetching ${type} recommendations for user: ${userId}`);
+      return await this.recommendationService.findActiveByUserAndType(
+        userId,
+        type,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error fetching recommendations by type: ${error.message}`,
+      );
+      throw new HttpException(
+        'Error al obtener recomendaciones por tipo',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
+
   @UseGuards(CookieAuthGuard)
-  @Delete(':id')
-  async deactivate(@Param('id') id: string): Promise<void> {
-    return this.recommendationService.deactivate(id);
+  @Patch(':id/deactivate')
+  async deactivate(@Param('id') id: string): Promise<{ message: string }> {
+    try {
+      this.logger.log(`Deactivating recommendation: ${id}`);
+      await this.recommendationService.deactivate(id);
+      return { message: 'Recomendación desactivada exitosamente' };
+    } catch (error) {
+      this.logger.error(`Error deactivating recommendation: ${error.message}`);
+      throw new HttpException(
+        'Error al desactivar recomendación',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
+
   @UseGuards(CookieAuthGuard)
   @Post('quick-nutrition/:userId')
   async quickNutritionRecommendation(
     @Param('userId') userId: string,
   ): Promise<Recommendation> {
-    return this.recommendationService.generateRecommendation({
-      usuarioId: userId,
-      tipo: RecommendationType.NUTRITION,
-    });
+    try {
+      this.logger.log(
+        `Generating quick nutrition recommendation for user: ${userId}`,
+      );
+      return await this.recommendationService.generateRecommendation({
+        usuarioId: userId,
+        tipo: RecommendationType.NUTRITION,
+        datosEntrada: {}, // Añade datos de entrada vacíos o por defecto
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error generating nutrition recommendation: ${error.message}`,
+      );
+      throw new HttpException(
+        'Error al generar recomendación de nutrición',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
+
   @UseGuards(CookieAuthGuard)
   @Post('quick-exercise/:userId')
   async quickExerciseRecommendation(
     @Param('userId') userId: string,
   ): Promise<Recommendation> {
-    return this.recommendationService.generateRecommendation({
-      usuarioId: userId,
-      tipo: RecommendationType.EXERCISE,
-    });
+    try {
+      this.logger.log(
+        `Generating quick exercise recommendation for user: ${userId}`,
+      );
+      return await this.recommendationService.generateRecommendation({
+        usuarioId: userId,
+        tipo: RecommendationType.EXERCISE,
+        datosEntrada: {}, // Añade datos de entrada vacíos o por defecto
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error generating exercise recommendation: ${error.message}`,
+      );
+      throw new HttpException(
+        'Error al generar recomendación de ejercicio',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
+
   @UseGuards(CookieAuthGuard)
   @Post('quick-medical/:userId')
   async quickMedicalRecommendation(
     @Param('userId') userId: string,
   ): Promise<Recommendation> {
-    return this.recommendationService.generateRecommendation({
-      usuarioId: userId,
-      tipo: RecommendationType.MEDICAL,
-    });
+    try {
+      this.logger.log(
+        `Generating quick medical recommendation for user: ${userId}`,
+      );
+      return await this.recommendationService.generateRecommendation({
+        usuarioId: userId,
+        tipo: RecommendationType.MEDICAL,
+        datosEntrada: {},
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error generating medical recommendation: ${error.message}`,
+      );
+      throw new HttpException(
+        'Error al generar recomendación médica',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

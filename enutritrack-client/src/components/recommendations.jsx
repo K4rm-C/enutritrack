@@ -30,6 +30,10 @@ import {
   Search,
   Menu,
   X,
+  Dumbbell,
+  Pill,
+  Utensils,
+  Info,
 } from "lucide-react";
 
 // Tipos basados en el modelo
@@ -60,6 +64,8 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
+  const [showForm, setShowForm] = useState(null);
+  const [formData, setFormData] = useState({});
 
   // Cargar recomendaciones al montar el componente
   useEffect(() => {
@@ -83,8 +89,10 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
       }
     };
 
-    loadRecommendations();
-  }, [user, getRecommendationsByUser]);
+    if (user && user.id && !loading) {
+      loadRecommendations();
+    }
+  }, [user?.id]);
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -142,6 +150,8 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
         getTypeName(rec.tipo).toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // Reemplaza la función generateRecommendation en tu componente
+
   const generateRecommendation = async (tipo, datosEntrada = {}) => {
     if (!user || !user.id) {
       setError("Usuario no autenticado");
@@ -154,59 +164,60 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
     try {
       let newRecommendation;
 
-      // Preparar datos según el formato esperado por el backend
-      const recommendationData = {
-        usuarioId: user.id,
+      // Log para debug
+      console.log("Generando recomendación con datos:", {
         tipo,
         datosEntrada,
-      };
-
-      console.log("Enviando datos al servidor:", recommendationData);
+        userId: user.id,
+      });
 
       switch (tipo) {
         case RecommendationType.NUTRITION:
+          // Pasar datosEntrada como segundo parámetro
           newRecommendation = await quickNutritionRecommendation(
-            recommendationData
+            user.id,
+            datosEntrada // Asegúrate de que esto se pase
           );
           break;
         case RecommendationType.EXERCISE:
           newRecommendation = await quickExerciseRecommendation(
-            recommendationData
+            user.id,
+            datosEntrada // Asegúrate de que esto se pase
           );
           break;
         case RecommendationType.MEDICAL:
           newRecommendation = await quickMedicalRecommendation(
-            recommendationData
+            user.id,
+            datosEntrada // Asegúrate de que esto se pase
           );
           break;
         default:
+          const recommendationData = {
+            usuarioId: user.id,
+            tipo,
+            datosEntrada,
+          };
           newRecommendation = await createRecommendation(recommendationData);
       }
 
       console.log("Recomendación generada:", newRecommendation);
 
-      // Actualizar la lista de recomendaciones
-      await getRecommendationsByUser(user.id);
+      // Limpiar el formulario después de generar
+      setFormData({});
     } catch (error) {
       console.error("Error generating recommendation:", error);
       setError(`Error al generar la recomendación: ${error.message}`);
-      setDebugInfo({
-        type: tipo,
-        datosEntrada,
-        userId: user.id,
-        error: error.response?.data || error.message,
-        timestamp: new Date().toISOString(),
-      });
     } finally {
       setLoading(false);
-      setShowCreateForm(false);
+      setShowForm(null);
     }
   };
+
+    // ... resto del código del componente permanece igual
 
   const deactivateRecommendation = async (id) => {
     try {
       await deleteRecommendation(id);
-      // Actualizar la lista de recomendaciones
       if (user && user.id) {
         await getRecommendationsByUser(user.id);
       }
@@ -235,6 +246,408 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
           ? "from-purple-900/20 to-purple-800/10"
           : "from-purple-50 to-purple-100";
     }
+  };
+
+  // Input Forms for datosEntrada
+  const DatosEntradaForm = ({ tipo, onGenerate, onCancel }) => {
+    const handleSubmit = (e) => {
+      e.preventDefault();
+          console.log("Enviando datos del formulario:", {
+            tipo,
+            formData,
+          });
+      onGenerate(tipo, formData);
+    };
+
+    const handleChange = (field, value) => {
+      setFormData({ ...formData, [field]: value });
+    };
+
+    const handleArrayChange = (field, item) => {
+      const current = formData[field] || [];
+      const updated = current.includes(item)
+        ? current.filter((i) => i !== item)
+        : [...current, item];
+      handleChange(field, updated);
+    };
+
+    const renderExerciseForm = () => (
+      <div className="space-y-6">
+        <div className="flex items-start space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+          <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            Proporciona información sobre tu equipamiento, lesiones y objetivos
+            para una recomendación de ejercicio personalizada.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Equipo disponible
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              "pesas",
+              "bicicleta estática",
+              "bandas de resistencia",
+              "máquinas de gimnasio",
+              "ninguno",
+            ].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => handleArrayChange("equipo_disponible", item)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  (formData.equipo_disponible || []).includes(item)
+                    ? "bg-blue-500 text-white shadow-md"
+                    : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Lesiones o limitaciones
+          </label>
+          <input
+            type="text"
+            placeholder="Ej: rodilla derecha, espalda baja..."
+            value={formData.lesiones || ""}
+            onChange={(e) =>
+              handleChange(
+                "lesiones",
+                e.target.value.split(",").map((item) => item.trim())
+              )
+            }
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Objetivo principal
+          </label>
+          <select
+            value={formData.objetivo || ""}
+            onChange={(e) => handleChange("objetivo", e.target.value)}
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Seleccionar objetivo</option>
+            <option value="ganar masa muscular">Ganar masa muscular</option>
+            <option value="perder peso">Perder peso</option>
+            <option value="mejorar resistencia">Mejorar resistencia</option>
+            <option value="mejorar flexibilidad">Mejorar flexibilidad</option>
+            <option value="rehabilitación">Rehabilitación</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Días disponibles por semana
+          </label>
+          <div className="flex items-center space-x-2">
+            <input
+              type="range"
+              min="1"
+              max="7"
+              value={formData.dias_semana || 3}
+              onChange={(e) =>
+                handleChange("dias_semana", parseInt(e.target.value))
+              }
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-lg font-bold text-blue-600 dark:text-blue-400 min-w-[30px] text-center">
+              {formData.dias_semana || 3}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+
+    const renderMedicalForm = () => (
+      <div className="space-y-6">
+        <div className="flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
+          <Info className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-red-700 dark:text-red-300">
+            Esta información nos ayuda a proporcionar recomendaciones médicas
+            más precisas y seguras para ti.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Síntomas actuales
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              "fatiga",
+              "dolores de cabeza",
+              "mareos",
+              "náuseas",
+              "dolor articular",
+              "insomnio",
+            ].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => handleArrayChange("sintomas_actuales", item)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  (formData.sintomas_actuales || []).includes(item)
+                    ? "bg-red-500 text-white shadow-md"
+                    : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            placeholder="Otros síntomas (separados por coma)"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent mt-2"
+            onChange={(e) => handleChange("otros_sintomas", e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Preocupaciones principales
+          </label>
+          <textarea
+            placeholder="Ej: control de diabetes, presión arterial, colesterol..."
+            value={formData.preocupaciones || ""}
+            onChange={(e) => handleChange("preocupaciones", e.target.value)}
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            rows="3"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Medicamentos actuales
+          </label>
+          <input
+            type="text"
+            placeholder="Ej: metformina 500mg, losartán 50mg..."
+            value={formData.medicamentos || ""}
+            onChange={(e) =>
+              handleChange(
+                "medicamentos",
+                e.target.value.split(",").map((item) => item.trim())
+              )
+            }
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Alergias conocidas
+          </label>
+          <input
+            type="text"
+            placeholder="Ej: penicilina, mariscos, polvo..."
+            value={formData.alergias || ""}
+            onChange={(e) =>
+              handleChange(
+                "alergias",
+                e.target.value.split(",").map((item) => item.trim())
+              )
+            }
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+    );
+
+    const renderNutritionForm = () => (
+      <div className="space-y-6">
+        <div className="flex items-start space-x-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+          <Info className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-green-700 dark:text-green-300">
+            Comparte tus preferencias y restricciones alimenticias para recibir
+            un plan nutricional personalizado.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Preferencias alimenticias
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              "vegetariano",
+              "vegano",
+              "sin gluten",
+              "sin lactosa",
+              "bajo en carbohidratos",
+              "alto en proteínas",
+            ].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => handleArrayChange("preferencias", item)}
+                className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  (formData.preferencias || []).includes(item)
+                    ? "bg-green-500 text-white shadow-md"
+                    : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Alergias alimentarias
+          </label>
+          <input
+            type="text"
+            placeholder="Ej: nueces, mariscos, lácteos..."
+            value={formData.alergias_alimentarias || ""}
+            onChange={(e) =>
+              handleChange(
+                "alergias_alimentarias",
+                e.target.value.split(",").map((item) => item.trim())
+              )
+            }
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Objetivo nutricional
+          </label>
+          <select
+            value={formData.objetivo || ""}
+            onChange={(e) => handleChange("objetivo", e.target.value)}
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">Seleccionar objetivo</option>
+            <option value="perder peso">Perder peso</option>
+            <option value="ganar masa muscular">Ganar masa muscular</option>
+            <option value="mejorar energía">Mejorar energía</option>
+            <option value="controlar condición médica">
+              Controlar condición médica
+            </option>
+            <option value="mantener peso">Mantener peso</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Comidas que te gustan
+          </label>
+          <textarea
+            placeholder="Ej: pollo a la plancha, ensaladas, frutas..."
+            value={formData.comidas_gustan || ""}
+            onChange={(e) => handleChange("comidas_gustan", e.target.value)}
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            rows="2"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+            Comidas que no te gustan
+          </label>
+          <textarea
+            placeholder="Ej: pescado, brócoli, alimentos picantes..."
+            value={formData.comidas_no_gustan || ""}
+            onChange={(e) => handleChange("comidas_no_gustan", e.target.value)}
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            rows="2"
+          />
+        </div>
+      </div>
+    );
+
+    const getFormIcon = () => {
+      switch (tipo) {
+        case RecommendationType.EXERCISE:
+          return <Dumbbell className="w-6 h-6 text-blue-500" />;
+        case RecommendationType.MEDICAL:
+          return <Pill className="w-6 h-6 text-red-500" />;
+        case RecommendationType.NUTRITION:
+          return <Utensils className="w-6 h-6 text-green-500" />;
+        default:
+          return <Info className="w-6 h-6 text-purple-500" />;
+      }
+    };
+
+    const getFormColor = () => {
+      switch (tipo) {
+        case RecommendationType.EXERCISE:
+          return "border-blue-200 dark:border-blue-800";
+        case RecommendationType.MEDICAL:
+          return "border-red-200 dark:border-red-800";
+        case RecommendationType.NUTRITION:
+          return "border-green-200 dark:border-green-800";
+        default:
+          return "border-purple-200 dark:border-purple-800";
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div
+          className={`bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 ${getFormColor()}`}
+        >
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  {getFormIcon()}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Personalizar {getTypeName(tipo)}
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Completa la información para una recomendación más precisa
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onCancel}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6">
+            {tipo === RecommendationType.EXERCISE && renderExerciseForm()}
+            {tipo === RecommendationType.MEDICAL && renderMedicalForm()}
+            {tipo === RecommendationType.NUTRITION && renderNutritionForm()}
+
+            <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-5 py-2.5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg font-medium"
+              >
+                Generar Recomendación
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
   };
 
   // Quick Actions Component
@@ -270,51 +683,74 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
       },
     ];
 
+    const handleGenerate = (tipo, formData) => {
+      generateRecommendation(tipo, formData);
+    };
+
     return (
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-2xl border p-6 hover:shadow-xl transition-all duration-300`}
-      >
-        <div className="flex items-center mb-6">
-          <div
-            className={`w-10 h-10 ${
-              darkMode ? "bg-gray-700" : "bg-gray-100"
-            } rounded-xl flex items-center justify-center mr-3 shadow-md`}
-          >
-            <Zap
-              className={`w-6 h-6 ${
-                darkMode ? "text-yellow-400" : "text-yellow-600"
-              }`}
-            />
-          </div>
-          <h3
-            className={`text-xl font-bold ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Generar Recomendaciones
-          </h3>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          {actions.map((action, index) => (
-            <button
-              key={index}
-              onClick={() => generateRecommendation(action.type, {})}
-              disabled={loading}
-              className={`${action.gradient} text-white p-5 rounded-2xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed group`}
+      <>
+        <div
+          className={`${
+            darkMode
+              ? "bg-gray-800 border-gray-700"
+              : "bg-white border-gray-200"
+          } rounded-2xl border p-6 hover:shadow-xl transition-all duration-300`}
+        >
+          <div className="flex items-center mb-6">
+            <div
+              className={`w-10 h-10 ${
+                darkMode ? "bg-gray-700" : "bg-gray-100"
+              } rounded-xl flex items-center justify-center mr-3 shadow-md`}
             >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <action.icon className="w-6 h-6" />
+              <Zap
+                className={`w-6 h-6 ${
+                  darkMode ? "text-yellow-400" : "text-yellow-600"
+                }`}
+              />
+            </div>
+            <h3
+              className={`text-xl font-bold ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Generar Recomendaciones
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {actions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  if (action.type === RecommendationType.GENERAL) {
+                    generateRecommendation(action.type, {});
+                  } else {
+                    setShowForm(action.type);
+                    setFormData({});
+                  }
+                }}
+                disabled={loading}
+                className={`${action.gradient} text-white p-5 rounded-2xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed group`}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <action.icon className="w-6 h-6" />
+                  </div>
+                  <div className="font-bold text-sm mb-1">{action.title}</div>
+                  <div className="text-xs opacity-90">{action.subtitle}</div>
                 </div>
-                <div className="font-bold text-sm mb-1">{action.title}</div>
-                <div className="text-xs opacity-90">{action.subtitle}</div>
-              </div>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+
+        {showForm && (
+          <DatosEntradaForm
+            tipo={showForm}
+            onGenerate={handleGenerate}
+            onCancel={() => setShowForm(null)}
+          />
+        )}
+      </>
     );
   };
 
