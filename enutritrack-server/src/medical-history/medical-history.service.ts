@@ -9,18 +9,10 @@ export class MedicalHistoryService {
 
   constructor(private httpService: HttpService) {}
 
-  async create(createMedicalHistoryDto: any, authToken: string) {
+  async create(createMedicalHistoryDto: any) {
     try {
       const response = await firstValueFrom(
-        this.httpService.post(
-          `${this.MEDICAL_SERVICE_URL}/medical-history`,
-          createMedicalHistoryDto,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-            },
-          },
-        ),
+        this.httpService.post(`${this.MEDICAL_SERVICE_URL}/medical-history`),
       );
       return response.data;
     } catch (error) {
@@ -32,16 +24,11 @@ export class MedicalHistoryService {
     }
   }
 
-  async findByUser(userId: string, authToken: string) {
+  async findByUser(userId: string) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
           `${this.MEDICAL_SERVICE_URL}/medical-history/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-            },
-          },
         ),
       );
       return response.data;

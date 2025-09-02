@@ -19,7 +19,7 @@ import { CacheModule } from '@nestjs/cache-manager';
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: 'jwtSecretKey',
+      secret: 'tu_clave_secreta_super_segura',
       signOptions: { expiresIn: '24h' },
     }),
     RedisModule,

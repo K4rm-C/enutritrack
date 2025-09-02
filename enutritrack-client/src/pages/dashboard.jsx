@@ -40,6 +40,9 @@ import {
 import { useAuth } from "../context/auth/auth.context";
 import Perfil from "../components/profile";
 import Recomendaciones from "../components/recommendations";
+import NutricionTracker from "../components/nutrition-tracker";
+import ActivityTracker from "../components/activity-tracker";
+import HistoryMedical from "../components/history-medical";
 
 // Dark Mode Context
 const DarkModeContext = createContext();
@@ -1000,37 +1003,11 @@ const Dashboard = () => {
       id: "nutricion",
       name: "Nutrición",
       icon: <Utensils className="w-5 h-5" />,
-      hasSubMenu: true,
-      subItems: [
-        {
-          id: "plan_nutricional",
-          name: "Plan Nutricional",
-          icon: <ClipboardList className="w-4 h-4" />,
-        },
-        {
-          id: "seguimiento",
-          name: "Seguimiento",
-          icon: <TrendingUp className="w-4 h-4" />,
-        },
-      ],
     },
     {
       id: "actividad",
       name: "Actividad Física",
       icon: <Activity className="w-5 h-5" />,
-      hasSubMenu: true,
-      subItems: [
-        {
-          id: "rutinas",
-          name: "Rutinas",
-          icon: <Dumbbell className="w-4 h-4" />,
-        },
-        {
-          id: "progreso",
-          name: "Progreso",
-          icon: <TrendingUp className="w-4 h-4" />,
-        },
-      ],
     },
     {
       id: "recomendaciones",
@@ -1041,24 +1018,6 @@ const Dashboard = () => {
       id: "historial",
       name: "Historial Médico",
       icon: <History className="w-5 h-5" />,
-    },
-    {
-      id: "configuracion",
-      name: "Configuración",
-      icon: <Settings className="w-5 h-5" />,
-      hasSubMenu: true,
-      subItems: [
-        {
-          id: "cuenta",
-          name: "Cuenta",
-          icon: <UserCog className="w-4 h-4" />,
-        },
-        {
-          id: "notificaciones",
-          name: "Notificaciones",
-          icon: <Bell className="w-4 h-4" />,
-        },
-      ],
     },
   ];
 
@@ -1087,6 +1046,15 @@ const Dashboard = () => {
     }
     if (activeContent === "recomendaciones") {
       return <Recomendaciones darkMode={darkMode} />;
+    }
+    if (activeContent === "nutricion") {
+      return <NutricionTracker darkMode={darkMode} />;
+    }
+    if (activeContent === "actividad") {
+      return <ActivityTracker darkMode={darkMode} />;
+    }
+    if (activeContent === "historial") {
+      return <HistoryMedical darkMode={darkMode} />;
     }
     return <GenericContent title={getPageTitle()} darkMode={darkMode} />;
   };

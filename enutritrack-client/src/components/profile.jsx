@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/auth/auth.context";
+import { useMedicalHistory } from "../context/history-medical/history-medical.context";
+import { useNutrition } from "../context/nutrition/nutrition.context";
+import { usePhysicalActivity } from "../context/activity/activity.context";
 import {
   User,
   Heart,
   Activity,
-  Lightbulb,
   FileText,
-  Settings,
-  Edit,
+  Edit3,
   Save,
   Camera,
   Mail,
@@ -22,1141 +24,1291 @@ import {
   BarChart3,
   Plus,
   Trash2,
-  Bell,
+  X,
+  Info,
   Shield,
-  Moon,
-  Sun,
-  Download,
-  Upload,
-  Droplets,
+  AlertCircle,
+  Pill,
 } from "lucide-react";
 
 const ProfileDashboard = ({ darkMode = false }) => {
+  const { user, updateUser } = useAuth();
+  const {
+    medicalHistory,
+    getMedicalHistoryByUser,
+    createMedicalHistory,
+    updateMedicalHistory,
+  } = useMedicalHistory();
+  const {
+    foodRecords,
+    dailySummary,
+    getFoodRecordsByUser,
+    getDailySummary,
+    deleteFoodRecord,
+  } = useNutrition();
+  const {
+    activities,
+    weeklySummary,
+    getPhysicalActivitiesByUser,
+    getWeeklySummary,
+    deletePhysicalActivity,
+  } = usePhysicalActivity();
+
   const [activeTab, setActiveTab] = useState("perfil");
   const [editingProfile, setEditingProfile] = useState(false);
 
-  // Estados para datos del usuario
   const [profileData, setProfileData] = useState({
-    nombre: "Juan Pérez",
-    email: "juan@email.com",
-    telefono: "+52 81 1234 5678",
-    edad: 28,
-    altura: 175,
-    pesoActual: 75,
-    pesoObjetivo: 70,
-    genero: "M",
+    nombre: "",
+    email: "",
+    telefono: "",
+    edad: "",
+    altura: "",
+    pesoActual: "",
+    pesoObjetivo: "",
+    genero: "",
     nivelActividad: "moderado",
   });
 
-  const [nutritionGoals, setNutritionGoals] = useState({
-    calorias: 2200,
-    proteinas: 110,
-    carbohidratos: 275,
-    grasas: 73,
-    agua: 2.5,
-  });
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        nombre: user.name || "",
+        email: user.email || "",
+        telefono: user.telefono || "",
+        edad: user.edad || "",
+        altura: user.altura || "",
+        pesoActual: user.pesoActual || "",
+        pesoObjetivo: user.pesoObjetivo || "",
+        genero: user.genero || "",
+        nivelActividad: user.nivelActividad || "moderado",
+      });
 
-  const [medicalHistory, setMedicalHistory] = useState([
-    {
-      id: 1,
-      fecha: "2024-01-15",
-      tipo: "Consulta",
-      descripcion: "Revisión general",
-      doctor: "Dr. García",
-    },
-    {
-      id: 2,
-      fecha: "2024-01-30",
-      tipo: "Análisis",
-      descripcion: "Perfil lipídico",
-      resultado: "Normal",
-    },
-  ]);
+      const loadData = async () => {
+        try {
+          await getMedicalHistoryByUser(user.id);
+          await getFoodRecordsByUser(user.id);
+          await getDailySummary(
+            user.id,
+            new Date().toISOString().split("T")[0]
+          );
+          await getPhysicalActivitiesByUser(user.id);
+          await getWeeklySummary(
+            user.id,
+            new Date().toISOString().split("T")[0]
+          );
+        } catch (error) {
+          // Handle error silently or show user-friendly message
+        }
+      };
+
+      loadData();
+    }
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    try {
+      await updateUser(profileData);
+      setEditingProfile(false);
+    } catch (error) {
+      // Handle error
+    }
+  };
 
   const tabs = [
-    { id: "perfil", name: "Perfil", icon: User },
-    { id: "nutricion", name: "Nutrición", icon: Apple },
-    { id: "actividad", name: "Actividad Física", icon: Activity },
-    { id: "recomendaciones", name: "Recomendaciones", icon: Lightbulb },
-    { id: "historial", name: "Historial Médico", icon: FileText },
-    { id: "configuracion", name: "Configuración", icon: Settings },
+    { id: "perfil", name: "Perfil", icon: User, color: "emerald" },
+    { id: "nutricion", name: "Nutrición", icon: Apple, color: "green" },
+    { id: "actividad", name: "Actividad", icon: Activity, color: "blue" },
+    { id: "historial", name: "Historial", icon: FileText, color: "orange" },
   ];
 
   // Componente de Perfil
   const ProfileSection = () => (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Card principal de perfil */}
       <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
+        className={`relative overflow-hidden rounded-2xl border shadow-2xl ${
+          darkMode
+            ? "border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900"
+            : "border-gray-200 bg-gradient-to-br from-white to-gray-50"
+        }`}
       >
-        <div className="flex items-center justify-between mb-6">
-          <h3
-            className={`text-xl font-bold ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Información Personal
-          </h3>
-          <button
-            onClick={() => setEditingProfile(!editingProfile)}
-            className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-          >
-            {editingProfile ? (
-              <Save className="h-4 w-4 mr-2" />
-            ) : (
-              <Edit className="h-4 w-4 mr-2" />
-            )}
-            {editingProfile ? "Guardar" : "Editar"}
-          </button>
-        </div>
-
-        <div className="flex items-center space-x-6 mb-8">
-          <div className="relative">
-            <div
-              className={`w-24 h-24 ${
-                darkMode ? "bg-emerald-900/30" : "bg-emerald-100"
-              } rounded-full flex items-center justify-center`}
-            >
-              <User className="h-12 w-12 text-emerald-600" />
-            </div>
-            <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-white hover:bg-emerald-700 transition-colors">
-              <Camera className="h-4 w-4" />
-            </button>
-          </div>
-          <div>
-            <h4
-              className={`text-2xl font-bold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              {profileData.nombre}
-            </h4>
-            <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
-              {profileData.email}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <Mail
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <div>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
+        {/* Header con gradiente */}
+        <div
+          className={`relative px-8 py-6 ${
+            darkMode
+              ? "bg-gradient-to-r from-emerald-900/20 to-blue-900/20"
+              : "bg-gradient-to-r from-emerald-50 to-blue-50"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <div
+                  className={`w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl ${
+                    darkMode
+                      ? "bg-gradient-to-br from-emerald-600 to-emerald-700"
+                      : "bg-gradient-to-br from-emerald-500 to-emerald-600"
                   }`}
                 >
-                  Email
-                </p>
-                <p
-                  className={`font-medium ${
+                  <User className="h-10 w-10 text-white" />
+                </div>
+                <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-emerald-500 hover:scale-110 transition-transform">
+                  <Camera className="h-4 w-4 text-emerald-600" />
+                </button>
+              </div>
+              <div>
+                <h2
+                  className={`text-3xl font-bold ${
                     darkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {profileData.nombre || "Usuario"}
+                </h2>
+                <p
+                  className={`text-lg ${
+                    darkMode ? "text-gray-300" : "text-gray-600"
                   }`}
                 >
                   {profileData.email}
                 </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Phone
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <div>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Teléfono
-                </p>
-                <p
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {profileData.telefono}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Calendar
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <div>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Edad
-                </p>
-                <p
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {profileData.edad} años
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <Ruler
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <div>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Altura
-                </p>
-                <p
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {profileData.altura} cm
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Weight
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <div>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Peso Actual
-                </p>
-                <p
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {profileData.pesoActual} kg
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Target
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <div>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Peso Objetivo
-                </p>
-                <p
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {profileData.pesoObjetivo} kg
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <h3
-          className={`text-xl font-bold mb-4 ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Estadísticas Rápidas
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div
-            className={`text-center p-4 rounded-lg ${
-              darkMode ? "bg-emerald-900/20" : "bg-emerald-50"
-            }`}
-          >
-            <TrendingUp className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-emerald-600">-5kg</p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              Progreso
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 rounded-lg ${
-              darkMode ? "bg-blue-900/20" : "bg-blue-50"
-            }`}
-          >
-            <BarChart3 className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-blue-600">85%</p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              Meta Diaria
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 rounded-lg ${
-              darkMode ? "bg-orange-900/20" : "bg-orange-50"
-            }`}
-          >
-            <Activity className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-orange-600">120</p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              Min Activos
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 rounded-lg ${
-              darkMode ? "bg-purple-900/20" : "bg-purple-50"
-            }`}
-          >
-            <Heart className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-purple-600">98%</p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              Salud
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Componente de Nutrición
-  const NutritionSection = () => (
-    <div className="space-y-6">
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <h3
-          className={`text-xl font-bold mb-6 ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Objetivos Nutricionales
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div
-            className={`text-center p-4 border rounded-lg ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                darkMode ? "bg-red-900/20" : "bg-red-100"
-              }`}
-            >
-              <span className="text-2xl">🔥</span>
-            </div>
-            <h4
-              className={`font-semibold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Calorías
-            </h4>
-            <p className="text-2xl font-bold text-red-600">
-              {nutritionGoals.calorias}
-            </p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              kcal/día
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 border rounded-lg ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                darkMode ? "bg-blue-900/20" : "bg-blue-100"
-              }`}
-            >
-              <span className="text-2xl">💪</span>
-            </div>
-            <h4
-              className={`font-semibold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Proteínas
-            </h4>
-            <p className="text-2xl font-bold text-blue-600">
-              {nutritionGoals.proteinas}g
-            </p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              por día
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 border rounded-lg ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                darkMode ? "bg-green-900/20" : "bg-green-100"
-              }`}
-            >
-              <span className="text-2xl">🌾</span>
-            </div>
-            <h4
-              className={`font-semibold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Carbohidratos
-            </h4>
-            <p className="text-2xl font-bold text-green-600">
-              {nutritionGoals.carbohidratos}g
-            </p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              por día
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 border rounded-lg ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                darkMode ? "bg-yellow-900/20" : "bg-yellow-100"
-              }`}
-            >
-              <span className="text-2xl">🥑</span>
-            </div>
-            <h4
-              className={`font-semibold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Grasas
-            </h4>
-            <p className="text-2xl font-bold text-yellow-600">
-              {nutritionGoals.grasas}g
-            </p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              por día
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 border rounded-lg ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                darkMode ? "bg-cyan-900/20" : "bg-cyan-100"
-              }`}
-            >
-              <Droplets className="h-8 w-8 text-cyan-600" />
-            </div>
-            <h4
-              className={`font-semibold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Agua
-            </h4>
-            <p className="text-2xl font-bold text-cyan-600">
-              {nutritionGoals.agua}L
-            </p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              por día
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <h3
-          className={`text-xl font-bold mb-6 ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Registro de Comidas
-        </h3>
-        <div className="space-y-4">
-          {["Desayuno", "Almuerzo", "Cena", "Snacks"].map((meal) => (
-            <div
-              key={meal}
-              className={`flex items-center justify-between p-4 border rounded-lg ${
-                darkMode ? "border-gray-700" : "border-gray-200"
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Utensils
-                  className={`h-5 w-5 ${
-                    darkMode ? "text-gray-500" : "text-gray-400"
-                  }`}
-                />
-                <div>
-                  <h4
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
-                    {meal}
-                  </h4>
-                  <p
+                <div className="flex items-center mt-2 space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span
                     className={`text-sm ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
+                      darkMode ? "text-green-400" : "text-green-600"
                     }`}
                   >
-                    0 alimentos registrados
-                  </p>
+                    Perfil Activo
+                  </span>
                 </div>
               </div>
-              <button className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Registro
-              </button>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 
-  // Componente de Actividad Física
-  const ActivitySection = () => (
-    <div className="space-y-6">
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <h3
-          className={`text-xl font-bold mb-6 ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Actividad Física Hoy
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div
-            className={`text-center p-4 rounded-lg ${
-              darkMode ? "bg-green-900/20" : "bg-green-50"
-            }`}
-          >
-            <Activity className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-600">8,532</p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              Pasos
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 rounded-lg ${
-              darkMode ? "bg-blue-900/20" : "bg-blue-50"
-            }`}
-          >
-            <Clock className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-blue-600">45</p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              Minutos Activos
-            </p>
-          </div>
-          <div
-            className={`text-center p-4 rounded-lg ${
-              darkMode ? "bg-orange-900/20" : "bg-orange-50"
-            }`}
-          >
-            <TrendingUp className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-orange-600">320</p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              Calorías Quemadas
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3
-            className={`text-xl font-bold ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Rutinas de Ejercicio
-          </h3>
-          <button className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Rutina
-          </button>
-        </div>
-        <div className="space-y-4">
-          <div
-            className={`flex items-center justify-between p-4 border rounded-lg ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <div>
-              <h4
-                className={`font-medium ${
-                  darkMode ? "text-white" : "text-gray-900"
-                }`}
-              >
-                Cardio Matutino
-              </h4>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                30 min • Nivel: Moderado
-              </p>
-            </div>
-            <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-              Iniciar
-            </button>
-          </div>
-          <div
-            className={`flex items-center justify-between p-4 border rounded-lg ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <div>
-              <h4
-                className={`font-medium ${
-                  darkMode ? "text-white" : "text-gray-900"
-                }`}
-              >
-                Entrenamiento de Fuerza
-              </h4>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                45 min • Nivel: Intenso
-              </p>
-            </div>
-            <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-              Iniciar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Componente de Recomendaciones
-  const RecommendationsSection = () => (
-    <div className="space-y-6">
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <h3
-          className={`text-xl font-bold mb-6 ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Recomendaciones Personalizadas
-        </h3>
-        <div className="space-y-4">
-          <div
-            className={`flex items-start space-x-3 p-4 rounded-lg ${
-              darkMode
-                ? "bg-blue-900/20 border-blue-500/30"
-                : "bg-blue-50 border-blue-200"
-            } border`}
-          >
-            <Droplets
-              className={`h-6 w-6 mt-1 ${
-                darkMode ? "text-blue-400" : "text-blue-600"
-              }`}
-            />
-            <div>
-              <h4
-                className={`font-semibold ${
-                  darkMode ? "text-blue-400" : "text-blue-900"
-                }`}
-              >
-                Hidratación
-              </h4>
-              <p className={darkMode ? "text-blue-300" : "text-blue-800"}>
-                Aumenta tu consumo de agua. Te recomendamos 2.5L diarios basado
-                en tu actividad.
-              </p>
-            </div>
-          </div>
-          <div
-            className={`flex items-start space-x-3 p-4 rounded-lg ${
-              darkMode
-                ? "bg-green-900/20 border-green-500/30"
-                : "bg-green-50 border-green-200"
-            } border`}
-          >
-            <Apple
-              className={`h-6 w-6 mt-1 ${
-                darkMode ? "text-green-400" : "text-green-600"
-              }`}
-            />
-            <div>
-              <h4
-                className={`font-semibold ${
-                  darkMode ? "text-green-400" : "text-green-900"
-                }`}
-              >
-                Nutrición
-              </h4>
-              <p className={darkMode ? "text-green-300" : "text-green-800"}>
-                Incluye más proteínas en tu desayuno. Esto te ayudará a mantener
-                la saciedad.
-              </p>
-            </div>
-          </div>
-          <div
-            className={`flex items-start space-x-3 p-4 rounded-lg ${
-              darkMode
-                ? "bg-orange-900/20 border-orange-500/30"
-                : "bg-orange-50 border-orange-200"
-            } border`}
-          >
-            <Activity
-              className={`h-6 w-6 mt-1 ${
-                darkMode ? "text-orange-400" : "text-orange-600"
-              }`}
-            />
-            <div>
-              <h4
-                className={`font-semibold ${
-                  darkMode ? "text-orange-400" : "text-orange-900"
-                }`}
-              >
-                Ejercicio
-              </h4>
-              <p className={darkMode ? "text-orange-300" : "text-orange-800"}>
-                Intenta caminar 10,000 pasos diarios. Estás cerca de tu meta
-                actual.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <h3
-          className={`text-xl font-bold mb-6 ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Planes Sugeridos
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div
-            className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <h4
-              className={`font-semibold mb-2 ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Plan de Pérdida de Peso
-            </h4>
-            <p
-              className={`mb-4 ${darkMode ? "text-gray-400" : "text-gray-600"}`}
-            >
-              Diseñado para perder 0.5kg por semana de forma saludable.
-            </p>
-            <button className="w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-              Ver Plan
-            </button>
-          </div>
-          <div
-            className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
-              darkMode ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <h4
-              className={`font-semibold mb-2 ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Plan de Mantenimiento
-            </h4>
-            <p
-              className={`mb-4 ${darkMode ? "text-gray-400" : "text-gray-600"}`}
-            >
-              Mantén tu peso actual con hábitos saludables.
-            </p>
-            <button className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Ver Plan
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Componente de Historial Médico
-  const MedicalHistorySection = () => (
-    <div className="space-y-6">
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3
-            className={`text-xl font-bold ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Historial Médico
-          </h3>
-          <button className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar
-          </button>
-        </div>
-        <div className="space-y-4">
-          {medicalHistory.map((record) => (
-            <div
-              key={record.id}
-              className={`flex items-center justify-between p-4 border rounded-lg ${
-                darkMode ? "border-gray-700" : "border-gray-200"
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    darkMode ? "bg-blue-900/20" : "bg-blue-100"
-                  }`}
-                >
-                  <FileText className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h4
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
-                    {record.descripcion}
-                  </h4>
-                  <p
-                    className={`text-sm ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    {record.fecha} • {record.doctor || record.resultado}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span
-                  className={`px-2 py-1 text-xs rounded-full ${
-                    record.tipo === "Consulta"
-                      ? darkMode
-                        ? "bg-blue-900/20 text-blue-400"
-                        : "bg-blue-100 text-blue-800"
-                      : darkMode
-                      ? "bg-green-900/20 text-green-400"
-                      : "bg-green-100 text-green-800"
-                  }`}
-                >
-                  {record.tipo}
-                </span>
-                <button
-                  className={`hover:text-red-600 ${
-                    darkMode ? "text-gray-500" : "text-gray-400"
-                  }`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  // Componente de Configuración
-  const SettingsSection = () => (
-    <div className="space-y-6">
-      <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
-      >
-        <h3
-          className={`text-xl font-bold mb-6 ${
-            darkMode ? "text-white" : "text-gray-900"
-          }`}
-        >
-          Configuración General
-        </h3>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Bell
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <div>
-                <h4
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Notificaciones
-                </h4>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Recordatorios de comidas y ejercicio
-                </p>
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              {darkMode ? (
-                <Sun
-                  className={`h-5 w-5 ${
-                    darkMode ? "text-gray-500" : "text-gray-400"
-                  }`}
-                />
+              {editingProfile ? (
+                <>
+                  <button
+                    onClick={handleSaveProfile}
+                    className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-200 hover:scale-105 shadow-lg"
+                  >
+                    <Save className="h-5 w-5 mr-2" />
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => setEditingProfile(false)}
+                    className={`flex items-center px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg ${
+                      darkMode
+                        ? "bg-gray-700 text-white hover:bg-gray-600"
+                        : "bg-gray-500 text-white hover:bg-gray-600"
+                    }`}
+                  >
+                    <X className="h-5 w-5 mr-2" />
+                    Cancelar
+                  </button>
+                </>
               ) : (
-                <Moon
-                  className={`h-5 w-5 ${
-                    darkMode ? "text-gray-500" : "text-gray-400"
-                  }`}
-                />
+                <button
+                  onClick={() => setEditingProfile(true)}
+                  className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-200 hover:scale-105 shadow-lg"
+                >
+                  <Edit3 className="h-5 w-5 mr-2" />
+                  Editar Perfil
+                </button>
               )}
-              <div>
-                <h4
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Modo Oscuro
-                </h4>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Cambiar apariencia de la aplicación
-                </p>
-              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={darkMode}
-                readOnly
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
           </div>
+        </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Shield
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
+        {/* Contenido del perfil */}
+        <div className="p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Información personal */}
+            <div className="space-y-6">
+              <h3
+                className={`text-xl font-semibold mb-4 ${
+                  darkMode ? "text-white" : "text-gray-900"
                 }`}
-              />
-              <div>
-                <h4
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Privacidad
-                </h4>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Configurar privacidad de datos
-                </p>
+              >
+                Información Personal
+              </h3>
+
+              <div className="space-y-4">
+                {[
+                  {
+                    icon: Mail,
+                    label: "Email",
+                    value: profileData.email,
+                    field: "email",
+                  },
+                  {
+                    icon: Phone,
+                    label: "Teléfono",
+                    value: profileData.telefono,
+                    field: "telefono",
+                  },
+                  {
+                    icon: Calendar,
+                    label: "Edad",
+                    value: `${profileData.edad} años`,
+                    field: "edad",
+                  },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center space-x-4 p-4 rounded-xl border transition-all hover:shadow-md ${
+                      darkMode
+                        ? "border-gray-700 bg-gray-800/50"
+                        : "border-gray-200 bg-gray-50"
+                    }`}
+                  >
+                    <div
+                      className={`p-2 rounded-lg ${
+                        darkMode ? "bg-gray-700" : "bg-white shadow-sm"
+                      }`}
+                    >
+                      <item.icon
+                        className={`h-5 w-5 ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p
+                        className={`text-sm font-medium ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
+                        {item.label}
+                      </p>
+                      {editingProfile ? (
+                        <input
+                          type={
+                            item.field === "email"
+                              ? "email"
+                              : item.field === "telefono"
+                              ? "tel"
+                              : "text"
+                          }
+                          value={profileData[item.field] || ""}
+                          onChange={(e) =>
+                            setProfileData((prev) => ({
+                              ...prev,
+                              [item.field]: e.target.value,
+                            }))
+                          }
+                          className={`w-full mt-1 px-3 py-2 rounded-lg border transition-colors ${
+                            darkMode
+                              ? "bg-gray-700 border-gray-600 text-white"
+                              : "bg-white border-gray-300 text-gray-900"
+                          }`}
+                        />
+                      ) : (
+                        <p
+                          className={`font-semibold ${
+                            darkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {item.value || "No especificado"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <button className="text-emerald-600 hover:text-emerald-700 font-medium">
-              Configurar
-            </button>
+
+            {/* Métricas corporales */}
+            <div className="space-y-6">
+              <h3
+                className={`text-xl font-semibold mb-4 ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Métricas Corporales
+              </h3>
+
+              <div className="space-y-4">
+                {[
+                  {
+                    icon: Ruler,
+                    label: "Altura",
+                    value: `${profileData.altura} cm`,
+                    field: "altura",
+                  },
+                  {
+                    icon: Weight,
+                    label: "Peso Actual",
+                    value: `${profileData.pesoActual} kg`,
+                    field: "pesoActual",
+                  },
+                  {
+                    icon: Target,
+                    label: "Peso Objetivo",
+                    value: `${profileData.pesoObjetivo} kg`,
+                    field: "pesoObjetivo",
+                  },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center space-x-4 p-4 rounded-xl border transition-all hover:shadow-md ${
+                      darkMode
+                        ? "border-gray-700 bg-gray-800/50"
+                        : "border-gray-200 bg-gray-50"
+                    }`}
+                  >
+                    <div
+                      className={`p-2 rounded-lg ${
+                        darkMode ? "bg-gray-700" : "bg-white shadow-sm"
+                      }`}
+                    >
+                      <item.icon
+                        className={`h-5 w-5 ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p
+                        className={`text-sm font-medium ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
+                        {item.label}
+                      </p>
+                      {editingProfile ? (
+                        <input
+                          type="number"
+                          value={profileData[item.field] || ""}
+                          onChange={(e) =>
+                            setProfileData((prev) => ({
+                              ...prev,
+                              [item.field]: e.target.value,
+                            }))
+                          }
+                          className={`w-full mt-1 px-3 py-2 rounded-lg border transition-colors ${
+                            darkMode
+                              ? "bg-gray-700 border-gray-600 text-white"
+                              : "bg-white border-gray-300 text-gray-900"
+                          }`}
+                        />
+                      ) : (
+                        <p
+                          className={`font-semibold ${
+                            darkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {item.value || "No especificado"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Estadísticas rápidas */}
       <div
-        className={`${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-        } rounded-xl border p-6`}
+        className={`rounded-2xl border shadow-xl ${
+          darkMode
+            ? "border-gray-700 bg-gray-800/50"
+            : "border-gray-200 bg-white/90"
+        }`}
       >
-        <h3
-          className={`text-xl font-bold mb-6 ${
-            darkMode ? "text-white" : "text-gray-900"
+        <div
+          className={`px-8 py-6 border-b ${
+            darkMode ? "border-gray-700" : "border-gray-100"
           }`}
         >
-          Datos y Privacidad
-        </h3>
-        <div className="space-y-4">
-          <button
-            className={`w-full flex items-center justify-between p-4 border rounded-lg transition-colors ${
-              darkMode
-                ? "border-gray-700 hover:bg-gray-700"
-                : "border-gray-200 hover:bg-gray-50"
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
             }`}
           >
-            <div className="flex items-center space-x-3">
-              <Download
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <span
-                className={`font-medium ${
-                  darkMode ? "text-white" : "text-gray-900"
+            Resumen de Progreso
+          </h3>
+        </div>
+        <div className="p-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div
+              className={`text-center p-6 rounded-xl border ${
+                darkMode
+                  ? "border-emerald-800 bg-emerald-900/20"
+                  : "border-emerald-200 bg-emerald-50"
+              }`}
+            >
+              <TrendingUp className="h-8 w-8 text-emerald-600 mx-auto mb-3" />
+              <p className="text-2xl font-bold text-emerald-600">
+                {profileData.pesoActual && profileData.pesoObjetivo
+                  ? `${Math.abs(
+                      profileData.pesoActual - profileData.pesoObjetivo
+                    ).toFixed(1)}kg`
+                  : "0kg"}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
                 }`}
               >
-                Exportar Datos
-              </span>
+                Diferencia
+              </p>
             </div>
-          </button>
-          <button
-            className={`w-full flex items-center justify-between p-4 border rounded-lg transition-colors ${
-              darkMode
-                ? "border-gray-700 hover:bg-gray-700"
-                : "border-gray-200 hover:bg-gray-50"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Upload
-                className={`h-5 w-5 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-              <span
-                className={`font-medium ${
-                  darkMode ? "text-white" : "text-gray-900"
+            <div
+              className={`text-center p-6 rounded-xl border ${
+                darkMode
+                  ? "border-blue-800 bg-blue-900/20"
+                  : "border-blue-200 bg-blue-50"
+              }`}
+            >
+              <BarChart3 className="h-8 w-8 text-blue-600 mx-auto mb-3" />
+              <p className="text-2xl font-bold text-blue-600">
+                {dailySummary?.totalCalorias || 0}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
                 }`}
               >
-                Importar Datos
-              </span>
+                Calorías Hoy
+              </p>
             </div>
-          </button>
-          <button
-            className={`w-full flex items-center justify-between p-4 border border-red-300 rounded-lg text-red-600 transition-colors ${
-              darkMode ? "hover:bg-red-900/20" : "hover:bg-red-50"
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Trash2 className="h-5 w-5" />
-              <span className="font-medium">Eliminar Cuenta</span>
+            <div
+              className={`text-center p-6 rounded-xl border ${
+                darkMode
+                  ? "border-orange-800 bg-orange-900/20"
+                  : "border-orange-200 bg-orange-50"
+              }`}
+            >
+              <Activity className="h-8 w-8 text-orange-600 mx-auto mb-3" />
+              <p className="text-2xl font-bold text-orange-600">
+                {weeklySummary?.totalDuracion || 0}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Min Activos
+              </p>
             </div>
-          </button>
+            <div
+              className={`text-center p-6 rounded-xl border ${
+                darkMode
+                  ? "border-purple-800 bg-purple-900/20"
+                  : "border-purple-200 bg-purple-50"
+              }`}
+            >
+              <Heart className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+              <p className="text-2xl font-bold text-purple-600">
+                {(() => {
+                  if (!medicalHistory) return 0;
+                  if (Array.isArray(medicalHistory))
+                    return medicalHistory.length;
+                  if (typeof medicalHistory === "object") {
+                    const possibleArrays = [
+                      "data",
+                      "records",
+                      "history",
+                      "items",
+                      "results",
+                    ];
+                    for (const prop of possibleArrays) {
+                      if (
+                        medicalHistory[prop] &&
+                        Array.isArray(medicalHistory[prop])
+                      ) {
+                        return medicalHistory[prop].length;
+                      }
+                    }
+                    return Object.keys(medicalHistory).length > 0 ? 1 : 0;
+                  }
+                  return 0;
+                })()}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Registros Médicos
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 
-  const renderActiveSection = () => {
+  // Componente de Nutrición usando context real
+  const NutritionSection = () => (
+    <div className="space-y-8">
+      {/* Resumen diario */}
+      <div
+        className={`rounded-2xl border shadow-xl ${
+          darkMode
+            ? "border-gray-700 bg-gray-800/50"
+            : "border-gray-200 bg-white/90"
+        }`}
+      >
+        <div
+          className={`px-8 py-6 border-b ${
+            darkMode ? "border-gray-700" : "border-gray-100"
+          }`}
+        >
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Resumen Nutricional de Hoy
+          </h3>
+        </div>
+        <div className="p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: "🔥",
+                label: "Calorías",
+                value: dailySummary?.totalCalorias || 0,
+                unit: "kcal",
+                color: "red",
+              },
+              {
+                icon: "💪",
+                label: "Proteínas",
+                value: dailySummary?.totalProteinas || 0,
+                unit: "g",
+                color: "blue",
+              },
+              {
+                icon: "🌾",
+                label: "Carbohidratos",
+                value: dailySummary?.totalCarbohidratos || 0,
+                unit: "g",
+                color: "green",
+              },
+              {
+                icon: "🥑",
+                label: "Grasas",
+                value: dailySummary?.totalGrasas || 0,
+                unit: "g",
+                color: "yellow",
+              },
+            ].map((item, index) => (
+              <div
+                key={index}
+                className={`text-center p-6 rounded-xl border hover:shadow-lg transition-all ${
+                  darkMode
+                    ? "border-gray-700 bg-gray-800/30"
+                    : "border-gray-200 bg-gray-50"
+                }`}
+              >
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                    darkMode
+                      ? `bg-${item.color}-900/20`
+                      : `bg-${item.color}-100`
+                  }`}
+                >
+                  <span className="text-2xl">{item.icon}</span>
+                </div>
+                <h4
+                  className={`font-semibold mb-2 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {item.label}
+                </h4>
+                <p className={`text-2xl font-bold text-${item.color}-600 mb-1`}>
+                  {item.value}
+                </p>
+                <p
+                  className={`text-sm ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  {item.unit}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Registro de comidas del día */}
+      <div
+        className={`rounded-2xl border shadow-xl ${
+          darkMode
+            ? "border-gray-700 bg-gray-800/50"
+            : "border-gray-200 bg-white/90"
+        }`}
+      >
+        <div
+          className={`px-8 py-6 border-b flex items-center justify-between ${
+            darkMode ? "border-gray-700" : "border-gray-100"
+          }`}
+        >
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Registros de Comida
+          </h3>
+          <button className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar Comida
+          </button>
+        </div>
+        <div className="p-8">
+          <div className="space-y-4">
+            {foodRecords && foodRecords.length > 0 ? (
+              foodRecords.map((record, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between p-4 rounded-xl border ${
+                    darkMode
+                      ? "border-gray-700 bg-gray-800/30"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Utensils
+                      className={`h-5 w-5 ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    />
+                    <div>
+                      <h4
+                        className={`font-medium ${
+                          darkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {record.nombreComida || "Comida"}
+                      </h4>
+                      <p
+                        className={`text-sm ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
+                        {record.calorias} kcal • {record.tipoComida}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteFoodRecord(record.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div
+                className={`text-center py-12 ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                <Apple className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p>No hay registros de comida para hoy</p>
+                <p className="text-sm mt-2">
+                  Comienza agregando tu primera comida
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Componente de Actividad Física usando context real
+  const ActivitySection = () => (
+    <div className="space-y-8">
+      {/* Resumen semanal de actividades */}
+      <div
+        className={`rounded-2xl border shadow-xl ${
+          darkMode
+            ? "border-gray-700 bg-gray-800/50"
+            : "border-gray-200 bg-white/90"
+        }`}
+      >
+        <div
+          className={`px-8 py-6 border-b ${
+            darkMode ? "border-gray-700" : "border-gray-100"
+          }`}
+        >
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Resumen de Actividad Física
+          </h3>
+        </div>
+        <div className="p-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+              className={`text-center p-6 rounded-xl border ${
+                darkMode
+                  ? "border-green-800 bg-green-900/20"
+                  : "border-green-200 bg-green-50"
+              }`}
+            >
+              <Activity className="h-8 w-8 text-green-600 mx-auto mb-3" />
+              <p className="text-2xl font-bold text-green-600">
+                {weeklySummary?.totalActividades || 0}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Actividades
+              </p>
+            </div>
+            <div
+              className={`text-center p-6 rounded-xl border ${
+                darkMode
+                  ? "border-blue-800 bg-blue-900/20"
+                  : "border-blue-200 bg-blue-50"
+              }`}
+            >
+              <Clock className="h-8 w-8 text-blue-600 mx-auto mb-3" />
+              <p className="text-2xl font-bold text-blue-600">
+                {weeklySummary?.totalDuracion || 0}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Minutos Total
+              </p>
+            </div>
+            <div
+              className={`text-center p-6 rounded-xl border ${
+                darkMode
+                  ? "border-orange-800 bg-orange-900/20"
+                  : "border-orange-200 bg-orange-50"
+              }`}
+            >
+              <TrendingUp className="h-8 w-8 text-orange-600 mx-auto mb-3" />
+              <p className="text-2xl font-bold text-orange-600">
+                {weeklySummary?.totalCaloriasQuemadas || 0}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Calorías Quemadas
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de actividades */}
+      <div
+        className={`rounded-2xl border shadow-xl ${
+          darkMode
+            ? "border-gray-700 bg-gray-800/50"
+            : "border-gray-200 bg-white/90"
+        }`}
+      >
+        <div
+          className={`px-8 py-6 border-b flex items-center justify-between ${
+            darkMode ? "border-gray-700" : "border-gray-100"
+          }`}
+        >
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Actividades Físicas
+          </h3>
+          <button className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Actividad
+          </button>
+        </div>
+        <div className="p-8">
+          <div className="space-y-4">
+            {activities && activities.length > 0 ? (
+              activities.map((activity, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between p-4 rounded-xl border ${
+                    darkMode
+                      ? "border-gray-700 bg-gray-800/30"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Activity
+                      className={`h-5 w-5 ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    />
+                    <div>
+                      <h4
+                        className={`font-medium ${
+                          darkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {activity.tipoActividad}
+                      </h4>
+                      <p
+                        className={`text-sm ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
+                        {activity.duracion} min • {activity.intensidad} •{" "}
+                        {activity.caloriasQuemadas} kcal
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deletePhysicalActivity(activity.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div
+                className={`text-center py-12 ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                <Activity className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p>No hay actividades físicas registradas</p>
+                <p className="text-sm mt-2">
+                  Comienza registrando tu primera actividad
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Componente de Historial Médico actualizado con vista previa
+  const MedicalHistorySection = () => {
+    const getMedicalHistoryData = () => {
+      if (!medicalHistory) return [];
+      if (Array.isArray(medicalHistory)) return medicalHistory;
+      if (typeof medicalHistory === "object") {
+        const possibleArrays = [
+          "data",
+          "records",
+          "history",
+          "items",
+          "results",
+        ];
+        for (const prop of possibleArrays) {
+          if (medicalHistory[prop] && Array.isArray(medicalHistory[prop])) {
+            return medicalHistory[prop];
+          }
+        }
+        if (Object.keys(medicalHistory).length > 0) {
+          return [medicalHistory];
+        }
+      }
+      return [];
+    };
+
+    const medicalData = getMedicalHistoryData();
+
+    // Datos de ejemplo para demostrar la estructura
+    const sampleMedicalData = [
+      {
+        id: 1,
+        tipo: "condiciones",
+        titulo: "Condiciones Médicas",
+        items: ["hipertensión", "diabetes tipo 2"],
+        count: 2,
+      },
+      {
+        id: 2,
+        tipo: "alergias",
+        titulo: "Alergias",
+        items: ["penicilina", "mariscos"],
+        count: 2,
+      },
+      {
+        id: 3,
+        tipo: "medicamentos",
+        titulo: "Medicamentos",
+        items: ["lisinopril 10mg", "metformina 500mg"],
+        count: 2,
+      },
+    ];
+
+    // Usar datos reales si existen, si no usar datos de ejemplo
+    const displayData =
+      medicalData.length > 0 ? medicalData : sampleMedicalData;
+
+    return (
+      <div className="space-y-8">
+        {/* Header principal */}
+        <div
+          className={`rounded-2xl border shadow-xl ${
+            darkMode
+              ? "border-gray-700 bg-gray-800/50"
+              : "border-gray-200 bg-white/90"
+          }`}
+        >
+          <div
+            className={`px-8 py-6 border-b flex items-center justify-between ${
+              darkMode ? "border-gray-700" : "border-gray-100"
+            }`}
+          >
+            <div>
+              <div className="flex items-center space-x-3">
+                <Heart
+                  className={`h-6 w-6 ${
+                    darkMode ? "text-red-400" : "text-red-500"
+                  }`}
+                />
+                <h3
+                  className={`text-xl font-bold ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Mi Información Médica
+                </h3>
+              </div>
+              <p
+                className={`text-sm mt-1 ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Visualizando información médica
+              </p>
+            </div>
+            <button className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+              <Edit3 className="h-4 w-4 mr-2" />
+              Editar Información
+            </button>
+          </div>
+
+          <div className="p-8">
+            <div className="space-y-6">
+              {/* Vista previa de las categorías médicas */}
+              {displayData.map((category, index) => (
+                <div
+                  key={category.id || index}
+                  className={`rounded-lg border ${
+                    darkMode ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <div
+                    className={`flex items-center justify-between p-4 ${
+                      darkMode ? "bg-gray-800/30" : "bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`p-2 rounded-lg ${
+                          category.tipo === "condiciones"
+                            ? "bg-red-100"
+                            : category.tipo === "alergias"
+                            ? "bg-orange-100"
+                            : category.tipo === "medicamentos"
+                            ? "bg-blue-100"
+                            : darkMode
+                            ? "bg-gray-700"
+                            : "bg-gray-100"
+                        }`}
+                      >
+                        {category.tipo === "condiciones" ? (
+                          <Heart className="h-5 w-5 text-red-600" />
+                        ) : category.tipo === "alergias" ? (
+                          <AlertCircle className="h-5 w-5 text-orange-600" />
+                        ) : category.tipo === "medicamentos" ? (
+                          <Pill className="h-5 w-5 text-blue-600" />
+                        ) : (
+                          <FileText className="h-5 w-5 text-gray-600" />
+                        )}
+                      </div>
+                      <div>
+                        <h4
+                          className={`font-semibold ${
+                            darkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {category.titulo ||
+                            category.condicion ||
+                            category.tipo ||
+                            "Información Médica"}
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          darkMode
+                            ? "bg-gray-700 text-gray-300"
+                            : "bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        {category.count || category.items?.length || 1}
+                      </span>
+                      <Info
+                        className={`h-4 w-4 ${
+                          darkMode ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lista de elementos */}
+                  <div className="p-4">
+                    <div className="space-y-2">
+                      {category.items ? (
+                        category.items.map((item, itemIndex) => (
+                          <div
+                            key={itemIndex}
+                            className={`flex items-center p-3 rounded-lg ${
+                              category.tipo === "condiciones"
+                                ? "bg-red-50 border border-red-100"
+                                : category.tipo === "alergias"
+                                ? "bg-orange-50 border border-orange-100"
+                                : category.tipo === "medicamentos"
+                                ? "bg-blue-50 border border-blue-100"
+                                : darkMode
+                                ? "bg-gray-800 border border-gray-700"
+                                : "bg-gray-50 border border-gray-200"
+                            }`}
+                          >
+                            <span
+                              className={`text-sm ${
+                                category.tipo === "condiciones"
+                                  ? "text-red-700"
+                                  : category.tipo === "alergias"
+                                  ? "text-orange-700"
+                                  : category.tipo === "medicamentos"
+                                  ? "text-blue-700"
+                                  : darkMode
+                                  ? "text-gray-300"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {item}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div
+                          className={`flex items-center p-3 rounded-lg ${
+                            darkMode
+                              ? "bg-gray-800 border border-gray-700"
+                              : "bg-gray-50 border border-gray-200"
+                          }`}
+                        >
+                          <span
+                            className={`text-sm ${
+                              darkMode ? "text-gray-300" : "text-gray-700"
+                            }`}
+                          >
+                            {category.descripcion ||
+                              category.notas ||
+                              "Sin información adicional"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {medicalData.length === 0 && (
+                <div
+                  className={`text-center py-8 ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-sm">Datos de ejemplo mostrados</p>
+                  <p className="text-xs mt-1">
+                    Agrega tu información médica real para personalizar
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Información de salud general */}
+        <div
+          className={`rounded-2xl border shadow-xl ${
+            darkMode
+              ? "border-gray-700 bg-gray-800/50"
+              : "border-gray-200 bg-white/90"
+          }`}
+        >
+          <div
+            className={`px-8 py-6 border-b ${
+              darkMode ? "border-gray-700" : "border-gray-100"
+            }`}
+          >
+            <h3
+              className={`text-xl font-bold ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Resumen de Salud
+            </h3>
+          </div>
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* IMC */}
+              <div
+                className={`p-6 rounded-xl border ${
+                  darkMode
+                    ? "border-gray-700 bg-gray-800/30"
+                    : "border-gray-200 bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h4
+                    className={`font-semibold ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    Índice de Masa Corporal (IMC)
+                  </h4>
+                  <TrendingUp
+                    className={`h-5 w-5 ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  />
+                </div>
+                {profileData.altura && profileData.pesoActual ? (
+                  <div>
+                    <p className="text-3xl font-bold text-emerald-600 mb-2">
+                      {(
+                        parseFloat(profileData.pesoActual) /
+                        Math.pow(parseFloat(profileData.altura) / 100, 2)
+                      ).toFixed(1)}
+                    </p>
+                    <p
+                      className={`text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      Rango normal: 18.5 - 24.9
+                    </p>
+                  </div>
+                ) : (
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    Completa tu altura y peso para calcular
+                  </p>
+                )}
+              </div>
+
+              {/* Estado general */}
+              <div
+                className={`p-6 rounded-xl border ${
+                  darkMode
+                    ? "border-gray-700 bg-gray-800/30"
+                    : "border-gray-200 bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h4
+                    className={`font-semibold ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    Estado General
+                  </h4>
+                  <Heart
+                    className={`h-5 w-5 ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-sm ${
+                        darkMode ? "text-gray-300" : "text-gray-600"
+                      }`}
+                    >
+                      Nutrición
+                    </span>
+                    <div
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        dailySummary && dailySummary.totalCalorias > 0
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {dailySummary && dailySummary.totalCalorias > 0
+                        ? "Activo"
+                        : "Pendiente"}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-sm ${
+                        darkMode ? "text-gray-300" : "text-gray-600"
+                      }`}
+                    >
+                      Actividad Física
+                    </span>
+                    <div
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        weeklySummary && weeklySummary.totalDuracion > 0
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {weeklySummary && weeklySummary.totalDuracion > 0
+                        ? "Activo"
+                        : "Mejorar"}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-sm ${
+                        darkMode ? "text-gray-300" : "text-gray-600"
+                      }`}
+                    >
+                      Seguimiento Médico
+                    </span>
+                    <div
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        medicalData.length > 0
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {medicalData.length > 0 ? "Al día" : "Sin datos"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
     switch (activeTab) {
       case "perfil":
         return <ProfileSection />;
@@ -1164,12 +1316,8 @@ const ProfileDashboard = ({ darkMode = false }) => {
         return <NutritionSection />;
       case "actividad":
         return <ActivitySection />;
-      case "recomendaciones":
-        return <RecommendationsSection />;
       case "historial":
         return <MedicalHistorySection />;
-      case "configuracion":
-        return <SettingsSection />;
       default:
         return <ProfileSection />;
     }
@@ -1177,60 +1325,61 @@ const ProfileDashboard = ({ darkMode = false }) => {
 
   return (
     <div
-      className={`lg:w-[1263px] w-full ${
-        darkMode ? "bg-gray-900" : "bg-gray-100"
-      } p-6`}
+      className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+          : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
+      }`}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
           <h1
-            className={`text-4xl font-bold ${
+            className={`text-4xl font-bold mb-2 ${
               darkMode ? "text-white" : "text-gray-900"
-            } mb-2`}
+            }`}
           >
-            Mi Perfil
+            Mi Dashboard
           </h1>
-          <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
-            Gestiona tu información personal y configuraciones
+          <p
+            className={`text-lg ${
+              darkMode ? "text-gray-300" : "text-gray-600"
+            }`}
+          >
+            Tu centro de control para una vida saludable
           </p>
         </div>
-      </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar */}
-        <div className="lg:w-64">
-          <nav
-            className={`${
-              darkMode
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            } rounded-xl border p-2`}
-          >
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? "bg-emerald-600 text-white shadow-md"
-                      : darkMode
-                      ? "text-gray-300 hover:bg-gray-700"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{tab.name}</span>
-                </button>
-              );
-            })}
-          </nav>
+        {/* Navigation Tabs */}
+        <div
+          className={`flex space-x-1 rounded-xl p-1 mb-8 ${
+            darkMode ? "bg-gray-800/50" : "bg-gray-100"
+          }`}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === tab.id
+                  ? `bg-${tab.color}-600 text-white shadow-lg scale-105`
+                  : darkMode
+                  ? "text-gray-400 hover:text-white hover:bg-gray-700"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-white"
+              }`}
+            >
+              <tab.icon
+                className={`h-5 w-5 mr-2 ${
+                  activeTab === tab.id ? "text-white" : ""
+                }`}
+              />
+              {tab.name}
+            </button>
+          ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1">{renderActiveSection()}</div>
+        <div className="transition-all duration-300">{renderContent()}</div>
       </div>
     </div>
   );

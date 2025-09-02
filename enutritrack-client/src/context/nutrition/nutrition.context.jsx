@@ -14,7 +14,9 @@ const NutritionContext = createContext();
 export const useNutrition = () => {
   const context = useContext(NutritionContext);
   if (!context) {
-    throw new Error("useNutrition ya esta usado");
+    throw new Error(
+      "useNutrition debe ser usado dentro de un NutritionProvider"
+    );
   }
   return context;
 };
@@ -25,11 +27,20 @@ export function NutritionProvider({ children }) {
 
   const createFoodRecord = async (foodRecord) => {
     try {
+      console.log("Creando registro de comida:", foodRecord);
+
+      if (!foodRecord.usuarioId) {
+        throw new Error("userId es requerido");
+      }
+
       const res = await createFoodRecordRequest(foodRecord);
-      console.log(res);
+      console.log("Respuesta del servidor:", res);
       return res.data;
     } catch (error) {
-      console.log(error);
+      console.error(
+        "Error en createFoodRecord:",
+        error.response?.data || error.message
+      );
       throw error;
     }
   };

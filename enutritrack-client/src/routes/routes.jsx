@@ -18,6 +18,7 @@ import Profile from "../components/profile";
 import NutritionTracker from "../components/nutrition-tracker";
 import ActivityTracker from "../components/activity-tracker";
 import Recommendations from "../components/recommendations";
+import HistoryMedical from "../components/history-medical";
 
 const AppRoutes = () => {
   return (
@@ -47,6 +48,10 @@ const AppRoutes = () => {
                           <Route
                             path="activity"
                             element={<ActivityTracker />}
+                          />
+                          <Route
+                            path="historyMedical"
+                            element={<HistoryMedical />}
                           />
                           <Route
                             path="recommendations"

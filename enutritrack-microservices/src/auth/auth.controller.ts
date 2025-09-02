@@ -21,13 +21,10 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  @HttpCode(HttpStatus.OK)
   async login(
     @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
   ) {
-    console.log('🔐 Login request received');
-
     if (!req.user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -39,7 +36,6 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 24 * 60 * 60 * 1000,
-      path: '/',
     });
 
     return {

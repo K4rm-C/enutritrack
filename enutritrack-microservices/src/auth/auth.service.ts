@@ -78,15 +78,12 @@ export class AuthService {
   async validateToken(token: string) {
     try {
       const payload = this.jwtService.verify(token);
-      console.log(`✅ Token válido para: ${payload.email}`);
-
       return {
         userId: payload.sub,
         email: payload.email,
         nombre: payload.nombre,
       };
     } catch (error) {
-      console.error(`💥 Error validando token: ${error.message}`);
       throw new UnauthorizedException('Token inválido');
     }
   }

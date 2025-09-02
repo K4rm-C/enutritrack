@@ -105,19 +105,13 @@ export class AuthService {
 
   async validateToken(token: string) {
     try {
-      const decoded = this.jwtService.verify(token);
-
-      const cachedToken = await this.cacheManager.get(`auth:token:${token}`);
-      if (!cachedToken) {
-        throw new UnauthorizedException('Token revocado o expirado');
-      }
-
-      return decoded;
+      const payload = this.jwtService.verify(token);
+      return {
+        userId: payload.sub,
+        email: payload.email,
+        nombre: payload.nombre,
+      };
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      console.error('Error validando token:', error);
       throw new UnauthorizedException('Token inválido');
     }
   }
@@ -175,32 +169,5 @@ export class AuthService {
 
   async cleanupExpiredTokens() {
     console.log('Cleaning up expired tokens...');
-  }
-
-  async getUserFromToken(token: string) {
-    try {
-      const tokenData = await this.validateToken(token);
-
-      try {
-        const response = await firstValueFrom(
-          this.httpService.get(
-            `${this.AUTH_SERVICE_URL}/users/${tokenData.sub}`,
-            {
-              timeout: 5000,
-            },
-          ),
-        );
-        return response.data;
-      } catch (error) {
-        console.warn('Error fetching user from microservice:', error);
-        return {
-          id: tokenData.sub,
-          email: tokenData.email,
-          nombre: tokenData.nombre,
-        };
-      }
-    } catch (error) {
-      throw new UnauthorizedException('Token inválido');
-    }
   }
 }

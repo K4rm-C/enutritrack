@@ -1,169 +1,473 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNutrition } from "../context/nutrition/nutrition.context";
+import { useAuth } from "../context/auth/auth.context";
+import {
+  Apple,
+  Plus,
+  Utensils,
+  Droplets,
+  BarChart3,
+  Calendar,
+} from "lucide-react";
 
-const NutritionSummary = ({ summary }) => {
-  const nutritionData = [
-    {
-      name: "Calorías",
-      current: summary?.totalCalories || 0,
-      goal: 2000,
-      unit: "kcal",
-      color: "bg-red-500",
-      lightColor: "bg-red-100",
-    },
-    {
-      name: "Proteínas",
-      current: summary?.totalProtein || 0,
-      goal: 150,
-      unit: "g",
-      color: "bg-blue-500",
-      lightColor: "bg-blue-100",
-    },
-    {
-      name: "Carbohidratos",
-      current: summary?.totalCarbs || 0,
-      goal: 250,
-      unit: "g",
-      color: "bg-yellow-500",
-      lightColor: "bg-yellow-100",
-    },
-    {
-      name: "Grasas",
-      current: summary?.totalFat || 0,
-      goal: 65,
-      unit: "g",
-      color: "bg-green-500",
-      lightColor: "bg-green-100",
-    },
-  ];
+const NutritionDashboard = ({ darkMode = false }) => {
+  const {
+    foodRecords,
+    dailySummary,
+    createFoodRecord,
+    getFoodRecordsByUser,
+    getDailySummary,
+  } = useNutrition();
+  const { user } = useAuth();
 
-  const calculatePercentage = (current, goal) => {
-    return Math.min((current / goal) * 100, 100);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newFoodRecord, setNewFoodRecord] = useState({
+    tipo_comida: "almuerzo",
+    descripcion: "",
+    calorias: 0,
+    proteinas: 0,
+    carbohidratos: 0,
+    grasas: 0,
+    fecha: new Date().toISOString(),
+  });
+
+  useEffect(() => {
+    if (user.id) {
+      getFoodRecordsByUser(user.id);
+      getDailySummary(user.id, selectedDate);
+    }
+  }, [user.id, selectedDate]);
+
+  const handleAddFoodRecord = async () => {
+    try {
+      await createFoodRecord({
+        ...newFoodRecord,
+        usuarioId: user.id,
+      });
+      setShowAddForm(false);
+      setNewFoodRecord({
+        tipo_comida: "almuerzo",
+        descripcion: "",
+        calorias: 0,
+        proteinas: 0,
+        carbohidratos: 0,
+        grasas: 0,
+        fecha: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error adding food record:", error);
+    }
   };
 
-  const getStatusMessage = (current, goal) => {
-    const percentage = (current / goal) * 100;
-    if (percentage < 50)
-      return { message: "Necesitas más", color: "text-orange-600" };
-    if (percentage < 80)
-      return { message: "Buen progreso", color: "text-yellow-600" };
-    if (percentage < 100)
-      return { message: "Casi completo", color: "text-blue-600" };
-    return { message: "Objetivo alcanzado", color: "text-green-600" };
+  const mealTypes = {
+    desayuno: "Desayuno",
+    almuerzo: "Almuerzo",
+    cena: "Cena",
+    merienda: "Merienda",
   };
+
+  const filteredRecords = foodRecords.filter((record) => {
+    const recordDate = new Date(record.fecha).toDateString();
+    const selectedDateStr = selectedDate.toDateString();
+    return recordDate === selectedDateStr;
+  });
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-            🍎
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Resumen Nutricional de Hoy
+    <div className="space-y-6">
+      {/* Resumen Diario */}
+      <div
+        className={`${
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        } rounded-xl border p-6`}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Resumen Nutricional del Día
           </h3>
+          <div className="flex items-center space-x-2">
+            <Calendar
+              className={`h-5 w-5 ${
+                darkMode ? "text-gray-400" : "text-gray-600"
+              }`}
+            />
+            <input
+              type="date"
+              value={selectedDate.toISOString().split("T")[0]}
+              onChange={(e) => setSelectedDate(new Date(e.target.value))}
+              className={`px-3 py-2 rounded-lg border ${
+                darkMode
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+            />
+          </div>
         </div>
-        <div className="text-sm text-gray-500">
-          {new Date().toLocaleDateString("es-ES", {
-            weekday: "long",
-            day: "numeric",
-            month: "short",
-          })}
-        </div>
+
+        {dailySummary ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div
+              className={`text-center p-4 rounded-lg ${
+                darkMode ? "bg-red-900/20" : "bg-red-50"
+              }`}
+            >
+              <span className="text-2xl">🔥</span>
+              <p className="text-2xl font-bold text-red-600">
+                {dailySummary.calorias || 0}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Calorías
+              </p>
+            </div>
+            <div
+              className={`text-center p-4 rounded-lg ${
+                darkMode ? "bg-blue-900/20" : "bg-blue-50"
+              }`}
+            >
+              <span className="text-2xl">💪</span>
+              <p className="text-2xl font-bold text-blue-600">
+                {dailySummary.proteinas || 0}g
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Proteínas
+              </p>
+            </div>
+            <div
+              className={`text-center p-4 rounded-lg ${
+                darkMode ? "bg-green-900/20" : "bg-green-50"
+              }`}
+            >
+              <span className="text-2xl">🌾</span>
+              <p className="text-2xl font-bold text-green-600">
+                {dailySummary.carbohidratos || 0}g
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Carbohidratos
+              </p>
+            </div>
+            <div
+              className={`text-center p-4 rounded-lg ${
+                darkMode ? "bg-yellow-900/20" : "bg-yellow-50"
+              }`}
+            >
+              <span className="text-2xl">🥑</span>
+              <p className="text-2xl font-bold text-yellow-600">
+                {dailySummary.grasas || 0}g
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Grasas
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+            No hay datos para esta fecha
+          </p>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {nutritionData.map((nutrient, index) => {
-          const percentage = calculatePercentage(
-            nutrient.current,
-            nutrient.goal
-          );
-          const status = getStatusMessage(nutrient.current, nutrient.goal);
+      {/* Registro de Comidas */}
+      <div
+        className={`${
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        } rounded-xl border p-6`}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Registro de Comidas
+          </h3>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Comida
+          </button>
+        </div>
 
-          return (
-            <div key={index} className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium text-gray-900">{nutrient.name}</h4>
-                <span className={`text-sm font-medium ${status.color}`}>
-                  {status.message}
-                </span>
+        {showAddForm && (
+          <div
+            className={`mb-6 p-4 rounded-lg ${
+              darkMode ? "bg-gray-700" : "bg-gray-50"
+            }`}
+          >
+            <h4
+              className={`font-semibold mb-4 ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Agregar Nueva Comida
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Tipo de Comida
+                </label>
+                <select
+                  value={newFoodRecord.tipo_comida}
+                  onChange={(e) =>
+                    setNewFoodRecord({
+                      ...newFoodRecord,
+                      tipo_comida: e.target.value,
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                >
+                  <option value="desayuno">Desayuno</option>
+                  <option value="almuerzo">Almuerzo</option>
+                  <option value="cena">Cena</option>
+                  <option value="merienda">Merienda</option>
+                </select>
               </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-gray-900">
-                  {nutrient.current}
-                </span>
-                <span className="text-sm text-gray-500">
-                  de {nutrient.goal} {nutrient.unit}
-                </span>
-              </div>
-
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all duration-500 ${nutrient.color}`}
-                  style={{ width: `${percentage}%` }}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Descripción
+                </label>
+                <input
+                  type="text"
+                  value={newFoodRecord.descripcion}
+                  onChange={(e) =>
+                    setNewFoodRecord({
+                      ...newFoodRecord,
+                      descripcion: e.target.value,
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                  placeholder="Ej: Ensalada César"
                 />
               </div>
-
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>0</span>
-                <span>{Math.round(percentage)}%</span>
-                <span>
-                  {nutrient.goal} {nutrient.unit}
-                </span>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Calorías
+                </label>
+                <input
+                  type="number"
+                  value={newFoodRecord.calorias}
+                  onChange={(e) =>
+                    setNewFoodRecord({
+                      ...newFoodRecord,
+                      calorias: parseInt(e.target.value),
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Proteínas (g)
+                </label>
+                <input
+                  type="number"
+                  value={newFoodRecord.proteinas}
+                  onChange={(e) =>
+                    setNewFoodRecord({
+                      ...newFoodRecord,
+                      proteinas: parseInt(e.target.value),
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Carbohidratos (g)
+                </label>
+                <input
+                  type="number"
+                  value={newFoodRecord.carbohidratos}
+                  onChange={(e) =>
+                    setNewFoodRecord({
+                      ...newFoodRecord,
+                      carbohidratos: parseInt(e.target.value),
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Grasas (g)
+                </label>
+                <input
+                  type="number"
+                  value={newFoodRecord.grasas}
+                  onChange={(e) =>
+                    setNewFoodRecord({
+                      ...newFoodRecord,
+                      grasas: parseInt(e.target.value),
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Hydration Tracker */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <span className="text-xl mr-2">💧</span>
-            <h4 className="font-medium text-gray-900">Hidratación</h4>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleAddFoodRecord}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
-          <span className="text-sm text-gray-500">6 de 8 vasos</span>
-        </div>
+        )}
 
-        <div className="flex space-x-2">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className={`w-6 h-8 rounded-sm ${
-                i < 6 ? "bg-blue-500" : "bg-gray-200"
-              } transition-colors`}
-            />
-          ))}
-        </div>
+        <div className="space-y-4">
+          {Object.entries(mealTypes).map(([key, label]) => {
+            const mealRecords = filteredRecords.filter(
+              (record) => record.tipo_comida === key
+            );
 
-        <div className="flex justify-between mt-2 text-xs text-gray-500">
-          <span>0</span>
-          <span>2L objetivo</span>
-        </div>
-      </div>
+            return (
+              <div
+                key={key}
+                className={`p-4 border rounded-lg ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <Utensils
+                      className={`h-5 w-5 ${
+                        darkMode ? "text-gray-500" : "text-gray-400"
+                      }`}
+                    />
+                    <h4
+                      className={`font-medium ${
+                        darkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {label}
+                    </h4>
+                  </div>
+                  <span
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {mealRecords.length} alimentos
+                  </span>
+                </div>
 
-      {/* Quick Add Food */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <button className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-          Agregar Comida
-        </button>
+                {mealRecords.length > 0 ? (
+                  <div className="space-y-2">
+                    {mealRecords.map((record) => (
+                      <div
+                        key={record.id}
+                        className={`flex justify-between items-center p-2 rounded ${
+                          darkMode ? "bg-gray-700" : "bg-gray-50"
+                        }`}
+                      >
+                        <div>
+                          <p
+                            className={
+                              darkMode ? "text-white" : "text-gray-900"
+                            }
+                          >
+                            {record.descripcion}
+                          </p>
+                          <p
+                            className={`text-sm ${
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            }`}
+                          >
+                            {record.calorias} kcal • P: {record.proteinas}g • C:{" "}
+                            {record.carbohidratos}g • G: {record.grasas}g
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                    No hay registros para esta comida
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 };
 
-export default NutritionSummary;
+export default NutritionDashboard;

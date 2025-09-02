@@ -1,187 +1,404 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { usePhysicalActivity } from "../context/activity/activity.context";
+import { useAuth } from "../context/auth/auth.context";
+import { Activity, Plus, Clock, TrendingUp, Calendar } from "lucide-react";
 
-const ActivityChart = ({ weeklyData }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState("week");
+const PhysicalActivityDashboard = ({ darkMode = false }) => {
+  const {
+    activities,
+    weeklySummary,
+    createPhysicalActivity,
+    getPhysicalActivitiesByUser,
+    getWeeklySummary,
+  } = usePhysicalActivity();
+  const { user } = useAuth();
+  const userId = user?.id;
 
-  // Mock data for the chart - replace with real data from weeklyData
-  const activityData = [
-    { day: "Lun", minutes: 45, calories: 320 },
-    { day: "Mar", minutes: 60, calories: 450 },
-    { day: "Mié", minutes: 30, calories: 210 },
-    { day: "Jue", minutes: 75, calories: 520 },
-    { day: "Vie", minutes: 90, calories: 630 },
-    { day: "Sáb", minutes: 120, calories: 850 },
-    { day: "Dom", minutes: 40, calories: 280 },
-  ];
+  const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newActivity, setNewActivity] = useState({
+    tipo_actividad: "",
+    duracion: 0,
+    caloriasQuemadas: 0,
+    fecha: new Date().toISOString(),
+  });
 
-  const maxMinutes = Math.max(...activityData.map((d) => d.minutes));
-  const maxCalories = Math.max(...activityData.map((d) => d.calories));
+  useEffect(() => {
+    if (userId) {
+      getPhysicalActivitiesByUser(userId);
+      getWeeklySummary(userId, selectedWeek);
+    }
+  }, [userId, selectedWeek]);
 
-  const periods = [
-    { key: "week", label: "Esta semana" },
-    { key: "month", label: "Este mes" },
-    { key: "year", label: "Este año" },
-  ];
+  const handleAddActivity = async () => {
+    try {
+      await createPhysicalActivity({
+        ...newActivity,
+        usuarioId: userId,
+      });
+      setShowAddForm(false);
+      setNewActivity({
+        tipo_actividad: "",
+        duracion: 0,
+        caloriasQuemadas: 0,
+        fecha: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error adding activity:", error);
+    }
+  };
+
+  const getWeekDates = (date) => {
+    const startDate = new Date(date);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      dates.push(currentDate);
+    }
+
+    return dates;
+  };
+
+  const weekDates = getWeekDates(selectedWeek);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-            📊
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Actividad Física
+    <div className="space-y-6">
+      {/* Resumen Semanal */}
+      <div
+        className={`${
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        } rounded-xl border p-6`}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Resumen Semanal de Actividad
           </h3>
+          <div className="flex items-center space-x-2">
+            <Calendar
+              className={`h-5 w-5 ${
+                darkMode ? "text-gray-400" : "text-gray-600"
+              }`}
+            />
+            <input
+              type="week"
+              value={getWeekInputValue(selectedWeek)}
+              onChange={(e) => setSelectedWeek(new Date(e.target.value))}
+              className={`px-3 py-2 rounded-lg border ${
+                darkMode
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+            />
+          </div>
         </div>
 
-        {/* Period Selector */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          {periods.map((period) => (
-            <button
-              key={period.key}
-              onClick={() => setSelectedPeriod(period.key)}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                selectedPeriod === period.key
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+        {weeklySummary ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div
+              className={`text-center p-4 rounded-lg ${
+                darkMode ? "bg-green-900/20" : "bg-green-50"
               }`}
             >
-              {period.label}
-            </button>
-          ))}
-        </div>
+              <Clock className="h-8 w-8 text-green-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-green-600">
+                {weeklySummary.totalMinutos || 0}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Minutos Totales
+              </p>
+            </div>
+            <div
+              className={`text-center p-4 rounded-lg ${
+                darkMode ? "bg-orange-900/20" : "bg-orange-50"
+              }`}
+            >
+              <TrendingUp className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-orange-600">
+                {weeklySummary.totalCaloriasQuemadas || 0}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Calorías Quemadas
+              </p>
+            </div>
+            <div
+              className={`text-center p-4 rounded-lg ${
+                darkMode ? "bg-blue-900/20" : "bg-blue-50"
+              }`}
+            >
+              <Activity className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-blue-600">
+                {Object.keys(weeklySummary.actividadesPorTipo || {}).length}
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Tipos de Actividad
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+            No hay datos para esta semana
+          </p>
+        )}
       </div>
 
-      {/* Stats Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center p-3 bg-blue-50 rounded-lg">
-          <p className="text-2xl font-bold text-blue-600">
-            {activityData.reduce((sum, day) => sum + day.minutes, 0)}
-          </p>
-          <p className="text-sm text-blue-600 font-medium">Minutos totales</p>
+      {/* Registro de Actividades */}
+      <div
+        className={`${
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        } rounded-xl border p-6`}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3
+            className={`text-xl font-bold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Registro de Actividades
+          </h3>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Actividad
+          </button>
         </div>
-        <div className="text-center p-3 bg-red-50 rounded-lg">
-          <p className="text-2xl font-bold text-red-600">
-            {activityData.reduce((sum, day) => sum + day.calories, 0)}
-          </p>
-          <p className="text-sm text-red-600 font-medium">Calorías quemadas</p>
-        </div>
-        <div className="text-center p-3 bg-green-50 rounded-lg">
-          <p className="text-2xl font-bold text-green-600">
-            {Math.round(
-              activityData.reduce((sum, day) => sum + day.minutes, 0) / 7
-            )}
-          </p>
-          <p className="text-sm text-green-600 font-medium">Promedio diario</p>
-        </div>
-      </div>
 
-      {/* Chart */}
-      <div className="relative h-64">
-        <div className="flex items-end justify-between h-full pb-8">
-          {activityData.map((day, index) => {
-            const minuteHeight = (day.minutes / maxMinutes) * 100;
-            const calorieHeight = (day.calories / maxCalories) * 100;
+        {showAddForm && (
+          <div
+            className={`mb-6 p-4 rounded-lg ${
+              darkMode ? "bg-gray-700" : "bg-gray-50"
+            }`}
+          >
+            <h4
+              className={`font-semibold mb-4 ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Agregar Nueva Actividad
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Tipo de Actividad
+                </label>
+                <input
+                  type="text"
+                  value={newActivity.tipo_actividad}
+                  onChange={(e) =>
+                    setNewActivity({
+                      ...newActivity,
+                      tipo_actividad: e.target.value,
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                  placeholder="Ej: Running, Ciclismo, Natación"
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Duración (minutos)
+                </label>
+                <input
+                  type="number"
+                  value={newActivity.duracion}
+                  onChange={(e) =>
+                    setNewActivity({
+                      ...newActivity,
+                      duracion: parseInt(e.target.value),
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Calorías Quemadas
+                </label>
+                <input
+                  type="number"
+                  value={newActivity.caloriasQuemadas}
+                  onChange={(e) =>
+                    setNewActivity({
+                      ...newActivity,
+                      caloriasQuemadas: parseInt(e.target.value),
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Fecha
+                </label>
+                <input
+                  type="datetime-local"
+                  value={newActivity.fecha.slice(0, 16)}
+                  onChange={(e) =>
+                    setNewActivity({ ...newActivity, fecha: e.target.value })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-500 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleAddActivity}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {weekDates.map((date) => {
+            const dateActivities = activities.filter((activity) => {
+              const activityDate = new Date(activity.fecha).toDateString();
+              return activityDate === date.toDateString();
+            });
 
             return (
-              <div key={index} className="flex flex-col items-center flex-1">
-                {/* Bars */}
-                <div
-                  className="relative flex items-end space-x-1 mb-2"
-                  style={{ height: "200px" }}
+              <div
+                key={date.toISOString()}
+                className={`p-4 border rounded-lg ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <h4
+                  className={`font-medium mb-3 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}
                 >
-                  {/* Minutes bar */}
-                  <div className="relative group">
-                    <div
-                      className="w-6 bg-blue-500 rounded-t-sm hover:bg-blue-600 transition-colors cursor-pointer"
-                      style={{ height: `${minuteHeight}%` }}
-                    />
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {day.minutes} min
-                    </div>
-                  </div>
+                  {date.toLocaleDateString("es-ES", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </h4>
 
-                  {/* Calories bar */}
-                  <div className="relative group">
-                    <div
-                      className="w-6 bg-red-500 rounded-t-sm hover:bg-red-600 transition-colors cursor-pointer"
-                      style={{ height: `${calorieHeight}%` }}
-                    />
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {day.calories} kcal
-                    </div>
+                {dateActivities.length > 0 ? (
+                  <div className="space-y-2">
+                    {dateActivities.map((activity) => (
+                      <div
+                        key={activity.id}
+                        className={`flex justify-between items-center p-3 rounded ${
+                          darkMode ? "bg-gray-700" : "bg-gray-50"
+                        }`}
+                      >
+                        <div>
+                          <p
+                            className={
+                              darkMode ? "text-white" : "text-gray-900"
+                            }
+                          >
+                            {activity.tipo_actividad}
+                          </p>
+                          <p
+                            className={`text-sm ${
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            }`}
+                          >
+                            {activity.duracion} min •{" "}
+                            {activity.caloriasQuemadas} kcal
+                          </p>
+                        </div>
+                        <span
+                          className={`text-sm ${
+                            darkMode ? "text-gray-400" : "text-gray-600"
+                          }`}
+                        >
+                          {new Date(activity.fecha).toLocaleTimeString(
+                            "es-ES",
+                            { hour: "2-digit", minute: "2-digit" }
+                          )}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                </div>
-
-                {/* Day label */}
-                <span className="text-xs text-gray-600 font-medium">
-                  {day.day}
-                </span>
+                ) : (
+                  <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                    No hay actividades registradas
+                  </p>
+                )}
               </div>
             );
           })}
-        </div>
-
-        {/* Y-axis labels */}
-        <div className="absolute left-0 top-0 h-full flex flex-col justify-between py-2 -ml-8">
-          <span className="text-xs text-gray-400">{maxMinutes}</span>
-          <span className="text-xs text-gray-400">
-            {Math.round(maxMinutes / 2)}
-          </span>
-          <span className="text-xs text-gray-400">0</span>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex justify-center space-x-6 mt-4">
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-blue-500 rounded mr-2" />
-          <span className="text-sm text-gray-600">Minutos</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-red-500 rounded mr-2" />
-          <span className="text-sm text-gray-600">Calorías</span>
-        </div>
-      </div>
-
-      {/* Goal Progress */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-900">
-            Meta semanal: 150 minutos
-          </span>
-          <span className="text-sm text-gray-600">
-            {activityData.reduce((sum, day) => sum + day.minutes, 0)}/150 min
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-            style={{
-              width: `${Math.min(
-                (activityData.reduce((sum, day) => sum + day.minutes, 0) /
-                  150) *
-                  100,
-                100
-              )}%`,
-            }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>0 min</span>
-          <span>
-            {Math.round(
-              (activityData.reduce((sum, day) => sum + day.minutes, 0) / 150) *
-                100
-            )}
-            % completado
-          </span>
-          <span>150 min</span>
         </div>
       </div>
     </div>
   );
 };
 
-export default ActivityChart;
+// Función auxiliar para formatear la fecha en formato week
+function getWeekInputValue(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay());
+
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+  const day = d.getDate().toString().padStart(2, "0");
+
+  return `${year}-W${Math.ceil((d.getDate() + 1 - d.getDay()) / 7)}`;
+}
+
+export default PhysicalActivityDashboard;

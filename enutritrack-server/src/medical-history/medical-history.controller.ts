@@ -19,40 +19,14 @@ export class MedicalHistoryController {
 
   @UseGuards(CookieAuthGuard)
   @Post()
-  async create(
-    @Req() req: express.Request,
-    @Body() createMedicalHistoryDto: any,
-  ) {
-    // Extraer el token de la cookie o header según tu implementación
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
-    if (!authToken) {
-      throw new Error('Authentication token not found');
-    }
-
-    return this.medicalHistoryService.create(
-      createMedicalHistoryDto,
-      authToken,
-    );
+  async create(@Body() createMedicalHistoryDto: any) {
+    return this.medicalHistoryService.create(createMedicalHistoryDto);
   }
 
   @UseGuards(CookieAuthGuard)
   @Get(':userId')
-  async findByUser(
-    @Req() req: express.Request,
-    @Param('userId') userId: string,
-  ) {
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
-    if (!authToken) {
-      throw new Error('Authentication token not found');
-    }
-
-    return this.medicalHistoryService.findByUser(userId, authToken);
+  async findByUser(@Param('userId') userId: string) {
+    return this.medicalHistoryService.findByUser(userId);
   }
 
   @UseGuards(CookieAuthGuard)
