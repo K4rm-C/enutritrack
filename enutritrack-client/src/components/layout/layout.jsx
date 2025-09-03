@@ -25,7 +25,7 @@ const Layout = () => {
           darkMode ? "bg-gray-900" : "bg-gray-50"
         }`}
       >
-        <div className="max-w-8xl mx-auto">
+        <div className="w-full max-w-none">
           <Outlet />
         </div>
       </div>

@@ -50,27 +50,12 @@ export function MedicalHistoryProvider({ children }) {
 
   const getMedicalHistoryByUser = async (userId) => {
     try {
-      setLoading(true);
-      setError(null);
       const res = await getMedicalHistoryByUserRequest(userId);
-
-      console.log("🔍 Respuesta del API:", res.data);
       setMedicalHistory(res.data);
       return res.data;
     } catch (error) {
-      console.error("Error fetching medical history:", error);
-      if (error.response?.status === 404) {
-        setMedicalHistory(null);
-        setError(null);
-        return null;
-      } else {
-        setError(
-          error.response?.data?.message || "Error al cargar historial médico"
-        );
-        throw error;
-      }
-    } finally {
-      setLoading(false);
+      console.log(error);
+      throw error;
     }
   };
 

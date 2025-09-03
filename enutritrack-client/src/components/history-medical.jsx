@@ -41,15 +41,10 @@ const MedicalHistoryDashboard = ({ darkMode = false }) => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Cargar historial médico al montar el componente
   useEffect(() => {
-    if (userId) {
-      console.log("🔄 Cargando historial médico para usuario:", userId);
-      getMedicalHistoryByUser(userId);
-    }
-  }, [userId, getMedicalHistoryByUser]);
+    getMedicalHistoryByUser(userId);
+  }, [userId]);
 
-  // Resetear form cuando se cancela la edición
   const resetForm = () => {
     setFormData({
       condiciones: [],
@@ -58,39 +53,25 @@ const MedicalHistoryDashboard = ({ darkMode = false }) => {
     });
   };
 
-  const forceRefresh = async () => {
-    console.log("🔄 Forzando refresh del historial médico");
-    await getMedicalHistoryByUser(userId);
-    setEditing(false);
-    setEditingIndex(null);
-    setShowCreateForm(false);
-    resetForm();
-  };
-
   const handleSave = async () => {
     try {
       clearError();
       setSuccessMessage(null);
 
       if (editing && editingIndex !== null) {
-        // Actualizar registro existente - usar el ID del historial médico
-        const historyToUpdate = Array.isArray(medicalHistory)
-          ? medicalHistory[editingIndex]
-          : medicalHistory;
-
         console.log("🆔 ID del historial a actualizar:", user.id);
         console.log("📊 Datos a enviar:", formData);
 
-        // Pasar el ID del historial médico, no el userId
         await updateMedicalHistory(user.id, formData);
         setSuccessMessage("✅ Historial médico actualizado correctamente");
+        await getMedicalHistoryByUser(userId);
       } else {
-        // Crear nuevo registro
         await createMedicalHistory({
           ...formData,
           usuarioId: userId,
         });
         setSuccessMessage("✅ Historial médico creado correctamente");
+        await getMedicalHistoryByUser(userId);
       }
 
       setEditing(false);
@@ -492,31 +473,6 @@ const MedicalHistoryDashboard = ({ darkMode = false }) => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 py-8">
       {/* Mensajes de estado */}
-      {error && (
-        <div
-          className={`p-6 rounded-2xl border transition-all duration-300 ${
-            darkMode
-              ? "bg-red-900/20 border-red-700 text-red-200"
-              : "bg-red-50 border-red-200 text-red-800"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <AlertCircle className="h-5 w-5" />
-              <span>{error}</span>
-            </div>
-            <button
-              onClick={forceRefresh}
-              className={`p-2 rounded-lg hover:bg-opacity-20 transition-colors ${
-                darkMode ? "hover:bg-red-400" : "hover:bg-red-200"
-              }`}
-            >
-              <RefreshCw className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {successMessage && (
         <div
           className={`p-6 rounded-2xl border transition-all duration-300 ${
@@ -552,19 +508,6 @@ const MedicalHistoryDashboard = ({ darkMode = false }) => {
         </div>
 
         <div className="flex space-x-3">
-          <button
-            onClick={forceRefresh}
-            className={`p-3 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
-              darkMode
-                ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-            } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-            title="Recargar historial médico"
-            disabled={loading}
-          >
-            <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-          </button>
-
           {!editing && (
             <button
               onClick={startCreating}

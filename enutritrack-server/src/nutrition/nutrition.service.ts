@@ -79,7 +79,6 @@ export class NutritionService {
     }
   }
 
-  // ... resto de métodos sin cambios
   async findAllByUser(userId: string, authToken: string) {
     try {
       const response = await firstValueFrom(

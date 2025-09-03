@@ -29,10 +29,6 @@ export function NutritionProvider({ children }) {
     try {
       console.log("Creando registro de comida:", foodRecord);
 
-      if (!foodRecord.usuarioId) {
-        throw new Error("userId es requerido");
-      }
-
       const res = await createFoodRecordRequest(foodRecord);
       console.log("Respuesta del servidor:", res);
       return res.data;

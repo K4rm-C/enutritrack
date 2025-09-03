@@ -34,13 +34,11 @@ export class MedicalHistoryController {
   }
 
   @UseGuards(CookieAuthGuard)
-  @Get(':userId') // Esta ruta debería funcionar
+  @Get(':userId')
   async findByUser(@Param('userId') userId: string) {
-    console.log(`Consultando historial médico para usuario: ${userId}`);
     try {
       const medicalHistory =
         await this.medicalHistoryService.findByUser(userId);
-      console.log('Historial encontrado:', medicalHistory);
       return medicalHistory;
     } catch (error) {
       console.error('Error en controller:', error);

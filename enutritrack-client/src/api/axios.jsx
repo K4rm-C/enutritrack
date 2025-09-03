@@ -3,10 +3,9 @@ import axios from "axios";
 
 const API_BASE_URL = "http://localhost:4000/";
 
-// Crear instancia de axios con configuración base
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Importante: esto envía cookies automáticamente
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -45,8 +44,6 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.error("Error de autenticación:", error.response.data);
-      // Opcional: redirigir al login
-      // window.location.href = '/login';
     }
     return Promise.reject(error);
   }

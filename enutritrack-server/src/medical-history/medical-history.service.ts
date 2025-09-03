@@ -38,8 +38,6 @@ export class MedicalHistoryService {
 
   async findByUser(userId: string, authToken: string) {
     try {
-      console.log(`Buscando historial médico para usuario: ${userId}`);
-
       const response = await firstValueFrom(
         this.httpService.get(
           `${this.MEDICAL_SERVICE_URL}/medical-history/${userId}`,
@@ -50,8 +48,6 @@ export class MedicalHistoryService {
           },
         ),
       );
-
-      console.log('Respuesta del microservicio:', response.data);
       return response.data;
     } catch (error) {
       console.error(
@@ -59,16 +55,6 @@ export class MedicalHistoryService {
         error.response?.data || error.message,
         error.response?.status, // Agrega el código de estado
       );
-
-      if (error.response?.status === 404) {
-        console.log('Historial médico no encontrado para usuario:', userId);
-        return null;
-      }
-
-      if (error.response?.status === 401) {
-        throw new UnauthorizedException('Token inválido o expirado');
-      }
-
       throw new Error('Failed to fetch medical history');
     }
   }
