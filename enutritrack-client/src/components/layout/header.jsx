@@ -82,15 +82,6 @@ const Header = ({ onMenuClick }) => {
                   />
                 </svg>
               </div>
-              <input
-                type="text"
-                placeholder="Buscar alimentos, ejercicios..."
-                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  darkMode
-                    ? "border-gray-600 bg-gray-700 text-white placeholder-gray-400"
-                    : "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
-                }`}
-              />
             </div>
           </div>
 
@@ -110,30 +101,6 @@ const Header = ({ onMenuClick }) => {
               ) : (
                 <Moon className="w-5 h-5" />
               )}
-            </button>
-
-            {/* Notifications */}
-            <button
-              className={`p-2 rounded-full transition-colors ${
-                darkMode
-                  ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
-                  : "text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 0 1 5.5 8.25v.5a6 6 0 0 1-5.5 8.25 6 6 0 0 1-5.5-8.25v-.5a6 6 0 0 1 5.5-8.25z"
-                />
-              </svg>
-              <span className="sr-only">Ver notificaciones</span>
             </button>
 
             {/* User profile */}

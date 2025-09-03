@@ -5,9 +5,10 @@ import { PhysicalActivityService } from './activity.service';
 import { PhysicalActivityController } from './activity.controller';
 import { PhysicalActivity } from './models/activity.model';
 import { User } from '../users/models/user.model';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PhysicalActivity, User])],
+  imports: [TypeOrmModule.forFeature([PhysicalActivity, User]), AuthModule],
   controllers: [PhysicalActivityController],
   providers: [PhysicalActivityService],
   exports: [PhysicalActivityService],

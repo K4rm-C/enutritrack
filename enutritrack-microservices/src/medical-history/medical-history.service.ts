@@ -35,24 +35,42 @@ export class MedicalHistoryService {
     return this.medicalHistoryRepository.save(medicalHistory);
   }
 
-  async findByUser(userId: string): Promise<MedicalHistory> {
-    const medicalHistory = await this.medicalHistoryRepository.findOne({
-      where: { usuario: { id: userId } },
-      relations: ['usuario'],
-    });
+  async findByUser(userId: string): Promise<MedicalHistory[]> {
+    console.log(`Buscando historiales médicos para usuario: ${userId}`);
 
-    if (!medicalHistory) {
-      throw new NotFoundException('Historial médico no encontrado');
+    try {
+      const medicalHistories = await this.medicalHistoryRepository.find({
+        where: { usuario: { id: userId } },
+        relations: ['usuario'],
+        order: { created_at: 'DESC' }, // Ordenar por fecha más reciente
+      });
+
+      console.log('Historiales encontrados:', medicalHistories.length);
+
+      if (!medicalHistories || medicalHistories.length === 0) {
+        console.log(
+          'No se encontraron historiales médicos para usuario:',
+          userId,
+        );
+        return [];
+      }
+
+      return medicalHistories;
+    } catch (error) {
+      console.error('Error en servicio findByUser:', error);
+      throw error;
     }
-
-    return medicalHistory;
   }
 
   async update(
     userId: string,
     updateMedicalHistoryDto: UpdateMedicalHistoryDto,
   ): Promise<MedicalHistory> {
-    const medicalHistory = await this.findByUser(userId);
+    const medicalHistories = await this.findByUser(userId);
+    if (!medicalHistories.length) {
+      throw new NotFoundException('Medical history not found');
+    }
+    const medicalHistory = medicalHistories[0]; // Get the most recent one
     Object.assign(medicalHistory, updateMedicalHistoryDto);
 
     return this.medicalHistoryRepository.save(medicalHistory);

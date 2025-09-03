@@ -1,4 +1,4 @@
-// src/medical-history/medical-history.controller.ts
+// enutritrack-server/src/medical-history/medical-history.controller.ts
 import {
   Controller,
   Get,
@@ -19,23 +19,40 @@ export class MedicalHistoryController {
 
   @UseGuards(CookieAuthGuard)
   @Post()
-  async create(@Body() createMedicalHistoryDto: any) {
-    return this.medicalHistoryService.create(createMedicalHistoryDto);
+  async create(
+    @Req() req: express.Request,
+    @Body() createMedicalHistoryDto: any,
+  ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+    const dtoWithUserId = {
+      ...createMedicalHistoryDto,
+      usuarioId: userId,
+    };
+    return this.medicalHistoryService.create(dtoWithUserId, authToken);
   }
 
   @UseGuards(CookieAuthGuard)
   @Get(':userId')
-  async findByUser(@Param('userId') userId: string) {
-    return this.medicalHistoryService.findByUser(userId);
+  async findByUser(@Req() req: express.Request) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    return this.medicalHistoryService.findByUser(userId, authToken);
   }
 
   @UseGuards(CookieAuthGuard)
   @Patch(':userId')
   async update(
     @Req() req: express.Request,
-    @Param('userId') userId: string,
     @Body() updateMedicalHistoryDto: any,
   ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
     const authToken =
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');

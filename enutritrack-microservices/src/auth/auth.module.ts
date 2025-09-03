@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { UserModule } from '../users/users.module';
 import { JwtStrategy } from '../auth/strategies/jwt.strategies';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CookieAuthGuard } from './guards/cookie-auth.guard';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
       signOptions: { expiresIn: '24h' },
     }),
   ],
-  providers: [JwtStrategy, JwtAuthGuard],
-  exports: [JwtAuthGuard],
+  providers: [JwtStrategy, JwtAuthGuard, CookieAuthGuard],
+  exports: [JwtAuthGuard, CookieAuthGuard, JwtModule],
 })
 export class AuthModule {}

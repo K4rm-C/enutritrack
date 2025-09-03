@@ -7,6 +7,7 @@ import {
   Patch,
   Param,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { MedicalHistoryService } from './medical-history.service';
 import { CreateMedicalHistoryDto } from './dto/create-medical-history.dto';
@@ -19,14 +20,34 @@ export class MedicalHistoryController {
 
   @UseGuards(CookieAuthGuard)
   @Post()
-  create(@Body() createMedicalHistoryDto: CreateMedicalHistoryDto) {
-    return this.medicalHistoryService.create(createMedicalHistoryDto);
+  create(
+    @Body() createMedicalHistoryDto: CreateMedicalHistoryDto,
+    @Req() req: any,
+  ) {
+    // Obtener userId del token en lugar del body
+    const userId = req.user?.userId || req.user?.sub;
+    const dtoWithUserId = {
+      ...createMedicalHistoryDto,
+      usuarioId: userId, // Usar el userId del token
+    };
+    return this.medicalHistoryService.create(dtoWithUserId);
   }
+
   @UseGuards(CookieAuthGuard)
-  @Get(':userId')
-  findByUser(@Param('userId') userId: string) {
-    return this.medicalHistoryService.findByUser(userId);
+  @Get(':userId') // Esta ruta debería funcionar
+  async findByUser(@Param('userId') userId: string) {
+    console.log(`Consultando historial médico para usuario: ${userId}`);
+    try {
+      const medicalHistory =
+        await this.medicalHistoryService.findByUser(userId);
+      console.log('Historial encontrado:', medicalHistory);
+      return medicalHistory;
+    } catch (error) {
+      console.error('Error en controller:', error);
+      throw error;
+    }
   }
+
   @UseGuards(CookieAuthGuard)
   @Patch(':userId')
   update(

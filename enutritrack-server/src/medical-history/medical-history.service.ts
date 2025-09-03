@@ -1,5 +1,5 @@
-// src/medical-history/medical-history.service.ts
-import { Injectable } from '@nestjs/common';
+// enutritrack-server/src/medical-history/medical-history.service.ts
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
@@ -9,10 +9,22 @@ export class MedicalHistoryService {
 
   constructor(private httpService: HttpService) {}
 
-  async create(createMedicalHistoryDto: any) {
+  async create(createMedicalHistoryDto: any, authToken?: string) {
     try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+
+      if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+      }
+
       const response = await firstValueFrom(
-        this.httpService.post(`${this.MEDICAL_SERVICE_URL}/medical-history`),
+        this.httpService.post(
+          `${this.MEDICAL_SERVICE_URL}/medical-history`,
+          createMedicalHistoryDto,
+          { headers },
+        ),
       );
       return response.data;
     } catch (error) {
@@ -24,23 +36,37 @@ export class MedicalHistoryService {
     }
   }
 
-  async findByUser(userId: string) {
+  async findByUser(userId: string, authToken: string) {
     try {
+      console.log(`Buscando historial médico para usuario: ${userId}`);
+
       const response = await firstValueFrom(
         this.httpService.get(
           `${this.MEDICAL_SERVICE_URL}/medical-history/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          },
         ),
       );
+
+      console.log('Respuesta del microservicio:', response.data);
       return response.data;
     } catch (error) {
       console.error(
         'Error fetching medical history:',
         error.response?.data || error.message,
+        error.response?.status, // Agrega el código de estado
       );
 
-      // Si es un 404, el historial médico no existe aún
       if (error.response?.status === 404) {
+        console.log('Historial médico no encontrado para usuario:', userId);
         return null;
+      }
+
+      if (error.response?.status === 401) {
+        throw new UnauthorizedException('Token inválido o expirado');
       }
 
       throw new Error('Failed to fetch medical history');
@@ -60,6 +86,7 @@ export class MedicalHistoryService {
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
             },
           },
         ),

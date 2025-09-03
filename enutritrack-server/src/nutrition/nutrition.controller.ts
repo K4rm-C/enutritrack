@@ -35,10 +35,8 @@ export class NutritionController {
 
   @UseGuards(CookieAuthGuard)
   @Get('user/:userId')
-  async findAllByUser(
-    @Req() req: express.Request,
-    @Param('userId') userId: string,
-  ) {
+  async findAllByUser(@Req() req: express.Request) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
     const authToken =
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');
@@ -54,9 +52,9 @@ export class NutritionController {
   @Get('daily-summary/:userId')
   async getDailySummary(
     @Req() req: express.Request,
-    @Param('userId') userId: string,
     @Query('date') date: string,
   ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
     const authToken =
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');

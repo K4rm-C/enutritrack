@@ -43,10 +43,8 @@ export class PhysicalActivityController {
 
   @UseGuards(CookieAuthGuard)
   @Get('user/:userId')
-  async findAllByUser(
-    @Req() req: express.Request,
-    @Param('userId') userId: string,
-  ) {
+  async findAllByUser(@Req() req: express.Request) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
     const authToken =
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');
@@ -62,9 +60,9 @@ export class PhysicalActivityController {
   @Get('weekly-summary/:userId')
   async getWeeklySummary(
     @Req() req: express.Request,
-    @Param('userId') userId: string,
     @Query('startDate') startDate: string,
   ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
     const authToken =
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');

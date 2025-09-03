@@ -8,6 +8,7 @@ import { UserModule } from '../users/users.module';
 import { MedicalHistoryModule } from '../medical-history/medical-history.module';
 import { NutritionModule } from '../nutrition/nutrition.module';
 import { PhysicalActivityModule } from '../activity/activity.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PhysicalActivityModule } from '../activity/activity.module';
     MedicalHistoryModule,
     NutritionModule,
     PhysicalActivityModule,
+    AuthModule,
   ],
   providers: [RecommendationService],
   controllers: [RecommendationController],
