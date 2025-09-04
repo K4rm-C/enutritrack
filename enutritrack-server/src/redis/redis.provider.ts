@@ -5,7 +5,7 @@ export const RedisProvider: Provider = {
   provide: 'RedisClient',
   useFactory: () => {
     const client = redis.createClient({
-      url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
+      url: `redis://localhost:6379`,
       password: process.env.REDIS_PASSWORD,
     });
 

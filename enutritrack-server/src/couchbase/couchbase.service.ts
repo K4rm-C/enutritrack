@@ -12,8 +12,8 @@ export class CouchbaseService implements OnModuleInit, OnModuleDestroy {
       this.cluster = await couchbase.connect(
         process.env.COUCHBASE_URL || 'couchbase://localhost',
         {
-          username: process.env.COUCHBASE_USERNAME || 'enutritrack',
-          password: process.env.COUCHBASE_PASSWORD || 'alfredo124$$',
+          username: process.env.COUCHBASE_USERNAME || 'carmona',
+          password: process.env.COUCHBASE_PASSWORD || 'carmona124$$',
         },
       );
 
@@ -55,7 +55,9 @@ export class CouchbaseService implements OnModuleInit, OnModuleDestroy {
 
   async queryDocuments(query: string, parameters?: any): Promise<any[]> {
     try {
-      const result = await this.cluster.query(query, { parameters });
+      const result: couchbase.QueryResult = await this.cluster.query(query, {
+        parameters,
+      });
       return result.rows;
     } catch (error) {
       console.error('Couchbase query error:', error);
