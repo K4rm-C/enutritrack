@@ -53,7 +53,7 @@ export class MedicalHistoryService {
       console.error(
         'Error fetching medical history:',
         error.response?.data || error.message,
-        error.response?.status, // Agrega el código de estado
+        error.response?.status,
       );
       throw new Error('Failed to fetch medical history');
     }

@@ -134,7 +134,7 @@ export class AuthService {
               userId,
             },
             {
-              timeout: 5000, // 5 segundos timeout
+              timeout: 5000,
             },
           ),
         );

@@ -38,7 +38,6 @@ export class NutritionService {
               Authorization: `Bearer ${authToken}`,
               'Content-Type': 'application/json',
             },
-            // Eliminamos transformRequest - Axios manejará la serialización automáticamente
           },
         ),
       );

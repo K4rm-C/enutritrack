@@ -8,8 +8,8 @@ import { AuthService } from '../auth.service';
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
-      usernameField: 'email', // Asegúrate de esto
-      passwordField: 'password', // Asegúrate de esto
+      usernameField: 'email',
+      passwordField: 'password',
     });
   }
 

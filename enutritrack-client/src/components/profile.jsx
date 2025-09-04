@@ -29,16 +29,18 @@ import {
   Shield,
   AlertCircle,
   Pill,
+  ChevronRight,
+  Star,
+  Award,
+  Zap,
+  Brain,
+  Eye,
+  ShieldCheck,
 } from "lucide-react";
 
 const ProfileDashboard = ({ darkMode = false }) => {
   const { user, updateUser } = useAuth();
-  const {
-    medicalHistory,
-    getMedicalHistoryByUser,
-    createMedicalHistory,
-    updateMedicalHistory,
-  } = useMedicalHistory();
+  const { medicalHistory, getMedicalHistoryByUser } = useMedicalHistory();
   const {
     foodRecords,
     dailySummary,
@@ -56,6 +58,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
 
   const [activeTab, setActiveTab] = useState("perfil");
   const [editingProfile, setEditingProfile] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [profileData, setProfileData] = useState({
     nombre: "",
@@ -84,20 +87,19 @@ const ProfileDashboard = ({ darkMode = false }) => {
       });
 
       const loadData = async () => {
+        setIsLoading(true);
         try {
-          await getMedicalHistoryByUser(user.id);
-          await getFoodRecordsByUser(user.id);
-          await getDailySummary(
-            user.id,
-            new Date().toISOString().split("T")[0]
-          );
-          await getPhysicalActivitiesByUser(user.id);
-          await getWeeklySummary(
-            user.id,
-            new Date().toISOString().split("T")[0]
-          );
+          await Promise.all([
+            getMedicalHistoryByUser(user.id),
+            getFoodRecordsByUser(user.id),
+            getDailySummary(user.id, new Date().toISOString().split("T")[0]),
+            getPhysicalActivitiesByUser(user.id),
+            getWeeklySummary(user.id, new Date().toISOString().split("T")[0]),
+          ]);
         } catch (error) {
-          // Handle error silently or show user-friendly message
+          console.error("Error loading data:", error);
+        } finally {
+          setIsLoading(false);
         }
       };
 
@@ -106,11 +108,14 @@ const ProfileDashboard = ({ darkMode = false }) => {
   }, [user]);
 
   const handleSaveProfile = async () => {
+    setIsLoading(true);
     try {
       await updateUser(profileData);
       setEditingProfile(false);
     } catch (error) {
-      // Handle error
+      console.error("Error updating profile:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -121,39 +126,86 @@ const ProfileDashboard = ({ darkMode = false }) => {
     { id: "historial", name: "Historial", icon: FileText, color: "orange" },
   ];
 
+  // Función para obtener clases de color según el modo
+  const getColorClasses = (color, type = "bg") => {
+    const colors = {
+      emerald: {
+        bg: darkMode ? "bg-emerald-900/20" : "bg-emerald-50",
+        border: darkMode ? "border-emerald-800" : "border-emerald-200",
+        text: "text-emerald-600",
+        accent: darkMode ? "bg-emerald-800" : "bg-emerald-100",
+      },
+      green: {
+        bg: darkMode ? "bg-green-900/20" : "bg-green-50",
+        border: darkMode ? "border-green-800" : "border-green-200",
+        text: "text-green-600",
+        accent: darkMode ? "bg-green-800" : "bg-green-100",
+      },
+      blue: {
+        bg: darkMode ? "bg-blue-900/20" : "bg-blue-50",
+        border: darkMode ? "border-blue-800" : "border-blue-200",
+        text: "text-blue-600",
+        accent: darkMode ? "bg-blue-800" : "bg-blue-100",
+      },
+      orange: {
+        bg: darkMode ? "bg-orange-900/20" : "bg-orange-50",
+        border: darkMode ? "border-orange-800" : "border-orange-200",
+        text: "text-orange-600",
+        accent: darkMode ? "bg-orange-800" : "bg-orange-100",
+      },
+      purple: {
+        bg: darkMode ? "bg-purple-900/20" : "bg-purple-50",
+        border: darkMode ? "border-purple-800" : "border-purple-200",
+        text: "text-purple-600",
+        accent: darkMode ? "bg-purple-800" : "bg-purple-100",
+      },
+      red: {
+        bg: darkMode ? "bg-red-900/20" : "bg-red-50",
+        border: darkMode ? "border-red-800" : "border-red-200",
+        text: "text-red-600",
+        accent: darkMode ? "bg-red-800" : "bg-red-100",
+      },
+    };
+    return colors[color] ? colors[color][type] : colors.emerald[type];
+  };
+
   // Componente de Perfil
   const ProfileSection = () => (
     <div className="space-y-8">
       {/* Card principal de perfil */}
       <div
-        className={`relative overflow-hidden rounded-2xl border shadow-2xl ${
+        className={`relative overflow-hidden rounded-3xl border-0 shadow-2xl ${
           darkMode
-            ? "border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900"
-            : "border-gray-200 bg-gradient-to-br from-white to-gray-50"
+            ? "bg-gradient-to-br from-gray-900 to-gray-800"
+            : "bg-gradient-to-br from-white to-gray-50"
         }`}
       >
         {/* Header con gradiente */}
         <div
-          className={`relative px-8 py-6 ${
+          className={`relative px-8 py-8 ${
             darkMode
-              ? "bg-gradient-to-r from-emerald-900/20 to-blue-900/20"
-              : "bg-gradient-to-r from-emerald-50 to-blue-50"
+              ? "bg-gradient-to-r from-emerald-600/20 to-blue-600/20"
+              : "bg-gradient-to-r from-emerald-500/10 to-blue-500/10"
           }`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <div className="relative">
                 <div
-                  className={`w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl ${
+                  className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-xl ${
                     darkMode
                       ? "bg-gradient-to-br from-emerald-600 to-emerald-700"
                       : "bg-gradient-to-br from-emerald-500 to-emerald-600"
                   }`}
                 >
-                  <User className="h-10 w-10 text-white" />
+                  <User className="h-12 w-12 text-white" />
                 </div>
-                <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-emerald-500 hover:scale-110 transition-transform">
-                  <Camera className="h-4 w-4 text-emerald-600" />
+                <button
+                  className={`absolute -bottom-2 -right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-emerald-500 hover:scale-110 transition-transform duration-200 ${
+                    darkMode ? "bg-gray-800" : "bg-white"
+                  }`}
+                >
+                  <Camera className="h-5 w-5 text-emerald-600" />
                 </button>
               </div>
               <div>
@@ -171,13 +223,9 @@ const ProfileDashboard = ({ darkMode = false }) => {
                 >
                   {profileData.email}
                 </p>
-                <div className="flex items-center mt-2 space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span
-                    className={`text-sm ${
-                      darkMode ? "text-green-400" : "text-green-600"
-                    }`}
-                  >
+                <div className="flex items-center mt-3 space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400">
                     Perfil Activo
                   </span>
                 </div>
@@ -189,18 +237,21 @@ const ProfileDashboard = ({ darkMode = false }) => {
                 <>
                   <button
                     onClick={handleSaveProfile}
-                    className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-200 hover:scale-105 shadow-lg"
+                    disabled={isLoading}
+                    className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-200 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="h-5 w-5 mr-2" />
-                    Guardar
+                    {isLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <>
+                        <Save className="h-5 w-5 mr-2" />
+                        Guardar
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => setEditingProfile(false)}
-                    className={`flex items-center px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg ${
-                      darkMode
-                        ? "bg-gray-700 text-white hover:bg-gray-600"
-                        : "bg-gray-500 text-white hover:bg-gray-600"
-                    }`}
+                    className="flex items-center px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all duration-200 hover:scale-105 shadow-lg"
                   >
                     <X className="h-5 w-5 mr-2" />
                     Cancelar
@@ -209,7 +260,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
               ) : (
                 <button
                   onClick={() => setEditingProfile(true)}
-                  className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-200 hover:scale-105 shadow-lg"
+                  className="flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 hover:scale-105 shadow-lg"
                 >
                   <Edit3 className="h-5 w-5 mr-2" />
                   Editar Perfil
@@ -225,7 +276,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
             {/* Información personal */}
             <div className="space-y-6">
               <h3
-                className={`text-xl font-semibold mb-4 ${
+                className={`text-xl font-semibold ${
                   darkMode ? "text-white" : "text-gray-900"
                 }`}
               >
@@ -239,36 +290,39 @@ const ProfileDashboard = ({ darkMode = false }) => {
                     label: "Email",
                     value: profileData.email,
                     field: "email",
+                    type: "email",
                   },
                   {
                     icon: Phone,
                     label: "Teléfono",
                     value: profileData.telefono,
                     field: "telefono",
+                    type: "tel",
                   },
                   {
                     icon: Calendar,
                     label: "Edad",
                     value: `${profileData.edad} años`,
                     field: "edad",
+                    type: "number",
                   },
                 ].map((item, index) => (
                   <div
                     key={index}
-                    className={`flex items-center space-x-4 p-4 rounded-xl border transition-all hover:shadow-md ${
+                    className={`flex items-center space-x-4 p-4 rounded-xl border ${
                       darkMode
                         ? "border-gray-700 bg-gray-800/50"
-                        : "border-gray-200 bg-gray-50"
-                    }`}
+                        : "border-gray-200 bg-white"
+                    } hover:shadow-md transition-all duration-200`}
                   >
                     <div
-                      className={`p-2 rounded-lg ${
-                        darkMode ? "bg-gray-700" : "bg-white shadow-sm"
+                      className={`p-3 rounded-xl ${
+                        darkMode ? "bg-emerald-900/30" : "bg-emerald-100"
                       }`}
                     >
                       <item.icon
                         className={`h-5 w-5 ${
-                          darkMode ? "text-gray-400" : "text-gray-600"
+                          darkMode ? "text-emerald-400" : "text-emerald-600"
                         }`}
                       />
                     </div>
@@ -282,13 +336,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
                       </p>
                       {editingProfile ? (
                         <input
-                          type={
-                            item.field === "email"
-                              ? "email"
-                              : item.field === "telefono"
-                              ? "tel"
-                              : "text"
-                          }
+                          type={item.type}
                           value={profileData[item.field] || ""}
                           onChange={(e) =>
                             setProfileData((prev) => ({
@@ -296,11 +344,11 @@ const ProfileDashboard = ({ darkMode = false }) => {
                               [item.field]: e.target.value,
                             }))
                           }
-                          className={`w-full mt-1 px-3 py-2 rounded-lg border transition-colors ${
+                          className={`w-full mt-2 px-4 py-2 rounded-lg border ${
                             darkMode
-                              ? "bg-gray-700 border-gray-600 text-white"
-                              : "bg-white border-gray-300 text-gray-900"
-                          }`}
+                              ? "border-gray-600 bg-gray-700 text-white"
+                              : "border-gray-300 bg-white text-gray-900"
+                          } focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors`}
                         />
                       ) : (
                         <p
@@ -320,7 +368,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
             {/* Métricas corporales */}
             <div className="space-y-6">
               <h3
-                className={`text-xl font-semibold mb-4 ${
+                className={`text-xl font-semibold ${
                   darkMode ? "text-white" : "text-gray-900"
                 }`}
               >
@@ -350,20 +398,20 @@ const ProfileDashboard = ({ darkMode = false }) => {
                 ].map((item, index) => (
                   <div
                     key={index}
-                    className={`flex items-center space-x-4 p-4 rounded-xl border transition-all hover:shadow-md ${
+                    className={`flex items-center space-x-4 p-4 rounded-xl border ${
                       darkMode
                         ? "border-gray-700 bg-gray-800/50"
-                        : "border-gray-200 bg-gray-50"
-                    }`}
+                        : "border-gray-200 bg-white"
+                    } hover:shadow-md transition-all duration-200`}
                   >
                     <div
-                      className={`p-2 rounded-lg ${
-                        darkMode ? "bg-gray-700" : "bg-white shadow-sm"
+                      className={`p-3 rounded-xl ${
+                        darkMode ? "bg-blue-900/30" : "bg-blue-100"
                       }`}
                     >
                       <item.icon
                         className={`h-5 w-5 ${
-                          darkMode ? "text-gray-400" : "text-gray-600"
+                          darkMode ? "text-blue-400" : "text-blue-600"
                         }`}
                       />
                     </div>
@@ -385,11 +433,11 @@ const ProfileDashboard = ({ darkMode = false }) => {
                               [item.field]: e.target.value,
                             }))
                           }
-                          className={`w-full mt-1 px-3 py-2 rounded-lg border transition-colors ${
+                          className={`w-full mt-2 px-4 py-2 rounded-lg border ${
                             darkMode
-                              ? "bg-gray-700 border-gray-600 text-white"
-                              : "bg-white border-gray-300 text-gray-900"
-                          }`}
+                              ? "border-gray-600 bg-gray-700 text-white"
+                              : "border-gray-300 bg-white text-gray-900"
+                          } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                         />
                       ) : (
                         <p
@@ -411,10 +459,8 @@ const ProfileDashboard = ({ darkMode = false }) => {
 
       {/* Estadísticas rápidas */}
       <div
-        className={`rounded-2xl border shadow-xl ${
-          darkMode
-            ? "border-gray-700 bg-gray-800/50"
-            : "border-gray-200 bg-white/90"
+        className={`rounded-3xl border-0 shadow-xl ${
+          darkMode ? "bg-gray-800/50" : "bg-white"
         }`}
       >
         <div
@@ -432,124 +478,87 @@ const ProfileDashboard = ({ darkMode = false }) => {
         </div>
         <div className="p-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div
-              className={`text-center p-6 rounded-xl border ${
-                darkMode
-                  ? "border-emerald-800 bg-emerald-900/20"
-                  : "border-emerald-200 bg-emerald-50"
-              }`}
-            >
-              <TrendingUp className="h-8 w-8 text-emerald-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-emerald-600">
-                {profileData.pesoActual && profileData.pesoObjetivo
-                  ? `${Math.abs(
-                      profileData.pesoActual - profileData.pesoObjetivo
-                    ).toFixed(1)}kg`
-                  : "0kg"}
-              </p>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Diferencia
-              </p>
-            </div>
-            <div
-              className={`text-center p-6 rounded-xl border ${
-                darkMode
-                  ? "border-blue-800 bg-blue-900/20"
-                  : "border-blue-200 bg-blue-50"
-              }`}
-            >
-              <BarChart3 className="h-8 w-8 text-blue-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-blue-600">
-                {dailySummary?.totalCalorias || 0}
-              </p>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Calorías Hoy
-              </p>
-            </div>
-            <div
-              className={`text-center p-6 rounded-xl border ${
-                darkMode
-                  ? "border-orange-800 bg-orange-900/20"
-                  : "border-orange-200 bg-orange-50"
-              }`}
-            >
-              <Activity className="h-8 w-8 text-orange-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-orange-600">
-                {weeklySummary?.totalDuracion || 0}
-              </p>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Min Activos
-              </p>
-            </div>
-            <div
-              className={`text-center p-6 rounded-xl border ${
-                darkMode
-                  ? "border-purple-800 bg-purple-900/20"
-                  : "border-purple-200 bg-purple-50"
-              }`}
-            >
-              <Heart className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-purple-600">
-                {(() => {
+            {[
+              {
+                icon: TrendingUp,
+                label: "Diferencia",
+                value:
+                  profileData.pesoActual && profileData.pesoObjetivo
+                    ? `${Math.abs(
+                        profileData.pesoActual - profileData.pesoObjetivo
+                      ).toFixed(1)}kg`
+                    : "0kg",
+                color: "emerald",
+                trend: "up",
+              },
+              {
+                icon: BarChart3,
+                label: "Calorías Hoy",
+                value: dailySummary?.totalCalorias || 0,
+                color: "blue",
+                trend: "stable",
+              },
+              {
+                icon: Activity,
+                label: "Min Activos",
+                value: weeklySummary?.totalDuracion || 0,
+                color: "orange",
+                trend: "up",
+              },
+              {
+                icon: Heart,
+                label: "Registros Médicos",
+                value: (() => {
                   if (!medicalHistory) return 0;
                   if (Array.isArray(medicalHistory))
                     return medicalHistory.length;
-                  if (typeof medicalHistory === "object") {
-                    const possibleArrays = [
-                      "data",
-                      "records",
-                      "history",
-                      "items",
-                      "results",
-                    ];
-                    for (const prop of possibleArrays) {
-                      if (
-                        medicalHistory[prop] &&
-                        Array.isArray(medicalHistory[prop])
-                      ) {
-                        return medicalHistory[prop].length;
-                      }
-                    }
-                    return Object.keys(medicalHistory).length > 0 ? 1 : 0;
-                  }
-                  return 0;
-                })()}
-              </p>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Registros Médicos
-              </p>
-            </div>
+                  return Object.keys(medicalHistory).length > 0 ? 1 : 0;
+                })(),
+                color: "purple",
+                trend: "stable",
+              },
+            ].map((item, index) => {
+              const colorClasses = getColorClasses(item.color);
+              const textColor = darkMode
+                ? `text-${item.color}-400`
+                : `text-${item.color}-600`;
+
+              return (
+                <div
+                  key={index}
+                  className={`text-center p-6 rounded-2xl border ${colorClasses.border} ${colorClasses.bg} hover:scale-105 transition-transform duration-200`}
+                >
+                  <div
+                    className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${colorClasses.accent}`}
+                  >
+                    <item.icon className={`h-8 w-8 ${textColor}`} />
+                  </div>
+                  <p className={`text-2xl font-bold ${textColor} mb-2`}>
+                    {item.value}
+                  </p>
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {item.label}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
     </div>
   );
 
-  // Componente de Nutrición usando context real
+  // Componente de Nutrición
   const NutritionSection = () => (
     <div className="space-y-8">
       {/* Resumen diario */}
       <div
-        className={`rounded-2xl border shadow-xl ${
-          darkMode
-            ? "border-gray-700 bg-gray-800/50"
-            : "border-gray-200 bg-white/90"
+        className={`rounded-3xl border-0 shadow-xl ${
+          darkMode ? "bg-gray-800/50" : "bg-white"
         }`}
       >
         <div
@@ -594,73 +603,79 @@ const ProfileDashboard = ({ darkMode = false }) => {
                 label: "Grasas",
                 value: dailySummary?.totalGrasas || 0,
                 unit: "g",
-                color: "yellow",
+                color: "orange",
               },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className={`text-center p-6 rounded-xl border hover:shadow-lg transition-all ${
-                  darkMode
-                    ? "border-gray-700 bg-gray-800/30"
-                    : "border-gray-200 bg-gray-50"
-                }`}
-              >
+            ].map((item, index) => {
+              const colorClasses = getColorClasses(item.color);
+              const textColor = darkMode
+                ? `text-${item.color}-400`
+                : `text-${item.color}-600`;
+
+              return (
                 <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                    darkMode
-                      ? `bg-${item.color}-900/20`
-                      : `bg-${item.color}-100`
-                  }`}
+                  key={index}
+                  className={`text-center p-6 rounded-2xl border ${
+                    colorClasses.border
+                  } ${
+                    darkMode ? "bg-gray-800/30" : "bg-white"
+                  } hover:shadow-lg transition-all duration-200`}
                 >
-                  <span className="text-2xl">{item.icon}</span>
+                  <div
+                    className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${colorClasses.accent}`}
+                  >
+                    <span className="text-2xl">{item.icon}</span>
+                  </div>
+                  <h4
+                    className={`font-semibold ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    } mb-2`}
+                  >
+                    {item.label}
+                  </h4>
+                  <p className={`text-2xl font-bold ${textColor} mb-1`}>
+                    {item.value}
+                  </p>
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {item.unit}
+                  </p>
                 </div>
-                <h4
-                  className={`font-semibold mb-2 ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {item.label}
-                </h4>
-                <p className={`text-2xl font-bold text-${item.color}-600 mb-1`}>
-                  {item.value}
-                </p>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  {item.unit}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Registro de comidas del día */}
+      {/* Registro de comidas */}
       <div
-        className={`rounded-2xl border shadow-xl ${
-          darkMode
-            ? "border-gray-700 bg-gray-800/50"
-            : "border-gray-200 bg-white/90"
+        className={`rounded-3xl border-0 shadow-xl ${
+          darkMode ? "bg-gray-800/50" : "bg-white"
         }`}
       >
         <div
-          className={`px-8 py-6 border-b flex items-center justify-between ${
+          className={`px-8 py-6 border-b ${
             darkMode ? "border-gray-700" : "border-gray-100"
-          }`}
+          } flex items-center justify-between`}
         >
-          <h3
-            className={`text-xl font-bold ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Registros de Comida
-          </h3>
-          <button className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar Comida
-          </button>
+          <div>
+            <h3
+              className={`text-xl font-bold ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Registros de Comida
+            </h3>
+            <p
+              className={`text-sm ${
+                darkMode ? "text-gray-400" : "text-gray-600"
+              } mt-1`}
+            >
+              {foodRecords?.length || 0} registros hoy
+            </p>
+          </div>
         </div>
         <div className="p-8">
           <div className="space-y-4">
@@ -671,15 +686,21 @@ const ProfileDashboard = ({ darkMode = false }) => {
                   className={`flex items-center justify-between p-4 rounded-xl border ${
                     darkMode
                       ? "border-gray-700 bg-gray-800/30"
-                      : "border-gray-200 bg-gray-50"
-                  }`}
+                      : "border-gray-200 bg-white"
+                  } hover:shadow-md transition-all duration-200`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <Utensils
-                      className={`h-5 w-5 ${
-                        darkMode ? "text-gray-400" : "text-gray-600"
+                  <div className="flex items-center space-x-4">
+                    <div
+                      className={`p-3 rounded-xl ${
+                        darkMode ? "bg-emerald-900/20" : "bg-emerald-100"
                       }`}
-                    />
+                    >
+                      <Utensils
+                        className={`h-5 w-5 ${
+                          darkMode ? "text-emerald-400" : "text-emerald-600"
+                        }`}
+                      />
+                    </div>
                     <div>
                       <h4
                         className={`font-medium ${
@@ -699,9 +720,9 @@ const ProfileDashboard = ({ darkMode = false }) => {
                   </div>
                   <button
                     onClick={() => deleteFoodRecord(record.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="p-2 text-red-600 hover:text-red-700 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
               ))
@@ -724,15 +745,13 @@ const ProfileDashboard = ({ darkMode = false }) => {
     </div>
   );
 
-  // Componente de Actividad Física usando context real
+  // Componente de Actividad Física
   const ActivitySection = () => (
     <div className="space-y-8">
-      {/* Resumen semanal de actividades */}
+      {/* Resumen semanal */}
       <div
-        className={`rounded-2xl border shadow-xl ${
-          darkMode
-            ? "border-gray-700 bg-gray-800/50"
-            : "border-gray-200 bg-white/90"
+        className={`rounded-3xl border-0 shadow-xl ${
+          darkMode ? "bg-gray-800/50" : "bg-white"
         }`}
       >
         <div
@@ -750,91 +769,85 @@ const ProfileDashboard = ({ darkMode = false }) => {
         </div>
         <div className="p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div
-              className={`text-center p-6 rounded-xl border ${
-                darkMode
-                  ? "border-green-800 bg-green-900/20"
-                  : "border-green-200 bg-green-50"
-              }`}
-            >
-              <Activity className="h-8 w-8 text-green-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-green-600">
-                {weeklySummary?.totalActividades || 0}
-              </p>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Actividades
-              </p>
-            </div>
-            <div
-              className={`text-center p-6 rounded-xl border ${
-                darkMode
-                  ? "border-blue-800 bg-blue-900/20"
-                  : "border-blue-200 bg-blue-50"
-              }`}
-            >
-              <Clock className="h-8 w-8 text-blue-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-blue-600">
-                {weeklySummary?.totalDuracion || 0}
-              </p>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Minutos Total
-              </p>
-            </div>
-            <div
-              className={`text-center p-6 rounded-xl border ${
-                darkMode
-                  ? "border-orange-800 bg-orange-900/20"
-                  : "border-orange-200 bg-orange-50"
-              }`}
-            >
-              <TrendingUp className="h-8 w-8 text-orange-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-orange-600">
-                {weeklySummary?.totalCaloriasQuemadas || 0}
-              </p>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Calorías Quemadas
-              </p>
-            </div>
+            {[
+              {
+                icon: Activity,
+                label: "Actividades",
+                value: weeklySummary?.totalActividades || 0,
+                color: "green",
+              },
+              {
+                icon: Clock,
+                label: "Minutos Total",
+                value: weeklySummary?.totalDuracion || 0,
+                color: "blue",
+              },
+              {
+                icon: TrendingUp,
+                label: "Calorías Quemadas",
+                value: weeklySummary?.totalCaloriasQuemadas || 0,
+                color: "orange",
+              },
+            ].map((item, index) => {
+              const colorClasses = getColorClasses(item.color);
+              const textColor = darkMode
+                ? `text-${item.color}-400`
+                : `text-${item.color}-600`;
+
+              return (
+                <div
+                  key={index}
+                  className={`text-center p-6 rounded-2xl border ${colorClasses.border} ${colorClasses.bg} hover:scale-105 transition-transform duration-200`}
+                >
+                  <div
+                    className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${colorClasses.accent}`}
+                  >
+                    <item.icon className={`h-8 w-8 ${textColor}`} />
+                  </div>
+                  <p className={`text-2xl font-bold ${textColor} mb-2`}>
+                    {item.value}
+                  </p>
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {item.label}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Lista de actividades */}
       <div
-        className={`rounded-2xl border shadow-xl ${
-          darkMode
-            ? "border-gray-700 bg-gray-800/50"
-            : "border-gray-200 bg-white/90"
+        className={`rounded-3xl border-0 shadow-xl ${
+          darkMode ? "bg-gray-800/50" : "bg-white"
         }`}
       >
         <div
-          className={`px-8 py-6 border-b flex items-center justify-between ${
+          className={`px-8 py-6 border-b ${
             darkMode ? "border-gray-700" : "border-gray-100"
-          }`}
+          } flex items-center justify-between`}
         >
-          <h3
-            className={`text-xl font-bold ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Actividades Físicas
-          </h3>
-          <button className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Actividad
-          </button>
+          <div>
+            <h3
+              className={`text-xl font-bold ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Actividades Físicas
+            </h3>
+            <p
+              className={`text-sm ${
+                darkMode ? "text-gray-400" : "text-gray-600"
+              } mt-1`}
+            >
+              {activities?.length || 0} actividades esta semana
+            </p>
+          </div>
         </div>
         <div className="p-8">
           <div className="space-y-4">
@@ -845,15 +858,21 @@ const ProfileDashboard = ({ darkMode = false }) => {
                   className={`flex items-center justify-between p-4 rounded-xl border ${
                     darkMode
                       ? "border-gray-700 bg-gray-800/30"
-                      : "border-gray-200 bg-gray-50"
-                  }`}
+                      : "border-gray-200 bg-white"
+                  } hover:shadow-md transition-all duration-200`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <Activity
-                      className={`h-5 w-5 ${
-                        darkMode ? "text-gray-400" : "text-gray-600"
+                  <div className="flex items-center space-x-4">
+                    <div
+                      className={`p-3 rounded-xl ${
+                        darkMode ? "bg-blue-900/20" : "bg-blue-100"
                       }`}
-                    />
+                    >
+                      <Activity
+                        className={`h-5 w-5 ${
+                          darkMode ? "text-blue-400" : "text-blue-600"
+                        }`}
+                      />
+                    </div>
                     <div>
                       <h4
                         className={`font-medium ${
@@ -874,9 +893,9 @@ const ProfileDashboard = ({ darkMode = false }) => {
                   </div>
                   <button
                     onClick={() => deletePhysicalActivity(activity.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="p-2 text-red-600 hover:text-red-700 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
               ))
@@ -899,408 +918,159 @@ const ProfileDashboard = ({ darkMode = false }) => {
     </div>
   );
 
-  // Componente de Historial Médico actualizado con vista previa
+  // Componente de Historial Médico
   const MedicalHistorySection = () => {
-    const getMedicalHistoryData = () => {
-      if (!medicalHistory) return [];
-      if (Array.isArray(medicalHistory)) return medicalHistory;
-      if (typeof medicalHistory === "object") {
-        const possibleArrays = [
-          "data",
-          "records",
-          "history",
-          "items",
-          "results",
-        ];
-        for (const prop of possibleArrays) {
-          if (medicalHistory[prop] && Array.isArray(medicalHistory[prop])) {
-            return medicalHistory[prop];
-          }
-        }
-        if (Object.keys(medicalHistory).length > 0) {
-          return [medicalHistory];
-        }
-      }
-      return [];
-    };
-
-    const medicalData = getMedicalHistoryData();
-
-    // Datos de ejemplo para demostrar la estructura
-    const sampleMedicalData = [
-      {
-        id: 1,
-        tipo: "condiciones",
-        titulo: "Condiciones Médicas",
-        items: ["hipertensión", "diabetes tipo 2"],
-        count: 2,
-      },
-      {
-        id: 2,
-        tipo: "alergias",
-        titulo: "Alergias",
-        items: ["penicilina", "mariscos"],
-        count: 2,
-      },
-      {
-        id: 3,
-        tipo: "medicamentos",
-        titulo: "Medicamentos",
-        items: ["lisinopril 10mg", "metformina 500mg"],
-        count: 2,
-      },
-    ];
-
-    // Usar datos reales si existen, si no usar datos de ejemplo
-    const displayData =
-      medicalData.length > 0 ? medicalData : sampleMedicalData;
+    const medicalData = medicalHistory
+      ? Array.isArray(medicalHistory)
+        ? medicalHistory
+        : [medicalHistory]
+      : [];
 
     return (
       <div className="space-y-8">
         {/* Header principal */}
         <div
-          className={`rounded-2xl border shadow-xl ${
-            darkMode
-              ? "border-gray-700 bg-gray-800/50"
-              : "border-gray-200 bg-white/90"
-          }`}
-        >
-          <div
-            className={`px-8 py-6 border-b flex items-center justify-between ${
-              darkMode ? "border-gray-700" : "border-gray-100"
-            }`}
-          >
-            <div>
-              <div className="flex items-center space-x-3">
-                <Heart
-                  className={`h-6 w-6 ${
-                    darkMode ? "text-red-400" : "text-red-500"
-                  }`}
-                />
-                <h3
-                  className={`text-xl font-bold ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Mi Información Médica
-                </h3>
-              </div>
-              <p
-                className={`text-sm mt-1 ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Visualizando información médica
-              </p>
-            </div>
-            <button className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-              <Edit3 className="h-4 w-4 mr-2" />
-              Editar Información
-            </button>
-          </div>
-
-          <div className="p-8">
-            <div className="space-y-6">
-              {/* Vista previa de las categorías médicas */}
-              {displayData.map((category, index) => (
-                <div
-                  key={category.id || index}
-                  className={`rounded-lg border ${
-                    darkMode ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <div
-                    className={`flex items-center justify-between p-4 ${
-                      darkMode ? "bg-gray-800/30" : "bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className={`p-2 rounded-lg ${
-                          category.tipo === "condiciones"
-                            ? "bg-red-100"
-                            : category.tipo === "alergias"
-                            ? "bg-orange-100"
-                            : category.tipo === "medicamentos"
-                            ? "bg-blue-100"
-                            : darkMode
-                            ? "bg-gray-700"
-                            : "bg-gray-100"
-                        }`}
-                      >
-                        {category.tipo === "condiciones" ? (
-                          <Heart className="h-5 w-5 text-red-600" />
-                        ) : category.tipo === "alergias" ? (
-                          <AlertCircle className="h-5 w-5 text-orange-600" />
-                        ) : category.tipo === "medicamentos" ? (
-                          <Pill className="h-5 w-5 text-blue-600" />
-                        ) : (
-                          <FileText className="h-5 w-5 text-gray-600" />
-                        )}
-                      </div>
-                      <div>
-                        <h4
-                          className={`font-semibold ${
-                            darkMode ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          {category.titulo ||
-                            category.condicion ||
-                            category.tipo ||
-                            "Información Médica"}
-                        </h4>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          darkMode
-                            ? "bg-gray-700 text-gray-300"
-                            : "bg-gray-200 text-gray-700"
-                        }`}
-                      >
-                        {category.count || category.items?.length || 1}
-                      </span>
-                      <Info
-                        className={`h-4 w-4 ${
-                          darkMode ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Lista de elementos */}
-                  <div className="p-4">
-                    <div className="space-y-2">
-                      {category.items ? (
-                        category.items.map((item, itemIndex) => (
-                          <div
-                            key={itemIndex}
-                            className={`flex items-center p-3 rounded-lg ${
-                              category.tipo === "condiciones"
-                                ? "bg-red-50 border border-red-100"
-                                : category.tipo === "alergias"
-                                ? "bg-orange-50 border border-orange-100"
-                                : category.tipo === "medicamentos"
-                                ? "bg-blue-50 border border-blue-100"
-                                : darkMode
-                                ? "bg-gray-800 border border-gray-700"
-                                : "bg-gray-50 border border-gray-200"
-                            }`}
-                          >
-                            <span
-                              className={`text-sm ${
-                                category.tipo === "condiciones"
-                                  ? "text-red-700"
-                                  : category.tipo === "alergias"
-                                  ? "text-orange-700"
-                                  : category.tipo === "medicamentos"
-                                  ? "text-blue-700"
-                                  : darkMode
-                                  ? "text-gray-300"
-                                  : "text-gray-700"
-                              }`}
-                            >
-                              {item}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <div
-                          className={`flex items-center p-3 rounded-lg ${
-                            darkMode
-                              ? "bg-gray-800 border border-gray-700"
-                              : "bg-gray-50 border border-gray-200"
-                          }`}
-                        >
-                          <span
-                            className={`text-sm ${
-                              darkMode ? "text-gray-300" : "text-gray-700"
-                            }`}
-                          >
-                            {category.descripcion ||
-                              category.notas ||
-                              "Sin información adicional"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {medicalData.length === 0 && (
-                <div
-                  className={`text-center py-8 ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">Datos de ejemplo mostrados</p>
-                  <p className="text-xs mt-1">
-                    Agrega tu información médica real para personalizar
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Información de salud general */}
-        <div
-          className={`rounded-2xl border shadow-xl ${
-            darkMode
-              ? "border-gray-700 bg-gray-800/50"
-              : "border-gray-200 bg-white/90"
+          className={`rounded-3xl border-0 shadow-xl ${
+            darkMode ? "bg-gray-800/50" : "bg-white"
           }`}
         >
           <div
             className={`px-8 py-6 border-b ${
               darkMode ? "border-gray-700" : "border-gray-100"
-            }`}
+            } flex items-center justify-between`}
           >
-            <h3
-              className={`text-xl font-bold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Resumen de Salud
-            </h3>
-          </div>
-          <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* IMC */}
-              <div
-                className={`p-6 rounded-xl border ${
-                  darkMode
-                    ? "border-gray-700 bg-gray-800/30"
-                    : "border-gray-200 bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h4
-                    className={`font-semibold ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
-                    Índice de Masa Corporal (IMC)
-                  </h4>
-                  <TrendingUp
-                    className={`h-5 w-5 ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
+            <div>
+              <div className="flex items-center space-x-3">
+                <div
+                  className={`p-3 rounded-xl ${
+                    darkMode ? "bg-red-900/20" : "bg-red-100"
+                  }`}
+                >
+                  <Heart
+                    className={`h-6 w-6 ${
+                      darkMode ? "text-red-400" : "text-red-600"
                     }`}
                   />
                 </div>
-                {profileData.altura && profileData.pesoActual ? (
-                  <div>
-                    <p className="text-3xl font-bold text-emerald-600 mb-2">
-                      {(
-                        parseFloat(profileData.pesoActual) /
-                        Math.pow(parseFloat(profileData.altura) / 100, 2)
-                      ).toFixed(1)}
-                    </p>
-                    <p
-                      className={`text-sm ${
-                        darkMode ? "text-gray-400" : "text-gray-600"
-                      }`}
-                    >
-                      Rango normal: 18.5 - 24.9
-                    </p>
-                  </div>
-                ) : (
+                <div>
+                  <h3
+                    className={`text-xl font-bold ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    Mi Información Médica
+                  </h3>
                   <p
                     className={`text-sm ${
                       darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
+                    } mt-1`}
                   >
-                    Completa tu altura y peso para calcular
+                    {medicalData.length} registros médicos
                   </p>
-                )}
+                </div>
               </div>
+            </div>
+          </div>
 
-              {/* Estado general */}
-              <div
-                className={`p-6 rounded-xl border ${
-                  darkMode
-                    ? "border-gray-700 bg-gray-800/30"
-                    : "border-gray-200 bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h4
-                    className={`font-semibold ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                {
+                  icon: Heart,
+                  title: "Condiciones",
+                  count: medicalData.length,
+                  color: "red",
+                  items: medicalData.flatMap((d) => d.condiciones || []),
+                },
+                {
+                  icon: AlertCircle,
+                  title: "Alergias",
+                  count: medicalData.flatMap((d) => d.alergias || []).length,
+                  color: "orange",
+                  items: medicalData.flatMap((d) => d.alergias || []),
+                },
+                {
+                  icon: Pill,
+                  title: "Medicamentos",
+                  count: medicalData.flatMap((d) => d.medicamentos || [])
+                    .length,
+                  color: "blue",
+                  items: medicalData.flatMap((d) => d.medicamentos || []),
+                },
+              ].map((category, index) => {
+                const colorClasses = getColorClasses(category.color);
+                const textColor = darkMode
+                  ? `text-${category.color}-400`
+                  : `text-${category.color}-600`;
+
+                return (
+                  <div
+                    key={index}
+                    className={`rounded-2xl border ${colorClasses.border} ${
+                      darkMode ? "bg-gray-800/30" : "bg-white"
+                    } hover:shadow-lg transition-all duration-200`}
                   >
-                    Estado General
-                  </h4>
-                  <Heart
-                    className={`h-5 w-5 ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  />
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-sm ${
-                        darkMode ? "text-gray-300" : "text-gray-600"
-                      }`}
-                    >
-                      Nutrición
-                    </span>
-                    <div
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        dailySummary && dailySummary.totalCalorias > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {dailySummary && dailySummary.totalCalorias > 0
-                        ? "Activo"
-                        : "Pendiente"}
+                    <div className="p-6">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div
+                          className={`p-3 rounded-xl ${colorClasses.accent}`}
+                        >
+                          <category.icon className={`h-6 w-6 ${textColor}`} />
+                        </div>
+                        <div>
+                          <h4
+                            className={`font-semibold ${
+                              darkMode ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {category.title}
+                          </h4>
+                          <p
+                            className={`text-sm ${
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            }`}
+                          >
+                            {category.count} registros
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {category.items.slice(0, 3).map((item, itemIndex) => (
+                          <div
+                            key={itemIndex}
+                            className={`flex items-center p-3 rounded-lg ${
+                              darkMode ? "bg-gray-700/50" : "bg-gray-50"
+                            }`}
+                          >
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></div>
+                            <span
+                              className={`text-sm ${
+                                darkMode ? "text-gray-300" : "text-gray-700"
+                              }`}
+                            >
+                              {item}
+                            </span>
+                          </div>
+                        ))}
+                        {category.items.length > 3 && (
+                          <div className="text-center pt-2">
+                            <span
+                              className={`text-sm ${
+                                darkMode
+                                  ? "text-emerald-400"
+                                  : "text-emerald-600"
+                              }`}
+                            >
+                              +{category.items.length - 3} más
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-sm ${
-                        darkMode ? "text-gray-300" : "text-gray-600"
-                      }`}
-                    >
-                      Actividad Física
-                    </span>
-                    <div
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        weeklySummary && weeklySummary.totalDuracion > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {weeklySummary && weeklySummary.totalDuracion > 0
-                        ? "Activo"
-                        : "Mejorar"}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-sm ${
-                        darkMode ? "text-gray-300" : "text-gray-600"
-                      }`}
-                    >
-                      Seguimiento Médico
-                    </span>
-                    <div
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        medicalData.length > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {medicalData.length > 0 ? "Al día" : "Sin datos"}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1309,6 +1079,14 @@ const ProfileDashboard = ({ darkMode = false }) => {
   };
 
   const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case "perfil":
         return <ProfileSection />;
@@ -1335,9 +1113,9 @@ const ProfileDashboard = ({ darkMode = false }) => {
         {/* Header */}
         <div className="mb-8">
           <h1
-            className={`text-4xl font-bold mb-2 ${
+            className={`text-4xl font-bold ${
               darkMode ? "text-white" : "text-gray-900"
-            }`}
+            } mb-2`}
           >
             Mi Dashboard
           </h1>
@@ -1352,30 +1130,35 @@ const ProfileDashboard = ({ darkMode = false }) => {
 
         {/* Navigation Tabs */}
         <div
-          className={`flex space-x-1 rounded-xl p-1 mb-8 ${
+          className={`flex space-x-1 rounded-2xl p-1 mb-8 ${
             darkMode ? "bg-gray-800/50" : "bg-gray-100"
           }`}
         >
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === tab.id
-                  ? `bg-${tab.color}-600 text-white shadow-lg scale-105`
-                  : darkMode
-                  ? "text-gray-400 hover:text-white hover:bg-gray-700"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-white"
-              }`}
-            >
-              <tab.icon
-                className={`h-5 w-5 mr-2 ${
-                  activeTab === tab.id ? "text-white" : ""
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const textColor = darkMode
+              ? isActive
+                ? "text-white"
+                : "text-gray-400 hover:text-white"
+              : isActive
+              ? "text-white"
+              : "text-gray-600 hover:text-gray-900";
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                  isActive
+                    ? `bg-${tab.color}-600 ${textColor} shadow-lg scale-105`
+                    : `${textColor} hover:bg-white dark:hover:bg-gray-700`
                 }`}
-              />
-              {tab.name}
-            </button>
-          ))}
+              >
+                <tab.icon className="h-5 w-5 mr-2" />
+                {tab.name}
+              </button>
+            );
+          })}
         </div>
 
         {/* Content */}

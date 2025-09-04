@@ -68,7 +68,6 @@ export class UserService {
   }
 
   async update(id: string, updateData: Partial<User>): Promise<User> {
-    // Verificar si el usuario existe
     const existingUser = await this.userRepository.findOne({ where: { id } });
     if (!existingUser) {
       throw new NotFoundException('User not found');
@@ -81,7 +80,6 @@ export class UserService {
       }
     }
 
-    // Actualizar en PostgreSQL
     await this.userRepository.update(id, updateData);
     const updatedUser = await this.userRepository.findOne({ where: { id } });
 

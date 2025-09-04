@@ -15,8 +15,6 @@ export class CookieAuthGuard extends AuthGuard('jwt') {
     if (!token) {
       throw new UnauthorizedException('Token no proporcionado');
     }
-
-    // Establecer el token en el header para que JwtStrategy pueda leerlo
     request.headers.authorization = `Bearer ${token}`;
 
     return super.canActivate(context);

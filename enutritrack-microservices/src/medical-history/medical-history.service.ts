@@ -42,7 +42,7 @@ export class MedicalHistoryService {
       const medicalHistories = await this.medicalHistoryRepository.find({
         where: { usuario: { id: userId } },
         relations: ['usuario'],
-        order: { created_at: 'DESC' }, // Ordenar por fecha más reciente
+        order: { created_at: 'DESC' },
       });
 
       console.log('Historiales encontrados:', medicalHistories.length);

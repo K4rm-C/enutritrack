@@ -289,21 +289,17 @@ export class RecommendationController {
     @Req() req: express.Request,
   ) {
     try {
-      // Debug logging para ver qué está llegando
       this.logger.log(
         `Raw userId parameter received: ${JSON.stringify(userId)}`,
       );
       this.logger.log(`Type of userId: ${typeof userId}`);
 
-      // Convertir a string si es necesario
       let cleanUserId: string;
       if (typeof userId === 'object') {
         cleanUserId = req.params.userId || req.params['userId'] || '';
       } else {
         cleanUserId = String(userId);
       }
-
-      // Validar que userId sea válido
       if (
         !cleanUserId ||
         cleanUserId.trim() === '' ||

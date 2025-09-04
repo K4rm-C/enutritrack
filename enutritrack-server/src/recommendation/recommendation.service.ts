@@ -10,7 +10,6 @@ export class RecommendationService {
   private genAI: GoogleGenerativeAI;
 
   constructor(private httpService: HttpService) {
-    // Inicializar Gemini AI con tu API key (debería estar en variables de entorno)
     this.genAI = new GoogleGenerativeAI(
       process.env.GEMINI_API_KEY || 'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4',
     );
@@ -21,31 +20,22 @@ export class RecommendationService {
     authHeader?: string,
   ) {
     try {
-      // Primero obtener los datos del usuario desde los servicios
       const userData = await this.getUserDataFromServices(
         createRecommendationDto.usuarioId,
         authHeader,
       );
-
-      // Generar el prompt basado en el tipo y datos del usuario
       const prompt = this.generatePrompt(
         createRecommendationDto.tipo,
         userData,
         createRecommendationDto.datosEntrada,
       );
-
-      // Usar la API de Gemini directamente
       const geminiResponse = await this.callGeminiApiDirectly(prompt);
-
-      // Crear la recomendación con el contenido generado por Gemini
       const recommendationData = {
         ...createRecommendationDto,
         contenido: geminiResponse,
         vigenciaHasta: this.calculateExpiryDate(createRecommendationDto.tipo),
         activa: true,
       };
-
-      // Guardar en el servicio de recomendaciones
       const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
         this.httpService.post(
@@ -69,39 +59,20 @@ export class RecommendationService {
     authHeader?: string,
   ): Promise<any> {
     try {
-      // Debug logging extensivo
-      this.logger.log(
-        `getUserDataFromServices called with userId: "${userId}"`,
-      );
-      this.logger.log(`Type of userId: ${typeof userId}`);
-      this.logger.log(`userId stringified: ${JSON.stringify(userId)}`);
-
-      // Validar que userId sea un string válido y no esté vacío
       if (!userId || typeof userId !== 'string' || userId.trim() === '') {
         throw new Error(
           `Invalid userId provided: ${JSON.stringify(userId)} (type: ${typeof userId})`,
         );
       }
-
-      // Limpiar el userId de cualquier carácter extraño
       const cleanUserId = String(userId).trim();
-      this.logger.log(`Clean userId after processing: "${cleanUserId}"`);
 
       // Validar que el cleanUserId sea un UUID válido (formato básico)
       const uuidRegex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(cleanUserId)) {
-        this.logger.warn(
-          `UserId "${cleanUserId}" doesn't appear to be a valid UUID format`,
-        );
-      }
-
       const headers = authHeader ? { Authorization: authHeader } : {};
       this.logger.log(
         `Making request to: ${this.RECOMMENDATION_SERVICE_URL}/users/${cleanUserId}`,
       );
-
-      // Obtener datos del usuario
       const userResponse = await firstValueFrom(
         this.httpService.get(
           `${this.RECOMMENDATION_SERVICE_URL}/users/${cleanUserId}`,
@@ -112,8 +83,6 @@ export class RecommendationService {
         ),
       );
       const user = userResponse.data;
-
-      // Obtener historial médico
       let medicalHistory = {};
       try {
         const medicalHistoryResponse = await firstValueFrom(
@@ -131,8 +100,6 @@ export class RecommendationService {
           `Could not fetch medical history for user ${cleanUserId}: ${error.message}`,
         );
       }
-
-      // Obtener datos de nutrición recientes
       let recentNutrition = [];
       try {
         const nutritionResponse = await firstValueFrom(
@@ -150,8 +117,6 @@ export class RecommendationService {
           `Could not fetch nutrition data for user ${cleanUserId}: ${error.message}`,
         );
       }
-
-      // Obtener actividades físicas recientes
       let recentActivities = [];
       try {
         const activityResponse = await firstValueFrom(
@@ -169,7 +134,6 @@ export class RecommendationService {
           `Could not fetch activity data for user ${cleanUserId}: ${error.message}`,
         );
       }
-
       return {
         user: {
           nombre: user.nombre || 'Usuario',
@@ -190,7 +154,6 @@ export class RecommendationService {
       this.logger.error(
         `Error fetching user data for ${userId}: ${error.message}`,
       );
-      // Devolver datos por defecto si no se pueden obtener
       return {
         user: {
           nombre: 'Usuario',
@@ -207,7 +170,6 @@ export class RecommendationService {
       };
     }
   }
-
   private async callGeminiApiDirectly(prompt: string): Promise<string> {
     try {
       const response = await fetch(
@@ -439,7 +401,6 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
     authHeader?: string,
   ): Promise<any> {
     try {
-      // Validar que userId sea un string válido
       if (!userId || typeof userId !== 'string') {
         throw new Error(`Invalid userId: ${userId}`);
       }
@@ -448,10 +409,8 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
         `Generating quick nutrition recommendation for user: ${userId}`,
       );
 
-      // Obtener datos básicos del usuario
       const userData = await this.getUserDataFromServices(userId, authHeader);
 
-      // Prompt específico para recomendación rápida de nutrición
       const quickPrompt = `Eres un nutricionista experto. Basándote en estos datos del usuario: 
       Edad: ${userData.user.edad}, Género: ${userData.user.genero}, Peso: ${userData.user.pesoActual}kg, 
       Altura: ${userData.user.altura}cm, Objetivo: ${userData.user.objetivoPeso}kg, 
