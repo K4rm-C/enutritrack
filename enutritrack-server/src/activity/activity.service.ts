@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class PhysicalActivityService {
-  private readonly ACTIVITY_SERVICE_URL = 'http://localhost:5000';
+  private readonly ACTIVITY_SERVICE_URL = 'http://localhost:3005';
 
   constructor(private httpService: HttpService) {}
 

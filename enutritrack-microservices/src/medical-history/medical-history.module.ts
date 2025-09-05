@@ -5,7 +5,7 @@ import { MedicalHistoryService } from './medical-history.service';
 import { MedicalHistoryController } from './medical-history.controller';
 import { MedicalHistory } from './model/medical-history.model';
 import { User } from '../users/models/user.model';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([MedicalHistory, User]), AuthModule],

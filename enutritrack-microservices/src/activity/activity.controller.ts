@@ -13,7 +13,7 @@ import {
 import { PhysicalActivityService } from './activity.service';
 import { CreatePhysicalActivityDto } from './dto/create-physical-activity.dto';
 import { UpdatePhysicalActivityDto } from './dto/update-physical-activity.dto';
-import { CookieAuthGuard } from 'src/auth/guards/cookie-auth.guard';
+import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 
 @Controller('physical-activity')
 export class PhysicalActivityController {

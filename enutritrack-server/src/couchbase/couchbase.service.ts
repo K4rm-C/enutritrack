@@ -12,8 +12,8 @@ export class CouchbaseService implements OnModuleInit, OnModuleDestroy {
       this.cluster = await couchbase.connect(
         process.env.COUCHBASE_URL || 'couchbase://localhost',
         {
-          username: process.env.COUCHBASE_USERNAME || 'carmona',
-          password: process.env.COUCHBASE_PASSWORD || 'carmona124$$',
+          username: process.env.COUCHBASE_USERNAME || 'alfredo',
+          password: process.env.COUCHBASE_PASSWORD || 'alfredo124$$',
         },
       );
 

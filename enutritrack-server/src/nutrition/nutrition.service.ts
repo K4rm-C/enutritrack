@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class NutritionService {
-  private readonly NUTRITION_SERVICE_URL = 'http://localhost:3000';
+  private readonly NUTRITION_SERVICE_URL = 'http://localhost:3003';
 
   constructor(private httpService: HttpService) {}
 

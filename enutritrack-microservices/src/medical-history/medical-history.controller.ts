@@ -12,7 +12,7 @@ import {
 import { MedicalHistoryService } from './medical-history.service';
 import { CreateMedicalHistoryDto } from './dto/create-medical-history.dto';
 import { UpdateMedicalHistoryDto } from './dto/update-medical-history.dto';
-import { CookieAuthGuard } from 'src/auth/guards/cookie-auth.guard';
+import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 
 @Controller('medical-history')
 export class MedicalHistoryController {

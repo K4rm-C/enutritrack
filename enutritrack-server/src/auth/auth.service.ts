@@ -11,7 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  private readonly AUTH_SERVICE_URL = 'http://localhost:3000';
+  private readonly AUTH_SERVICE_URL = 'http://localhost:3004';
 
   constructor(
     private httpService: HttpService,

@@ -6,7 +6,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 @Injectable()
 export class RecommendationService {
   private readonly logger = new Logger(RecommendationService.name);
-  private readonly RECOMMENDATION_SERVICE_URL = 'http://localhost:3000';
+  private readonly RECOMMENDATION_SERVICE_URL = 'http://localhost:3006';
   private genAI: GoogleGenerativeAI;
 
   constructor(private httpService: HttpService) {

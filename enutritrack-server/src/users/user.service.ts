@@ -8,7 +8,7 @@ import { CouchbaseService } from '../couchbase/couchbase.service';
 
 @Injectable()
 export class UsersService {
-  private readonly USER_SERVICE_URL = 'http://localhost:3000';
+  private readonly USER_SERVICE_URL = 'http://localhost:3001';
 
   constructor(
     private httpService: HttpService,

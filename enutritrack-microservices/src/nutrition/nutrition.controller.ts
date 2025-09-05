@@ -13,7 +13,7 @@ import {
 import { NutritionService } from './nutrition.service';
 import { CreateFoodRecordDto } from './dto/create-food-record.dto';
 import { UpdateFoodRecordDto } from './dto/update-food-record.dto';
-import { CookieAuthGuard } from 'src/auth/guards/cookie-auth.guard';
+import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 
 @Controller('nutrition')
 export class NutritionController {
