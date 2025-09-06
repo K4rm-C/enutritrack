@@ -26,9 +26,6 @@ export class NutritionService {
   async create(createFoodRecordDto: any, authToken: string) {
     try {
       const preparedData = this.prepareNutritionData(createFoodRecordDto);
-
-      console.log('Enviando datos al microservicio:', preparedData);
-
       const response = await firstValueFrom(
         this.httpService.post(
           `${this.NUTRITION_SERVICE_URL}/nutrition`,

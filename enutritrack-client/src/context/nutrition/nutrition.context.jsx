@@ -27,10 +27,7 @@ export function NutritionProvider({ children }) {
 
   const createFoodRecord = async (foodRecord) => {
     try {
-      console.log("Creando registro de comida:", foodRecord);
-
       const res = await createFoodRecordRequest(foodRecord);
-      console.log("Respuesta del servidor:", res);
       return res.data;
     } catch (error) {
       console.error(

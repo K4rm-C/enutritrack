@@ -15,6 +15,9 @@ import {
   Clock,
   X,
   Save,
+  Flame,
+  Activity,
+  Target,
 } from "lucide-react";
 
 const NutritionDashboard = ({ darkMode = false }) => {
@@ -70,7 +73,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
         grasas: 0,
       });
       getFoodRecordsByUser(user.id);
-      toast.success("¡Comida agregada correctamente!", {
+      toast.success("Comida agregada correctamente", {
         position: "top-right",
         autoClose: 3000,
         theme: darkMode ? "dark" : "light",
@@ -87,12 +90,20 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
   // Función para formatear números sin decimales innecesarios
   const formatNumber = (value) => {
-    // Si es un número entero, quitar los decimales
-    if (Number.isInteger(parseFloat(value))) {
-      return parseInt(value);
+    const num = parseFloat(value);
+    if (Number.isInteger(num)) {
+      return num.toString();
     }
-    // Si tiene decimales, mantenerlos pero sin ceros innecesarios
-    return parseFloat(value);
+    return num.toFixed(1);
+  };
+
+  // Función para formatear números grandes
+  const formatDisplayNumber = (value) => {
+    const num = parseFloat(value);
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + "k";
+    }
+    return Math.round(num).toLocaleString();
   };
 
   // Función para iniciar la edición de un registro
@@ -126,8 +137,8 @@ const NutritionDashboard = ({ darkMode = false }) => {
     try {
       await updateFoodRecord(recordId, editFormData);
       setEditingRecordId(null);
-      getFoodRecordsByUser(user.id); // Actualizar la lista
-      toast.success("¡Comida actualizada correctamente!", {
+      getFoodRecordsByUser(user.id);
+      toast.success("Comida actualizada correctamente", {
         position: "top-right",
         autoClose: 3000,
         theme: darkMode ? "dark" : "light",
@@ -146,8 +157,8 @@ const NutritionDashboard = ({ darkMode = false }) => {
   const handleDeleteRecord = async (recordId) => {
     try {
       await deleteFoodRecord(recordId);
-      getFoodRecordsByUser(user.id); // Actualizar la lista
-      toast.success("¡Comida eliminada correctamente!", {
+      getFoodRecordsByUser(user.id);
+      toast.success("Comida eliminada correctamente", {
         position: "top-right",
         autoClose: 3000,
         theme: darkMode ? "dark" : "light",
@@ -262,234 +273,267 @@ const NutritionDashboard = ({ darkMode = false }) => {
       />
 
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-7">
-          {/* Header */}
+        <div className="space-y-8">
+          {/* Header Mejorado */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1
-                className={`text-3xl font-bold ${
+                className={`text-3xl font-bold mb-2 ${
                   darkMode ? "text-white" : "text-gray-900"
                 }`}
               >
                 Panel Nutricional
               </h1>
               <p
-                className={`mt-2 text-sm ${
+                className={`text-sm ${
                   darkMode ? "text-gray-400" : "text-gray-600"
                 }`}
               >
-                Monitorea tu ingesta diaria de nutrientes
+                Monitorea tu ingesta diaria de nutrientes y alcanza tus
+                objetivos
               </p>
             </div>
-            <div className="mt-4 sm:mt-0 flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Calendar
-                  className={`h-5 w-5 ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
+            <div className="mt-6 sm:mt-0 flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+              <div className="flex items-center space-x-3">
+                <div
+                  className={`p-2 rounded-lg ${
+                    darkMode ? "bg-gray-700" : "bg-gray-100"
                   }`}
-                />
+                >
+                  <Calendar
+                    className={`h-5 w-5 ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  />
+                </div>
                 <input
                   type="date"
                   value={selectedDate.toISOString().split("T")[0]}
                   onChange={(e) => setSelectedDate(new Date(e.target.value))}
-                  className={`px-4 py-2 rounded-lg border ${
+                  className={`px-4 py-2 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                     darkMode
                       ? "bg-gray-700 border-gray-600 text-white"
                       : "bg-white border-gray-300 text-gray-900"
-                  } focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
+                  }`}
                 />
               </div>
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="flex items-center px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-5 w-5 mr-2" />
                 Nueva Comida
               </button>
             </div>
           </div>
 
-          {/* Resumen Nutricional */}
+          {/* Resumen Nutricional Mejorado */}
           <div
             className={`${
               darkMode
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            } rounded-xl border shadow-sm`}
+                ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 shadow-2xl"
+                : "bg-gradient-to-br from-white to-gray-50 border-gray-200 shadow-lg"
+            } rounded-2xl border p-8 transition-all duration-300 hover:shadow-xl`}
           >
-            <div className="p-6">
+            <div className="mb-8">
               <h3
-                className={`text-xl font-semibold mb-6 ${
+                className={`text-2xl font-bold mb-2 ${
                   darkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                Resumen del Día
+                Resumen Nutricional del Día
               </h3>
-
-              {localSummary ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div
-                    className={`p-6 rounded-xl ${
-                      darkMode ? "bg-red-900/20" : "bg-red-50"
-                    } border ${darkMode ? "border-red-800" : "border-red-100"}`}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className={`p-3 rounded-lg ${
-                          darkMode ? "bg-red-800" : "bg-red-100"
-                        } mr-4`}
-                      >
-                        <span className="text-2xl">🔥</span>
-                      </div>
-                      <div>
-                        <p className="text-3xl font-bold text-red-600">
-                          {Math.round(localSummary.calorias || 0)}
-                        </p>
-                        <p
-                          className={`text-sm font-medium ${
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }`}
-                        >
-                          Calorías
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`p-6 rounded-xl ${
-                      darkMode ? "bg-blue-900/20" : "bg-blue-50"
-                    } border ${
-                      darkMode ? "border-blue-800" : "border-blue-100"
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className={`p-3 rounded-lg ${
-                          darkMode ? "bg-blue-800" : "bg-blue-100"
-                        } mr-4`}
-                      >
-                        <span className="text-2xl">💪</span>
-                      </div>
-                      <div>
-                        <p className="text-3xl font-bold text-blue-600">
-                          {Math.round(localSummary.proteinas || 0)}g
-                        </p>
-                        <p
-                          className={`text-sm font-medium ${
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }`}
-                        >
-                          Proteínas
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`p-6 rounded-xl ${
-                      darkMode ? "bg-green-900/20" : "bg-green-50"
-                    } border ${
-                      darkMode ? "border-green-800" : "border-green-100"
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className={`p-3 rounded-lg ${
-                          darkMode ? "bg-green-800" : "bg-green-100"
-                        } mr-4`}
-                      >
-                        <span className="text-2xl">🌾</span>
-                      </div>
-                      <div>
-                        <p className="text-3xl font-bold text-green-600">
-                          {Math.round(localSummary.carbohidratos || 0)}g
-                        </p>
-                        <p
-                          className={`text-sm font-medium ${
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }`}
-                        >
-                          Carbohidratos
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`p-6 rounded-xl ${
-                      darkMode ? "bg-yellow-900/20" : "bg-yellow-50"
-                    } border ${
-                      darkMode ? "border-yellow-800" : "border-yellow-100"
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className={`p-3 rounded-lg ${
-                          darkMode ? "bg-yellow-800" : "bg-yellow-100"
-                        } mr-4`}
-                      >
-                        <span className="text-2xl">🥑</span>
-                      </div>
-                      <div>
-                        <p className="text-3xl font-bold text-yellow-600">
-                          {Math.round(localSummary.grasas || 0)}g
-                        </p>
-                        <p
-                          className={`text-sm font-medium ${
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }`}
-                        >
-                          Grasas
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🍽️</div>
-                  <p
-                    className={`text-lg ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    No hay datos para esta fecha
-                  </p>
-                  <p
-                    className={`text-sm ${
-                      darkMode ? "text-gray-500" : "text-gray-500"
-                    }`}
-                  >
-                    Comienza agregando tu primera comida del día
-                  </p>
-                </div>
-              )}
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {selectedDate.toLocaleDateString("es-ES", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
             </div>
+
+            {localSummary.calorias > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Calorías */}
+                <div
+                  className={`relative overflow-hidden text-center p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                    darkMode
+                      ? "bg-gradient-to-br from-red-900/30 to-orange-800/20 border border-red-700/50"
+                      : "bg-gradient-to-br from-red-50 to-orange-100 border border-red-200"
+                  }`}
+                >
+                  <div className="relative z-10">
+                    <div
+                      className={`inline-flex p-3 rounded-full mb-4 ${
+                        darkMode ? "bg-red-800/50" : "bg-red-200"
+                      }`}
+                    >
+                      <Flame className="h-8 w-8 text-red-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-red-600 mb-1">
+                      {formatDisplayNumber(localSummary.calorias)}
+                    </p>
+                    <p className="text-sm font-medium text-red-600/80">
+                      Calorías
+                    </p>
+                  </div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-red-400/10 rounded-full -translate-y-10 translate-x-10"></div>
+                </div>
+
+                {/* Proteínas */}
+                <div
+                  className={`relative overflow-hidden text-center p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                    darkMode
+                      ? "bg-gradient-to-br from-blue-900/30 to-indigo-800/20 border border-blue-700/50"
+                      : "bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200"
+                  }`}
+                >
+                  <div className="relative z-10">
+                    <div
+                      className={`inline-flex p-3 rounded-full mb-4 ${
+                        darkMode ? "bg-blue-800/50" : "bg-blue-200"
+                      }`}
+                    >
+                      <Activity className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-blue-600 mb-1">
+                      {formatDisplayNumber(localSummary.proteinas)}g
+                    </p>
+                    <p className="text-sm font-medium text-blue-600/80">
+                      Proteínas
+                    </p>
+                  </div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-blue-400/10 rounded-full -translate-y-10 translate-x-10"></div>
+                </div>
+
+                {/* Carbohidratos */}
+                <div
+                  className={`relative overflow-hidden text-center p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                    darkMode
+                      ? "bg-gradient-to-br from-green-900/30 to-emerald-800/20 border border-green-700/50"
+                      : "bg-gradient-to-br from-green-50 to-emerald-100 border border-green-200"
+                  }`}
+                >
+                  <div className="relative z-10">
+                    <div
+                      className={`inline-flex p-3 rounded-full mb-4 ${
+                        darkMode ? "bg-green-800/50" : "bg-green-200"
+                      }`}
+                    >
+                      <Target className="h-8 w-8 text-green-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-green-600 mb-1">
+                      {formatDisplayNumber(localSummary.carbohidratos)}g
+                    </p>
+                    <p className="text-sm font-medium text-green-600/80">
+                      Carbohidratos
+                    </p>
+                  </div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-green-400/10 rounded-full -translate-y-10 translate-x-10"></div>
+                </div>
+
+                {/* Grasas */}
+                <div
+                  className={`relative overflow-hidden text-center p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                    darkMode
+                      ? "bg-gradient-to-br from-yellow-900/30 to-amber-800/20 border border-yellow-700/50"
+                      : "bg-gradient-to-br from-yellow-50 to-amber-100 border border-yellow-200"
+                  }`}
+                >
+                  <div className="relative z-10">
+                    <div
+                      className={`inline-flex p-3 rounded-full mb-4 ${
+                        darkMode ? "bg-yellow-800/50" : "bg-yellow-200"
+                      }`}
+                    >
+                      <Droplets className="h-8 w-8 text-yellow-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-yellow-600 mb-1">
+                      {formatDisplayNumber(localSummary.grasas)}g
+                    </p>
+                    <p className="text-sm font-medium text-yellow-600/80">
+                      Grasas
+                    </p>
+                  </div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-400/10 rounded-full -translate-y-10 translate-x-10"></div>
+                </div>
+              </div>
+            ) : (
+              <div
+                className={`text-center py-12 ${
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                <div
+                  className={`inline-flex p-6 rounded-full mb-4 ${
+                    darkMode ? "bg-gray-700" : "bg-gray-100"
+                  }`}
+                >
+                  <Utensils className="h-16 w-16 opacity-50" />
+                </div>
+                <p className="text-lg font-medium mb-2">
+                  No hay datos para esta fecha
+                </p>
+                <p className="text-sm">
+                  Comienza agregando tu primera comida del día
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Formulario de Agregar Comida */}
+          {/* Formulario de Agregar Comida Mejorado */}
           {showAddForm && (
             <div
               className={`${
                 darkMode
                   ? "bg-gray-800 border-gray-700"
                   : "bg-white border-gray-200"
-              } rounded-xl border shadow-sm`}
+              } rounded-2xl border-2 border-dashed shadow-lg transition-all duration-300`}
             >
-              <div className="p-6">
+              <div className="p-8">
                 <h4
-                  className={`text-lg font-semibold mb-6 ${
+                  className={`text-xl font-bold mb-6 ${
                     darkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
                   Agregar Nueva Comida
                 </h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <label
+                      className={`block text-sm font-semibold mb-3 ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Descripción del Alimento
+                    </label>
+                    <input
+                      type="text"
+                      value={newFoodRecord.descripcion}
+                      onChange={(e) =>
+                        setNewFoodRecord({
+                          ...newFoodRecord,
+                          descripcion: e.target.value,
+                        })
+                      }
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        darkMode
+                          ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                          : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                      }`}
+                      placeholder="Ej: Ensalada César con pollo a la plancha"
+                    />
+                  </div>
+
                   <div>
                     <label
-                      className={`block text-sm font-medium mb-2 ${
+                      className={`block text-sm font-semibold mb-3 ${
                         darkMode ? "text-gray-300" : "text-gray-700"
                       }`}
                     >
@@ -503,11 +547,11 @@ const NutritionDashboard = ({ darkMode = false }) => {
                           tipo_comida: e.target.value,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-lg border ${
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         darkMode
                           ? "bg-gray-700 border-gray-600 text-white"
                           : "bg-white border-gray-300 text-gray-900"
-                      } focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
+                      }`}
                     >
                       <option value="desayuno">🌅 Desayuno</option>
                       <option value="almuerzo">☀️ Almuerzo</option>
@@ -518,33 +562,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                   <div>
                     <label
-                      className={`block text-sm font-medium mb-2 ${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      Descripción
-                    </label>
-                    <input
-                      type="text"
-                      value={newFoodRecord.descripcion}
-                      onChange={(e) =>
-                        setNewFoodRecord({
-                          ...newFoodRecord,
-                          descripcion: e.target.value,
-                        })
-                      }
-                      className={`w-full px-4 py-3 rounded-lg border ${
-                        darkMode
-                          ? "bg-gray-700 border-gray-600 text-white"
-                          : "bg-white border-gray-300 text-gray-900"
-                      } focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
-                      placeholder="Ej: Ensalada César con pollo"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      className={`block text-sm font-medium mb-2 ${
+                      className={`block text-sm font-semibold mb-3 ${
                         darkMode ? "text-gray-300" : "text-gray-700"
                       }`}
                     >
@@ -559,11 +577,11 @@ const NutritionDashboard = ({ darkMode = false }) => {
                           calorias: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-lg border ${
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         darkMode
                           ? "bg-gray-700 border-gray-600 text-white"
                           : "bg-white border-gray-300 text-gray-900"
-                      } focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
+                      }`}
                       min="0"
                       step="1"
                     />
@@ -571,7 +589,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                   <div>
                     <label
-                      className={`block text-sm font-medium mb-2 ${
+                      className={`block text-sm font-semibold mb-3 ${
                         darkMode ? "text-gray-300" : "text-gray-700"
                       }`}
                     >
@@ -586,11 +604,11 @@ const NutritionDashboard = ({ darkMode = false }) => {
                           proteinas: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-lg border ${
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         darkMode
                           ? "bg-gray-700 border-gray-600 text-white"
                           : "bg-white border-gray-300 text-gray-900"
-                      } focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
+                      }`}
                       min="0"
                       step="0.1"
                     />
@@ -598,7 +616,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                   <div>
                     <label
-                      className={`block text-sm font-medium mb-2 ${
+                      className={`block text-sm font-semibold mb-3 ${
                         darkMode ? "text-gray-300" : "text-gray-700"
                       }`}
                     >
@@ -613,11 +631,11 @@ const NutritionDashboard = ({ darkMode = false }) => {
                           carbohidratos: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-lg border ${
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         darkMode
                           ? "bg-gray-700 border-gray-600 text-white"
                           : "bg-white border-gray-300 text-gray-900"
-                      } focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
+                      }`}
                       min="0"
                       step="0.1"
                     />
@@ -625,7 +643,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                   <div>
                     <label
-                      className={`block text-sm font-medium mb-2 ${
+                      className={`block text-sm font-semibold mb-3 ${
                         darkMode ? "text-gray-300" : "text-gray-700"
                       }`}
                     >
@@ -640,31 +658,31 @@ const NutritionDashboard = ({ darkMode = false }) => {
                           grasas: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-lg border ${
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         darkMode
                           ? "bg-gray-700 border-gray-600 text-white"
                           : "bg-white border-gray-300 text-gray-900"
-                      } focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
+                      }`}
                       min="0"
                       step="0.1"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-3 mt-8">
+                <div className="flex justify-end space-x-4 mt-8">
                   <button
                     onClick={() => setShowAddForm(false)}
-                    className={`px-6 py-2 rounded-lg border ${
+                    className={`px-6 py-3 rounded-xl border-2 transition-all duration-200 font-semibold ${
                       darkMode
                         ? "border-gray-600 text-gray-300 hover:bg-gray-700"
                         : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                    } transition-colors`}
+                    }`}
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleAddFoodRecord}
-                    className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 font-semibold shadow-lg"
                   >
                     Guardar Comida
                   </button>
@@ -673,8 +691,8 @@ const NutritionDashboard = ({ darkMode = false }) => {
             </div>
           )}
 
-          {/* Registro de Comidas */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Registro de Comidas Mejorado */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {Object.entries(mealTypes).map(([key, meal]) => {
               const mealRecords = filteredRecords.filter(
                 (record) => record.tipo_comida === key
@@ -688,19 +706,20 @@ const NutritionDashboard = ({ darkMode = false }) => {
                     darkMode
                       ? "bg-gray-800 border-gray-700"
                       : "bg-white border-gray-200"
-                  } rounded-xl border shadow-sm overflow-hidden`}
+                  } rounded-2xl border-2 shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl`}
                 >
+                  {/* Header de la comida */}
                   <div
-                    className={`${colors.bg} ${colors.border} border-b px-6 py-4`}
+                    className={`${colors.bg} ${colors.border} border-b-2 px-6 py-5`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${colors.accent}`}>
-                          <span className="text-xl">{meal.icon}</span>
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-3 rounded-2xl ${colors.accent}`}>
+                          <span className="text-2xl">{meal.icon}</span>
                         </div>
                         <div>
                           <h4
-                            className={`font-semibold ${
+                            className={`font-bold text-lg ${
                               darkMode ? "text-white" : "text-gray-900"
                             }`}
                           >
@@ -708,7 +727,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
                           </h4>
                           <div className="flex items-center space-x-2 text-sm">
                             <Clock
-                              className={`h-3 w-3 ${
+                              className={`h-4 w-4 ${
                                 darkMode ? "text-gray-400" : "text-gray-500"
                               }`}
                             />
@@ -724,12 +743,12 @@ const NutritionDashboard = ({ darkMode = false }) => {
                       </div>
                       <div className="text-right">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold ${
                             mealRecords.length > 0
-                              ? `${colors.text} ${colors.bg}`
+                              ? `${colors.text} ${colors.bg} border-2 ${colors.border}`
                               : darkMode
-                              ? "text-gray-500 bg-gray-700"
-                              : "text-gray-500 bg-gray-100"
+                              ? "text-gray-500 bg-gray-700 border-2 border-gray-600"
+                              : "text-gray-500 bg-gray-100 border-2 border-gray-200"
                           }`}
                         >
                           {mealRecords.length}{" "}
@@ -745,47 +764,47 @@ const NutritionDashboard = ({ darkMode = false }) => {
                         {mealRecords.map((record, index) => (
                           <div
                             key={record.id}
-                            className={`p-4 rounded-lg ${
+                            className={`p-5 rounded-2xl border-2 transition-all duration-200 hover:shadow-md hover:scale-[1.02] ${
                               darkMode
-                                ? "bg-gray-700 border-gray-600"
-                                : "bg-gray-50 border-gray-200"
-                            } border transition-all hover:shadow-md`}
+                                ? "bg-gray-700/50 border-gray-600 hover:border-gray-500"
+                                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                            }`}
                           >
                             {editingRecordId === record.id ? (
                               // Formulario de edición
                               <div className="space-y-4">
                                 <div className="flex justify-between items-center">
                                   <h5
-                                    className={`font-medium ${
+                                    className={`font-bold text-lg ${
                                       darkMode ? "text-white" : "text-gray-900"
                                     }`}
                                   >
-                                    Editando alimento
+                                    Editando Alimento
                                   </h5>
-                                  <div className="flex space-x-2">
+                                  <div className="flex space-x-3">
                                     <button
                                       onClick={() => handleSaveEdit(record.id)}
-                                      className="p-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                                      className="p-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg"
                                     >
-                                      <Save className="h-4 w-4" />
+                                      <Save className="h-5 w-5" />
                                     </button>
                                     <button
                                       onClick={handleCancelEdit}
-                                      className={`p-2 rounded-lg ${
+                                      className={`p-2 rounded-xl transition-all duration-200 ${
                                         darkMode
-                                          ? "bg-gray-600 hover:bg-gray-500"
-                                          : "bg-gray-200 hover:bg-gray-300"
-                                      } transition-colors`}
+                                          ? "bg-gray-600 hover:bg-gray-500 text-gray-300"
+                                          : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                                      }`}
                                     >
-                                      <X className="h-4 w-4" />
+                                      <X className="h-5 w-5" />
                                     </button>
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="md:col-span-2">
                                     <label
-                                      className={`block text-xs font-medium mb-1 ${
+                                      className={`block text-sm font-semibold mb-2 ${
                                         darkMode
                                           ? "text-gray-300"
                                           : "text-gray-700"
@@ -802,7 +821,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
                                           descripcion: e.target.value,
                                         })
                                       }
-                                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                      className={`w-full px-4 py-3 rounded-xl border-2 text-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                                         darkMode
                                           ? "bg-gray-600 border-gray-500 text-white"
                                           : "bg-white border-gray-300 text-gray-900"
@@ -812,7 +831,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                                   <div>
                                     <label
-                                      className={`block text-xs font-medium mb-1 ${
+                                      className={`block text-sm font-semibold mb-2 ${
                                         darkMode
                                           ? "text-gray-300"
                                           : "text-gray-700"
@@ -828,7 +847,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
                                           tipo_comida: e.target.value,
                                         })
                                       }
-                                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                      className={`w-full px-4 py-3 rounded-xl border-2 text-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                                         darkMode
                                           ? "bg-gray-600 border-gray-500 text-white"
                                           : "bg-white border-gray-300 text-gray-900"
@@ -843,7 +862,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                                   <div>
                                     <label
-                                      className={`block text-xs font-medium mb-1 ${
+                                      className={`block text-sm font-semibold mb-2 ${
                                         darkMode
                                           ? "text-gray-300"
                                           : "text-gray-700"
@@ -861,7 +880,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
                                             parseFloat(e.target.value) || 0,
                                         })
                                       }
-                                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                      className={`w-full px-4 py-3 rounded-xl border-2 text-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                                         darkMode
                                           ? "bg-gray-600 border-gray-500 text-white"
                                           : "bg-white border-gray-300 text-gray-900"
@@ -873,7 +892,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                                   <div>
                                     <label
-                                      className={`block text-xs font-medium mb-1 ${
+                                      className={`block text-sm font-semibold mb-2 ${
                                         darkMode
                                           ? "text-gray-300"
                                           : "text-gray-700"
@@ -891,7 +910,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
                                             parseFloat(e.target.value) || 0,
                                         })
                                       }
-                                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                      className={`w-full px-4 py-3 rounded-xl border-2 text-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                                         darkMode
                                           ? "bg-gray-600 border-gray-500 text-white"
                                           : "bg-white border-gray-300 text-gray-900"
@@ -903,7 +922,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                                   <div>
                                     <label
-                                      className={`block text-xs font-medium mb-1 ${
+                                      className={`block text-sm font-semibold mb-2 ${
                                         darkMode
                                           ? "text-gray-300"
                                           : "text-gray-700"
@@ -921,7 +940,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
                                             parseFloat(e.target.value) || 0,
                                         })
                                       }
-                                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                      className={`w-full px-4 py-3 rounded-xl border-2 text-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                                         darkMode
                                           ? "bg-gray-600 border-gray-500 text-white"
                                           : "bg-white border-gray-300 text-gray-900"
@@ -933,7 +952,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
 
                                   <div>
                                     <label
-                                      className={`block text-xs font-medium mb-1 ${
+                                      className={`block text-sm font-semibold mb-2 ${
                                         darkMode
                                           ? "text-gray-300"
                                           : "text-gray-700"
@@ -951,7 +970,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
                                             parseFloat(e.target.value) || 0,
                                         })
                                       }
-                                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                      className={`w-full px-4 py-3 rounded-xl border-2 text-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                                         darkMode
                                           ? "bg-gray-600 border-gray-500 text-white"
                                           : "bg-white border-gray-300 text-gray-900"
@@ -965,109 +984,154 @@ const NutritionDashboard = ({ darkMode = false }) => {
                             ) : (
                               // Vista normal del registro
                               <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <h5
-                                    className={`font-medium mb-2 ${
-                                      darkMode ? "text-white" : "text-gray-900"
-                                    }`}
-                                  >
-                                    {record.descripcion}
-                                  </h5>
-                                  <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div className="flex justify-between">
-                                      <span
-                                        className={`${
-                                          darkMode
-                                            ? "text-gray-400"
-                                            : "text-gray-600"
-                                        }`}
-                                      >
-                                        Calorías:
-                                      </span>
-                                      <span
-                                        className={`font-medium ${colors.text}`}
-                                      >
-                                        {record.calorias} kcal
-                                      </span>
+                                <div className="flex-1 pr-4">
+                                  <div className="flex items-center space-x-3 mb-4">
+                                    <div
+                                      className={`p-2 rounded-lg ${colors.accent}`}
+                                    >
+                                      <Utensils
+                                        className={`h-5 w-5 ${colors.text}`}
+                                      />
                                     </div>
-                                    <div className="flex justify-between">
-                                      <span
-                                        className={`${
-                                          darkMode
-                                            ? "text-gray-400"
-                                            : "text-gray-600"
-                                        }`}
-                                      >
-                                        Proteínas:
-                                      </span>
-                                      <span
-                                        className={`font-medium text-blue-600`}
-                                      >
-                                        {record.proteinas}g
-                                      </span>
+                                    <h5
+                                      className={`font-bold text-lg ${
+                                        darkMode
+                                          ? "text-white"
+                                          : "text-gray-900"
+                                      }`}
+                                    >
+                                      {record.descripcion}
+                                    </h5>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div
+                                      className={`p-3 rounded-xl ${
+                                        darkMode ? "bg-red-900/20" : "bg-red-50"
+                                      } border ${
+                                        darkMode
+                                          ? "border-red-800/50"
+                                          : "border-red-200"
+                                      }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span
+                                          className={`text-sm font-medium ${
+                                            darkMode
+                                              ? "text-gray-300"
+                                              : "text-gray-600"
+                                          }`}
+                                        >
+                                          Calorías
+                                        </span>
+                                        <span className="font-bold text-red-600">
+                                          {formatNumber(record.calorias)}
+                                        </span>
+                                      </div>
                                     </div>
-                                    <div className="flex justify-between">
-                                      <span
-                                        className={`${
-                                          darkMode
-                                            ? "text-gray-400"
-                                            : "text-gray-600"
-                                        }`}
-                                      >
-                                        Carbohidratos:
-                                      </span>
-                                      <span
-                                        className={`font-medium text-green-600`}
-                                      >
-                                        {record.carbohidratos}g
-                                      </span>
+                                    <div
+                                      className={`p-3 rounded-xl ${
+                                        darkMode
+                                          ? "bg-blue-900/20"
+                                          : "bg-blue-50"
+                                      } border ${
+                                        darkMode
+                                          ? "border-blue-800/50"
+                                          : "border-blue-200"
+                                      }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span
+                                          className={`text-sm font-medium ${
+                                            darkMode
+                                              ? "text-gray-300"
+                                              : "text-gray-600"
+                                          }`}
+                                        >
+                                          Proteínas
+                                        </span>
+                                        <span className="font-bold text-blue-600">
+                                          {formatNumber(record.proteinas)}g
+                                        </span>
+                                      </div>
                                     </div>
-                                    <div className="flex justify-between">
-                                      <span
-                                        className={`${
-                                          darkMode
-                                            ? "text-gray-400"
-                                            : "text-gray-600"
-                                        }`}
-                                      >
-                                        Grasas:
-                                      </span>
-                                      <span
-                                        className={`font-medium text-yellow-600`}
-                                      >
-                                        {record.grasas}g
-                                      </span>
+                                    <div
+                                      className={`p-3 rounded-xl ${
+                                        darkMode
+                                          ? "bg-green-900/20"
+                                          : "bg-green-50"
+                                      } border ${
+                                        darkMode
+                                          ? "border-green-800/50"
+                                          : "border-green-200"
+                                      }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span
+                                          className={`text-sm font-medium ${
+                                            darkMode
+                                              ? "text-gray-300"
+                                              : "text-gray-600"
+                                          }`}
+                                        >
+                                          Carbohidratos
+                                        </span>
+                                        <span className="font-bold text-green-600">
+                                          {formatNumber(record.carbohidratos)}g
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div
+                                      className={`p-3 rounded-xl ${
+                                        darkMode
+                                          ? "bg-yellow-900/20"
+                                          : "bg-yellow-50"
+                                      } border ${
+                                        darkMode
+                                          ? "border-yellow-800/50"
+                                          : "border-yellow-200"
+                                      }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span
+                                          className={`text-sm font-medium ${
+                                            darkMode
+                                              ? "text-gray-300"
+                                              : "text-gray-600"
+                                          }`}
+                                        >
+                                          Grasas
+                                        </span>
+                                        <span className="font-bold text-yellow-600">
+                                          {formatNumber(record.grasas)}g
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex space-x-2 ml-4">
+                                <div className="flex flex-col space-y-2">
                                   <button
                                     onClick={() => handleEditClick(record)}
-                                    className={`p-2 rounded-lg ${
+                                    className={`p-3 rounded-xl transition-all duration-200 ${
                                       darkMode
-                                        ? "hover:bg-gray-600"
-                                        : "hover:bg-gray-200"
-                                    } transition-colors`}
+                                        ? "hover:bg-gray-600 text-gray-400 hover:text-gray-200"
+                                        : "hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+                                    }`}
+                                    title="Editar alimento"
                                   >
-                                    <Edit3
-                                      className={`h-4 w-4 ${
-                                        darkMode
-                                          ? "text-gray-400"
-                                          : "text-gray-500"
-                                      }`}
-                                    />
+                                    <Edit3 className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() =>
                                       handleDeleteRecord(record.id)
                                     }
-                                    className={`p-2 rounded-lg ${
+                                    className={`p-3 rounded-xl transition-all duration-200 ${
                                       darkMode
-                                        ? "hover:bg-red-900/30"
-                                        : "hover:bg-red-50"
-                                    } transition-colors`}
+                                        ? "hover:bg-red-900/30 text-red-400 hover:text-red-300"
+                                        : "hover:bg-red-50 text-red-500 hover:text-red-600"
+                                    }`}
+                                    title="Eliminar alimento"
                                   >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                    <Trash2 className="h-5 w-5" />
                                   </button>
                                 </div>
                               </div>
@@ -1076,20 +1140,27 @@ const NutritionDashboard = ({ darkMode = false }) => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <div className="text-4xl mb-3">{meal.icon}</div>
+                      <div className="text-center py-12">
+                        <div
+                          className={`inline-flex p-6 rounded-full mb-4 ${
+                            darkMode ? "bg-gray-700" : "bg-gray-100"
+                          }`}
+                        >
+                          <span className="text-4xl opacity-50">
+                            {meal.icon}
+                          </span>
+                        </div>
                         <p
-                          className={`text-sm ${
+                          className={`text-lg font-medium mb-2 ${
                             darkMode ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
-                          No hay alimentos registrados para{" "}
-                          {meal.label.toLowerCase()}
+                          No hay alimentos registrados
                         </p>
                         <p
-                          className={`text-xs ${
+                          className={`text-sm ${
                             darkMode ? "text-gray-500" : "text-gray-500"
-                          } mt-1`}
+                          }`}
                         >
                           {meal.time}
                         </p>

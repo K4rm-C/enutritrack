@@ -27,18 +27,16 @@ export class PhysicalActivityController {
     @Req() req: express.Request,
     @Body() createPhysicalActivityDto: any,
   ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
     const authToken =
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');
+    const dtoWithUserId = {
+      ...createPhysicalActivityDto,
+      usuarioId: userId,
+    };
 
-    if (!authToken) {
-      throw new Error('Authentication token not found');
-    }
-
-    return this.physicalActivityService.create(
-      createPhysicalActivityDto,
-      authToken,
-    );
+    return this.physicalActivityService.create(dtoWithUserId, authToken);
   }
 
   @UseGuards(CookieAuthGuard)

@@ -9,12 +9,26 @@ export class PhysicalActivityService {
 
   constructor(private httpService: HttpService) {}
 
+  private prepareActivityData(data: any): any {
+    const preparedData = {
+      usuarioId: data.usuarioId,
+      tipo_actividad: data.tipo_actividad,
+      duracion: data.duracion,
+      caloriasQuemadas: data.caloriasQuemadas,
+    };
+
+    return preparedData;
+  }
+
   async create(createPhysicalActivityDto: any, authToken: string) {
+    const prepareActivityData = this.prepareActivityData(
+      createPhysicalActivityDto,
+    );
     try {
       const response = await firstValueFrom(
         this.httpService.post(
           `${this.ACTIVITY_SERVICE_URL}/physical-activity`,
-          createPhysicalActivityDto,
+          prepareActivityData,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
