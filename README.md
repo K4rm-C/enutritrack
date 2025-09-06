@@ -80,7 +80,13 @@ docker-compose up -d
 4. **Iniciar los microservicios**
 ```bash
 # En terminales separadas
-PARA EL BACKEND Y MICROSERVICIOSnpm run start:dev
+PARA EL BACKEND Y MICROSERVICIOS: npm run dev:gateway
+  -- MICROSERVICIO DE USUARIOS: npm run dev:user
+  -- MICROSERVICIO DE HISTORIAL MEDICO: npm run dev:medical
+  -- MICROSERVICIO DE NUTRICION: npm run dev:nutrition
+  -- MICROSERVICIO DE AUNTENTICACION: npm run dev:auth
+  -- MICROSERVICIO DE ACTIVIDAD: npm run dev:activity
+  -- MICROSERVICIO DE RECOMENDACIONES: npm run dev:recommendation
 PARA EL FRONTEND: npm run dev
 
 ```
@@ -158,7 +164,13 @@ JWT_EXPIRES_IN=24h
 | Servicio | Puerto | Descripción |
 |----------|--------|-------------|
 | BACKEND | 4000 | Punto de entrada principal |
-| MICROSERVICIOS | 3000 | Autenticación y autorización |
+| MICROSERVICIOS MAIN | 3000 | MAIN Principal |
+| MICROSERVICIOS USUARIO | 3001 | Gestion de usuario |
+| MICROSERVICIOS HISTORIAL MEDICO | 3002 | Gestion de historial medico |
+| MICROSERVICIOS NUTRICION | 3003 | Gestion de registro de comida |
+| MICROSERVICIOS AUTENTICACION | 3004 | Autorizacion y validacion de usuario |
+| MICROSERVICIOS ACTIVIDAD FISICA | 3005 | Gestion de actividades fiscias del usuario |
+| MICROSERVICIOS RECOMENDACIONES IA | 3006 | Gestion de recomendaciones hechas por IA |
 | FRONTEND | 5174 | Gestión de usuarios |
 
 ### Endpoints Principales
