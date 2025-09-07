@@ -59,19 +59,8 @@ export class RecommendationController {
 
   @UseGuards(CookieAuthGuard)
   @Get('user/:userId')
-  async findByUser(@Param('userId') userId: string): Promise<Recommendation[]> {
-    try {
-      this.logger.log(`Fetching recommendations for user: ${userId}`);
-      return await this.recommendationService.findByUser(userId);
-    } catch (error) {
-      this.logger.error(
-        `Error fetching user recommendations: ${error.message}`,
-      );
-      throw new HttpException(
-        'Error al obtener recomendaciones',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  async findByUser(@Param('userId') userId: string) {
+    return await this.recommendationService.findByUser(userId);
   }
 
   @UseGuards(CookieAuthGuard)

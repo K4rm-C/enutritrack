@@ -49,7 +49,7 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
   const {
     recommendations,
     getRecommendationsByUser,
-    createRecommendation,
+    createRecommendationGeneral,
     deleteRecommendation,
     quickNutritionRecommendation,
     quickExerciseRecommendation,
@@ -66,33 +66,11 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
   const [debugInfo, setDebugInfo] = useState(null);
   const [showForm, setShowForm] = useState(null);
   const [formData, setFormData] = useState({});
+  const userId = user.id;
 
-  // Cargar recomendaciones al montar el componente
   useEffect(() => {
-    const loadRecommendations = async () => {
-      if (user && user.id) {
-        try {
-          setLoading(true);
-          setError(null);
-          await getRecommendationsByUser(user.id);
-        } catch (error) {
-          console.error("Error loading recommendations:", error);
-          setError("Error al cargar las recomendaciones");
-          setDebugInfo({
-            message: error.message,
-            userId: user.id,
-            timestamp: new Date().toISOString(),
-          });
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-
-    if (user && user.id && !loading) {
-      loadRecommendations();
-    }
-  }, [user?.id]);
+    getRecommendationsByUser(user.id);
+  }, [userId]);
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -153,24 +131,15 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
   // Reemplaza la función generateRecommendation en tu componente
 
   const generateRecommendation = async (tipo, datosEntrada = {}) => {
-    if (!user || !user.id) {
-      setError("Usuario no autenticado");
-      return;
-    }
-
     setLoading(true);
     setError(null);
-
     try {
       let newRecommendation;
-
-      // Log para debug
       console.log("Generando recomendación con datos:", {
         tipo,
         datosEntrada,
         userId: user.id,
       });
-
       switch (tipo) {
         case RecommendationType.NUTRITION:
           // Pasar datosEntrada como segundo parámetro
@@ -197,7 +166,9 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
             tipo,
             datosEntrada,
           };
-          newRecommendation = await createRecommendation(recommendationData);
+          newRecommendation = await createRecommendationGeneral(
+            recommendationData
+          );
       }
 
       console.log("Recomendación generada:", newRecommendation);
@@ -212,8 +183,6 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
       setShowForm(null);
     }
   };
-
-    // ... resto del código del componente permanece igual
 
   const deactivateRecommendation = async (id) => {
     try {
@@ -250,12 +219,13 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
 
   // Input Forms for datosEntrada
   const DatosEntradaForm = ({ tipo, onGenerate, onCancel }) => {
+    const [formData, setFormData] = useState({});
     const handleSubmit = (e) => {
       e.preventDefault();
-          console.log("Enviando datos del formulario:", {
-            tipo,
-            formData,
-          });
+      console.log("Enviando datos del formulario:", {
+        tipo,
+        formData,
+      });
       onGenerate(tipo, formData);
     };
 
@@ -272,20 +242,28 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
     };
 
     const renderExerciseForm = () => (
-      <div className="space-y-6">
-        <div className="flex items-start space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-          <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-blue-700 dark:text-blue-300">
-            Proporciona información sobre tu equipamiento, lesiones y objetivos
-            para una recomendación de ejercicio personalizada.
-          </p>
+      <div className="space-y-8">
+        <div className="flex items-start space-x-4 p-6 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/50">
+          <div className="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+            <Info className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+              Información Personal
+            </h4>
+            <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
+              Proporciona información sobre tu equipamiento, lesiones y
+              objetivos para una recomendación de ejercicio personalizada.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-blue-500 rounded-full mr-3"></div>
             Equipo disponible
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {[
               "pesas",
               "bicicleta estática",
@@ -297,10 +275,10 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                 key={item}
                 type="button"
                 onClick={() => handleArrayChange("equipo_disponible", item)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 shadow-sm ${
                   (formData.equipo_disponible || []).includes(item)
-                    ? "bg-blue-500 text-white shadow-md"
-                    : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    ? "bg-blue-500 text-white shadow-lg transform scale-105 ring-2 ring-blue-300"
+                    : "bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 hover:border-blue-300 hover:shadow-md"
                 }`}
               >
                 {item}
@@ -309,8 +287,9 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-blue-500 rounded-full mr-3"></div>
             Lesiones o limitaciones
           </label>
           <input
@@ -323,18 +302,19 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                 e.target.value.split(",").map((item) => item.trim())
               )
             }
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-blue-500 rounded-full mr-3"></div>
             Objetivo principal
           </label>
           <select
             value={formData.objetivo || ""}
             onChange={(e) => handleChange("objetivo", e.target.value)}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
           >
             <option value="">Seleccionar objetivo</option>
             <option value="ganar masa muscular">Ganar masa muscular</option>
@@ -345,11 +325,12 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-blue-500 rounded-full mr-3"></div>
             Días disponibles por semana
           </label>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
             <input
               type="range"
               min="1"
@@ -358,31 +339,48 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
               onChange={(e) =>
                 handleChange("dias_semana", parseInt(e.target.value))
               }
-              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${
+                  ((formData.dias_semana || 3) - 1) * 16.67
+                }%, #e5e7eb ${
+                  ((formData.dias_semana || 3) - 1) * 16.67
+                }%, #e5e7eb 100%)`,
+              }}
             />
-            <span className="text-lg font-bold text-blue-600 dark:text-blue-400 min-w-[30px] text-center">
-              {formData.dias_semana || 3}
-            </span>
+            <div className="flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-xl shadow-lg">
+              <span className="text-xl font-bold">
+                {formData.dias_semana || 3}
+              </span>
+            </div>
           </div>
         </div>
       </div>
     );
 
     const renderMedicalForm = () => (
-      <div className="space-y-6">
-        <div className="flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
-          <Info className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">
-            Esta información nos ayuda a proporcionar recomendaciones médicas
-            más precisas y seguras para ti.
-          </p>
+      <div className="space-y-8">
+        <div className="flex items-start space-x-4 p-6 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/20 rounded-2xl border border-red-200/50 dark:border-red-700/50">
+          <div className="flex-shrink-0 w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-lg">
+            <Info className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="font-semibold text-red-900 dark:text-red-100 mb-1">
+              Información Médica
+            </h4>
+            <p className="text-sm text-red-700 dark:text-red-300 leading-relaxed">
+              Esta información nos ayuda a proporcionar recomendaciones médicas
+              más precisas y seguras para ti.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-red-500 rounded-full mr-3"></div>
             Síntomas actuales
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3 mb-4">
             {[
               "fatiga",
               "dolores de cabeza",
@@ -395,10 +393,10 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                 key={item}
                 type="button"
                 onClick={() => handleArrayChange("sintomas_actuales", item)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 shadow-sm ${
                   (formData.sintomas_actuales || []).includes(item)
-                    ? "bg-red-500 text-white shadow-md"
-                    : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    ? "bg-red-500 text-white shadow-lg transform scale-105 ring-2 ring-red-300"
+                    : "bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 hover:border-red-300 hover:shadow-md"
                 }`}
               >
                 {item}
@@ -408,26 +406,28 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
           <input
             type="text"
             placeholder="Otros síntomas (separados por coma)"
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent mt-2"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 dark:placeholder-gray-500"
             onChange={(e) => handleChange("otros_sintomas", e.target.value)}
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-red-500 rounded-full mr-3"></div>
             Preocupaciones principales
           </label>
           <textarea
             placeholder="Ej: control de diabetes, presión arterial, colesterol..."
             value={formData.preocupaciones || ""}
             onChange={(e) => handleChange("preocupaciones", e.target.value)}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 dark:placeholder-gray-500 resize-none"
             rows="3"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-red-500 rounded-full mr-3"></div>
             Medicamentos actuales
           </label>
           <input
@@ -440,12 +440,13 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                 e.target.value.split(",").map((item) => item.trim())
               )
             }
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-red-500 rounded-full mr-3"></div>
             Alergias conocidas
           </label>
           <input
@@ -458,27 +459,35 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                 e.target.value.split(",").map((item) => item.trim())
               )
             }
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
       </div>
     );
 
     const renderNutritionForm = () => (
-      <div className="space-y-6">
-        <div className="flex items-start space-x-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-          <Info className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-green-700 dark:text-green-300">
-            Comparte tus preferencias y restricciones alimenticias para recibir
-            un plan nutricional personalizado.
-          </p>
+      <div className="space-y-8">
+        <div className="flex items-start space-x-4 p-6 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-2xl border border-green-200/50 dark:border-green-700/50">
+          <div className="flex-shrink-0 w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+            <Info className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="font-semibold text-green-900 dark:text-green-100 mb-1">
+              Información Nutricional
+            </h4>
+            <p className="text-sm text-green-700 dark:text-green-300 leading-relaxed">
+              Comparte tus preferencias y restricciones alimenticias para
+              recibir un plan nutricional personalizado.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-green-500 rounded-full mr-3"></div>
             Preferencias alimenticias
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {[
               "vegetariano",
               "vegano",
@@ -491,10 +500,10 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                 key={item}
                 type="button"
                 onClick={() => handleArrayChange("preferencias", item)}
-                className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                className={`px-6 py-4 rounded-xl text-sm font-medium transition-all duration-200 shadow-sm ${
                   (formData.preferencias || []).includes(item)
-                    ? "bg-green-500 text-white shadow-md"
-                    : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    ? "bg-green-500 text-white shadow-lg transform scale-105 ring-2 ring-green-300"
+                    : "bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 hover:border-green-300 hover:shadow-md"
                 }`}
               >
                 {item}
@@ -503,8 +512,9 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-green-500 rounded-full mr-3"></div>
             Alergias alimentarias
           </label>
           <input
@@ -517,18 +527,19 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                 e.target.value.split(",").map((item) => item.trim())
               )
             }
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-green-500 rounded-full mr-3"></div>
             Objetivo nutricional
           </label>
           <select
             value={formData.objetivo || ""}
             onChange={(e) => handleChange("objetivo", e.target.value)}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
           >
             <option value="">Seleccionar objetivo</option>
             <option value="perder peso">Perder peso</option>
@@ -541,28 +552,30 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-green-500 rounded-full mr-3"></div>
             Comidas que te gustan
           </label>
           <textarea
             placeholder="Ej: pollo a la plancha, ensaladas, frutas..."
             value={formData.comidas_gustan || ""}
             onChange={(e) => handleChange("comidas_gustan", e.target.value)}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 dark:placeholder-gray-500 resize-none"
             rows="2"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <label className="block text-base font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+            <div className="w-2 h-6 bg-green-500 rounded-full mr-3"></div>
             Comidas que no te gustan
           </label>
           <textarea
             placeholder="Ej: pescado, brócoli, alimentos picantes..."
             value={formData.comidas_no_gustan || ""}
             onChange={(e) => handleChange("comidas_no_gustan", e.target.value)}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400 dark:placeholder-gray-500 resize-none"
             rows="2"
           />
         </div>
@@ -585,61 +598,74 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
     const getFormColor = () => {
       switch (tipo) {
         case RecommendationType.EXERCISE:
-          return "border-blue-200 dark:border-blue-800";
+          return "border-blue-200 dark:border-blue-800 shadow-blue-100/50 dark:shadow-blue-900/20";
         case RecommendationType.MEDICAL:
-          return "border-red-200 dark:border-red-800";
+          return "border-red-200 dark:border-red-800 shadow-red-100/50 dark:shadow-red-900/20";
         case RecommendationType.NUTRITION:
-          return "border-green-200 dark:border-green-800";
+          return "border-green-200 dark:border-green-800 shadow-green-100/50 dark:shadow-green-900/20";
         default:
-          return "border-purple-200 dark:border-purple-800";
+          return "border-purple-200 dark:border-purple-800 shadow-purple-100/50 dark:shadow-purple-900/20";
+      }
+    };
+
+    const getGradientButton = () => {
+      switch (tipo) {
+        case RecommendationType.EXERCISE:
+          return "bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800";
+        case RecommendationType.MEDICAL:
+          return "bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800";
+        case RecommendationType.NUTRITION:
+          return "bg-gradient-to-r from-green-500 via-green-600 to-green-700 hover:from-green-600 hover:via-green-700 hover:to-green-800";
+        default:
+          return "bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 hover:from-purple-600 hover:via-purple-700 hover:to-purple-800";
       }
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div
-          className={`bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 ${getFormColor()}`}
+          className={`bg-white dark:bg-gray-900 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2 ${getFormColor()} shadow-2xl`}
         >
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+          <div className="sticky top-0 bg-white dark:bg-gray-900 p-8 border-b-2 border-gray-100 dark:border-gray-800 rounded-t-3xl backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-2xl shadow-lg">
                   {getFormIcon()}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                     Personalizar {getTypeName(tipo)}
                   </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                     Completa la información para una recomendación más precisa
                   </p>
                 </div>
               </div>
               <button
                 onClick={onCancel}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6">
+          <form onSubmit={handleSubmit} className="p-8">
             {tipo === RecommendationType.EXERCISE && renderExerciseForm()}
             {tipo === RecommendationType.MEDICAL && renderMedicalForm()}
             {tipo === RecommendationType.NUTRITION && renderNutritionForm()}
 
-            <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-end space-x-4 mt-10 pt-8 border-t-2 border-gray-100 dark:border-gray-800">
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-5 py-2.5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors font-medium"
+                className="px-8 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 font-semibold border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg font-medium"
+                className={`px-8 py-3 ${getGradientButton()} text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-semibold transform hover:scale-105 active:scale-95`}
               >
                 Generar Recomendación
               </button>
@@ -656,30 +682,24 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
       {
         title: "Nutrición",
         subtitle: "Plan alimenticio",
-        gradient: "bg-gradient-to-r from-green-500 to-emerald-600",
+        gradient:
+          "bg-gradient-to-br from-green-500 via-green-600 to-emerald-700",
         icon: Apple,
         type: RecommendationType.NUTRITION,
       },
       {
         title: "Ejercicio",
         subtitle: "Rutina de actividad",
-        gradient: "bg-gradient-to-r from-blue-500 to-cyan-600",
+        gradient: "bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-700",
         icon: Activity,
         type: RecommendationType.EXERCISE,
       },
       {
         title: "Médico",
         subtitle: "Consejos de salud",
-        gradient: "bg-gradient-to-r from-red-500 to-pink-600",
+        gradient: "bg-gradient-to-br from-red-500 via-red-600 to-pink-700",
         icon: Stethoscope,
         type: RecommendationType.MEDICAL,
-      },
-      {
-        title: "General",
-        subtitle: "Bienestar integral",
-        gradient: "bg-gradient-to-r from-purple-500 to-violet-600",
-        icon: Heart,
-        type: RecommendationType.GENERAL,
       },
     ];
 
@@ -692,31 +712,42 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
         <div
           className={`${
             darkMode
-              ? "bg-gray-800 border-gray-700"
-              : "bg-white border-gray-200"
-          } rounded-2xl border p-6 hover:shadow-xl transition-all duration-300`}
+              ? "bg-gray-800/50 border-gray-700 shadow-2xl shadow-gray-900/20"
+              : "bg-white border-gray-200 shadow-2xl shadow-gray-100/50"
+          } rounded-3xl border-2 p-8 hover:shadow-3xl transition-all duration-500 backdrop-blur-sm`}
         >
-          <div className="flex items-center mb-6">
+          <div className="flex items-center mb-8">
             <div
-              className={`w-10 h-10 ${
-                darkMode ? "bg-gray-700" : "bg-gray-100"
-              } rounded-xl flex items-center justify-center mr-3 shadow-md`}
+              className={`w-14 h-14 ${
+                darkMode
+                  ? "bg-gradient-to-br from-gray-700 to-gray-800 shadow-lg shadow-gray-900/30"
+                  : "bg-gradient-to-br from-gray-100 to-gray-200 shadow-lg shadow-gray-200/50"
+              } rounded-2xl flex items-center justify-center mr-4`}
             >
               <Zap
-                className={`w-6 h-6 ${
+                className={`w-8 h-8 ${
                   darkMode ? "text-yellow-400" : "text-yellow-600"
                 }`}
               />
             </div>
-            <h3
-              className={`text-xl font-bold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Generar Recomendaciones
-            </h3>
+            <div>
+              <h3
+                className={`text-2xl font-bold ${
+                  darkMode ? "text-white" : "text-gray-900"
+                } mb-1`}
+              >
+                Generar Recomendaciones
+              </h3>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Selecciona el tipo de recomendación que necesitas
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-6">
             {actions.map((action, index) => (
               <button
                 key={index}
@@ -729,14 +760,17 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                   }
                 }}
                 disabled={loading}
-                className={`${action.gradient} text-white p-5 rounded-2xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed group`}
+                className={`${action.gradient} text-white p-6 rounded-2xl hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden`}
               >
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <action.icon className="w-6 h-6" />
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative flex flex-col items-center text-center">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <action.icon className="w-8 h-8" />
                   </div>
-                  <div className="font-bold text-sm mb-1">{action.title}</div>
-                  <div className="text-xs opacity-90">{action.subtitle}</div>
+                  <div className="font-bold text-base mb-1">{action.title}</div>
+                  <div className="text-sm opacity-90 font-medium">
+                    {action.subtitle}
+                  </div>
                 </div>
               </button>
             ))}
@@ -845,65 +879,6 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
     );
   };
 
-  // User Profile Menu
-  const UserMenu = () => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        >
-          <div className="text-right hidden md:block">
-            <p
-              className={`font-semibold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              {user?.nombre || "Usuario"}
-            </p>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              {user?.edad ? `${user.edad} años` : ""} • {user?.genero || ""}
-            </p>
-          </div>
-          <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-lg">
-            <User className="w-6 h-6 text-white" />
-          </div>
-        </button>
-
-        {isOpen && (
-          <div
-            className={`absolute right-0 top-14 w-48 p-2 rounded-xl shadow-2xl ${
-              darkMode
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            } border z-50`}
-          >
-            <button
-              onClick={toggleDarkMode}
-              className="w-full text-left p-3 rounded-lg flex items-center space-x-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Settings className="w-5 h-5" />
-              <span>{darkMode ? "Modo Claro" : "Modo Oscuro"}</span>
-            </button>
-            <button
-              onClick={logout}
-              className="w-full text-left p-3 rounded-lg flex items-center space-x-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-red-500"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Cerrar Sesión</span>
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   // Mobile Menu
   const MobileMenu = () => {
     if (!mobileMenuOpen) return null;
@@ -1007,23 +982,6 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
               </button>
             ))}
           </div>
-
-          <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={toggleDarkMode}
-              className="w-full text-left p-3 rounded-lg flex items-center space-x-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              <Settings className="w-5 h-5" />
-              <span>{darkMode ? "Modo Claro" : "Modo Oscuro"}</span>
-            </button>
-            <button
-              onClick={logout}
-              className="w-full text-left p-3 rounded-lg flex items-center space-x-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-red-500"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Cerrar Sesión</span>
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -1107,44 +1065,6 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                   Consejos personalizados para tu salud
                 </p>
               </div>
-            </div>
-
-            <div className="flex-1 max-w-md mx-4 hidden md:block">
-              <div
-                className={`relative rounded-xl overflow-hidden ${
-                  darkMode ? "bg-gray-700" : "bg-gray-100"
-                }`}
-              >
-                <Search
-                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
-                    darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}
-                />
-                <input
-                  type="text"
-                  placeholder="Buscar recomendaciones..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full py-3 pl-10 pr-4 focus:outline-none ${
-                    darkMode
-                      ? "bg-gray-700 text-white placeholder-gray-400"
-                      : "bg-gray-100 text-gray-900 placeholder-gray-500"
-                  }`}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <button
-                className={`p-2 rounded-xl ${
-                  darkMode
-                    ? "text-gray-400 hover:bg-gray-700"
-                    : "text-gray-500 hover:bg-gray-100"
-                } transition-colors`}
-              >
-                <Bell className="w-6 h-6" />
-              </button>
-              <UserMenu />
             </div>
           </div>
         </div>
@@ -1358,24 +1278,44 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
             </div>
 
             {/* Recommendations List */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2
-                  className={`text-xl font-bold ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {selectedType === "all"
-                    ? "Todas las Recomendaciones"
-                    : `Recomendaciones de ${getTypeName(selectedType)}`}
-                </h2>
-                <span
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  {filteredRecommendations.length} recomendaciones
-                </span>
+            <div className="space-y-8">
+              <div className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/50">
+                <div>
+                  <h2
+                    className={`text-2xl font-bold ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    } mb-2`}
+                  >
+                    {selectedType === "all"
+                      ? "Todas las Recomendaciones"
+                      : `Recomendaciones de ${getTypeName(selectedType)}`}
+                  </h2>
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    Gestiona y revisa tus recomendaciones personalizadas
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`px-4 py-2 rounded-xl ${
+                      darkMode
+                        ? "bg-purple-900/30 text-purple-300 border border-purple-700/50"
+                        : "bg-purple-100 text-purple-700 border border-purple-200"
+                    } shadow-sm`}
+                  >
+                    <span className="font-semibold text-lg">
+                      {filteredRecommendations.length}
+                    </span>
+                    <span className="text-xs ml-1 opacity-80">
+                      {filteredRecommendations.length === 1
+                        ? "recomendación"
+                        : "recomendaciones"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {filteredRecommendations.map((recommendation) => (
@@ -1383,136 +1323,231 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
                   key={recommendation.id}
                   className={`${
                     darkMode
-                      ? "bg-gray-800 border-gray-700"
-                      : "bg-white border-gray-200"
-                  } rounded-2xl border shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] group`}
+                      ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700/50"
+                      : "bg-gradient-to-br from-white to-gray-50 border-gray-200/50"
+                  } rounded-3xl border-2 shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] group relative`}
                 >
                   <div
-                    className={`h-2 bg-gradient-to-r ${getCardGradient(
+                    className={`h-1.5 bg-gradient-to-r ${getCardGradient(
                       recommendation.tipo
-                    )}`}
+                    )} shadow-sm`}
                   ></div>
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-4">
+
+                  {/* Decorative background pattern */}
+                  <div className="absolute inset-0 opacity-5 dark:opacity-10">
+                    <div className="absolute top-4 right-4 w-32 h-32 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-4 left-4 w-24 h-24 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full blur-2xl"></div>
+                  </div>
+
+                  <div className="relative p-8">
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-start space-x-5">
                         <div
-                          className={`p-3 rounded-xl border shadow-lg ${getTypeColor(
+                          className={`p-4 rounded-2xl border-2 shadow-xl ${getTypeColor(
                             recommendation.tipo
-                          )} group-hover:scale-110 transition-transform`}
+                          )} group-hover:scale-110 transition-all duration-300 backdrop-blur-sm`}
                         >
                           {getTypeIcon(recommendation.tipo)}
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <h3
-                            className={`text-lg font-bold ${
+                            className={`text-xl font-bold ${
                               darkMode ? "text-white" : "text-gray-900"
-                            } mb-1`}
+                            } mb-3 leading-tight`}
                           >
                             Recomendación de {getTypeName(recommendation.tipo)}
                           </h3>
-                          <div className="flex items-center space-x-6 text-sm">
-                            <span
-                              className={`flex items-center space-x-2 ${
-                                darkMode ? "text-gray-400" : "text-gray-500"
-                              }`}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div
+                              className={`flex items-center space-x-3 p-3 rounded-xl ${
+                                darkMode
+                                  ? "bg-gray-800/50 border border-gray-700/50"
+                                  : "bg-white/70 border border-gray-200/50"
+                              } backdrop-blur-sm shadow-sm`}
                             >
-                              <Calendar className="w-4 h-4" />
-                              <span>
-                                Generada:{" "}
-                                {new Date(
-                                  recommendation.fechaGeneracion
-                                ).toLocaleDateString()}
-                              </span>
-                            </span>
-                            <span
-                              className={`flex items-center space-x-2 ${
-                                darkMode ? "text-gray-400" : "text-gray-500"
-                              }`}
+                              <div
+                                className={`p-2 rounded-lg ${
+                                  darkMode ? "bg-blue-900/30" : "bg-blue-100"
+                                }`}
+                              >
+                                <Calendar
+                                  className={`w-4 h-4 ${
+                                    darkMode ? "text-blue-400" : "text-blue-600"
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <span
+                                  className={`block text-xs font-medium ${
+                                    darkMode ? "text-gray-400" : "text-gray-500"
+                                  }`}
+                                >
+                                  Generada
+                                </span>
+                                <span
+                                  className={`font-semibold ${
+                                    darkMode ? "text-gray-200" : "text-gray-700"
+                                  }`}
+                                >
+                                  {new Date(
+                                    recommendation.fechaGeneracion
+                                  ).toLocaleDateString("es-ES", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            <div
+                              className={`flex items-center space-x-3 p-3 rounded-xl ${
+                                darkMode
+                                  ? "bg-gray-800/50 border border-gray-700/50"
+                                  : "bg-white/70 border border-gray-200/50"
+                              } backdrop-blur-sm shadow-sm`}
                             >
-                              <Clock className="w-4 h-4" />
-                              <span>
-                                Válida hasta:{" "}
-                                {new Date(
-                                  recommendation.vigenciaHasta
-                                ).toLocaleDateString()}
-                              </span>
-                            </span>
+                              <div
+                                className={`p-2 rounded-lg ${
+                                  isExpired(recommendation.vigenciaHasta)
+                                    ? darkMode
+                                      ? "bg-red-900/30"
+                                      : "bg-red-100"
+                                    : darkMode
+                                    ? "bg-green-900/30"
+                                    : "bg-green-100"
+                                }`}
+                              >
+                                <Clock
+                                  className={`w-4 h-4 ${
+                                    isExpired(recommendation.vigenciaHasta)
+                                      ? darkMode
+                                        ? "text-red-400"
+                                        : "text-red-600"
+                                      : darkMode
+                                      ? "text-green-400"
+                                      : "text-green-600"
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <span
+                                  className={`block text-xs font-medium ${
+                                    darkMode ? "text-gray-400" : "text-gray-500"
+                                  }`}
+                                >
+                                  Válida hasta
+                                </span>
+                                <span
+                                  className={`font-semibold ${
+                                    isExpired(recommendation.vigenciaHasta)
+                                      ? darkMode
+                                        ? "text-red-400"
+                                        : "text-red-600"
+                                      : darkMode
+                                      ? "text-gray-200"
+                                      : "text-gray-700"
+                                  }`}
+                                >
+                                  {new Date(
+                                    recommendation.vigenciaHasta
+                                  ).toLocaleDateString("es-ES", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
-                        {isExpired(recommendation.vigenciaHasta) && (
-                          <span
-                            className={`px-3 py-1 text-xs font-medium rounded-full ${
-                              darkMode
-                                ? "bg-red-900/30 text-red-400"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            Vencida
-                          </span>
-                        )}
-                        {!recommendation.activa && (
-                          <span
-                            className={`px-3 py-1 text-xs font-medium rounded-full ${
-                              darkMode
-                                ? "bg-gray-700 text-gray-400"
-                                : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            Inactiva
-                          </span>
-                        )}
-                        <button
-                          onClick={() =>
-                            setSelectedRecommendation(recommendation)
-                          }
-                          className={`p-2 rounded-lg transition-colors ${
-                            darkMode
-                              ? "text-gray-400 hover:text-blue-400 hover:bg-blue-900/20"
-                              : "text-gray-400 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
-                        >
-                          <Eye className="w-5 h-5" />
-                        </button>
-                        {recommendation.activa && (
+                      <div className="flex items-start space-x-3">
+                        <div className="flex flex-col space-y-2">
+                          {isExpired(recommendation.vigenciaHasta) && (
+                            <span
+                              className={`px-4 py-2 text-xs font-bold rounded-xl shadow-md ${
+                                darkMode
+                                  ? "bg-red-900/40 text-red-300 border border-red-700/50"
+                                  : "bg-red-100 text-red-800 border border-red-200"
+                              } backdrop-blur-sm`}
+                            >
+                              ⚠️ Vencida
+                            </span>
+                          )}
+                          {!recommendation.activa && (
+                            <span
+                              className={`px-4 py-2 text-xs font-bold rounded-xl shadow-md ${
+                                darkMode
+                                  ? "bg-gray-700/50 text-gray-400 border border-gray-600/50"
+                                  : "bg-gray-100 text-gray-600 border border-gray-200"
+                              } backdrop-blur-sm`}
+                            >
+                              💤 Inactiva
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
                           <button
                             onClick={() =>
-                              deactivateRecommendation(recommendation.id)
+                              setSelectedRecommendation(recommendation)
                             }
-                            className={`p-2 rounded-lg transition-colors ${
+                            className={`p-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl ${
                               darkMode
-                                ? "text-gray-400 hover:text-red-400 hover:bg-red-900/20"
-                                : "text-gray-400 hover:text-red-600 hover:bg-red-50"
-                            }`}
+                                ? "text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-700/50 hover:border-blue-600"
+                                : "text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300"
+                            } transform hover:scale-105`}
                           >
-                            <Trash2 className="w-5 h-5" />
+                            <Eye className="w-5 h-5" />
                           </button>
-                        )}
+                          {recommendation.activa && (
+                            <button
+                              onClick={() =>
+                                deactivateRecommendation(recommendation.id)
+                              }
+                              className={`p-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl ${
+                                darkMode
+                                  ? "text-red-400 hover:text-red-300 bg-red-900/20 hover:bg-red-900/30 border border-red-700/50 hover:border-red-600"
+                                  : "text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300"
+                              } transform hover:scale-105`}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     <div
                       className={`${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      } leading-relaxed`}
+                        darkMode
+                          ? "bg-gray-800/30 border border-gray-700/50"
+                          : "bg-white/50 border border-gray-200/50"
+                      } rounded-2xl p-6 backdrop-blur-sm shadow-inner`}
                     >
-                      <p className="line-clamp-3">{recommendation.contenido}</p>
-                      <button
-                        onClick={() =>
-                          setSelectedRecommendation(recommendation)
-                        }
-                        className={`mt-2 text-sm font-medium inline-flex items-center space-x-1 ${
-                          darkMode
-                            ? "text-purple-400 hover:text-purple-300"
-                            : "text-purple-600 hover:text-purple-700"
-                        } transition-colors`}
+                      <div
+                        className={`${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        } leading-relaxed text-base`}
                       >
-                        <BookOpen className="w-4 h-4" />
-                        <span>Leer más</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
+                        <p className="line-clamp-3 mb-4">
+                          {recommendation.contenido}
+                        </p>
+                        <button
+                          onClick={() =>
+                            setSelectedRecommendation(recommendation)
+                          }
+                          className={`inline-flex items-center space-x-2 text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-200 ${
+                            darkMode
+                              ? "text-purple-400 hover:text-purple-300 bg-purple-900/20 hover:bg-purple-900/30 border border-purple-700/50"
+                              : "text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200"
+                          } shadow-sm hover:shadow-md transform hover:scale-105`}
+                        >
+                          <BookOpen className="w-4 h-4" />
+                          <span>Leer completa</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1520,46 +1555,45 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
 
               {filteredRecommendations.length === 0 && (
                 <div
-                  className={`text-center py-16 ${
+                  className={`text-center py-20 ${
                     darkMode
-                      ? "bg-gray-800 border-gray-700"
-                      : "bg-white border-gray-200"
-                  } rounded-2xl border`}
+                      ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700/50"
+                      : "bg-gradient-to-br from-white to-gray-50 border-gray-200/50"
+                  } rounded-3xl border-2 shadow-2xl relative overflow-hidden`}
                 >
-                  <div className="mx-auto w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-6 shadow-lg">
-                    <Lightbulb
-                      className={`w-12 h-12 ${
-                        darkMode ? "text-purple-400" : "text-purple-600"
-                      }`}
-                    />
+                  {/* Decorative background */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className="absolute top-8 left-8 w-40 h-40 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-8 right-8 w-32 h-32 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full blur-3xl"></div>
                   </div>
-                  <h3
-                    className={`text-lg font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    } mb-2`}
-                  >
-                    No hay recomendaciones
-                  </h3>
-                  <p
-                    className={`${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    } mb-6`}
-                  >
-                    {selectedType === "all"
-                      ? "Aún no tienes recomendaciones. Genera tu primera recomendación usando las acciones rápidas."
-                      : `No tienes recomendaciones de ${getTypeName(
-                          selectedType
-                        )}.`}
-                  </p>
-                  <button
-                    onClick={() => setShowCreateForm(true)}
-                    className="bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <Plus className="w-5 h-5" />
-                      <span>Generar Recomendación</span>
+
+                  <div className="relative">
+                    <div className="mx-auto w-32 h-32 bg-gradient-to-br from-purple-100 via-purple-200 to-pink-200 dark:from-purple-900/40 dark:via-purple-800/40 dark:to-pink-900/40 rounded-3xl flex items-center justify-center mb-8 shadow-2xl backdrop-blur-sm border border-purple-200/50 dark:border-purple-700/50">
+                      <Lightbulb
+                        className={`w-16 h-16 ${
+                          darkMode ? "text-purple-400" : "text-purple-600"
+                        }`}
+                      />
                     </div>
-                  </button>
+                    <h3
+                      className={`text-2xl font-bold ${
+                        darkMode ? "text-white" : "text-gray-900"
+                      } mb-3`}
+                    >
+                      No hay recomendaciones
+                    </h3>
+                    <p
+                      className={`text-lg ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      } mb-8 max-w-md mx-auto leading-relaxed`}
+                    >
+                      {selectedType === "all"
+                        ? "Aún no tienes recomendaciones. Genera tu primera recomendación usando las acciones rápidas."
+                        : `No tienes recomendaciones de ${getTypeName(
+                            selectedType
+                          )}.`}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1569,128 +1603,219 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
 
       {/* Recommendation Detail Modal */}
       {selectedRecommendation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div
             className={`${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-y-auto shadow-2xl`}
+              darkMode
+                ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700/50"
+                : "bg-gradient-to-br from-white to-gray-50 border-gray-200/50"
+            } rounded-3xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-3xl border-2 relative`}
           >
+            {/* Decorative background */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full blur-3xl"></div>
+            </div>
+
             <div
               className={`sticky top-0 ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              } p-6 border-b ${
-                darkMode ? "border-gray-700" : "border-gray-100"
-              } rounded-t-2xl`}
+                darkMode ? "bg-gray-800/90" : "bg-white/90"
+              } p-8 border-b-2 ${
+                darkMode ? "border-gray-700/50" : "border-gray-200/50"
+              } rounded-t-3xl backdrop-blur-sm relative z-10`}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-5">
                   <div
-                    className={`p-3 rounded-xl border shadow-lg ${getTypeColor(
+                    className={`p-4 rounded-2xl border-2 shadow-xl ${getTypeColor(
                       selectedRecommendation.tipo
-                    )}`}
+                    )} backdrop-blur-sm`}
                   >
                     {getTypeIcon(selectedRecommendation.tipo)}
                   </div>
                   <div>
                     <h2
-                      className={`text-xl font-bold ${
+                      className={`text-2xl font-bold ${
                         darkMode ? "text-white" : "text-gray-900"
-                      } mb-1`}
+                      } mb-2`}
                     >
                       Recomendación de{" "}
                       {getTypeName(selectedRecommendation.tipo)}
                     </h2>
-                    <p
-                      className={`text-sm ${
-                        darkMode ? "text-gray-400" : "text-gray-600"
-                      }`}
-                    >
-                      Generada el{" "}
-                      {new Date(
-                        selectedRecommendation.fechaGeneracion
-                      ).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`flex items-center space-x-2 px-3 py-1 rounded-lg ${
+                          darkMode
+                            ? "bg-gray-700/50 border border-gray-600/50"
+                            : "bg-gray-100/70 border border-gray-200/50"
+                        } backdrop-blur-sm`}
+                      >
+                        <Calendar
+                          className={`w-4 h-4 ${
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            darkMode ? "text-gray-300" : "text-gray-600"
+                          }`}
+                        >
+                          {new Date(
+                            selectedRecommendation.fechaGeneracion
+                          ).toLocaleDateString("es-ES", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedRecommendation(null)}
-                  className={`p-2 rounded-xl transition-colors ${
+                  className={`p-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl ${
                     darkMode
-                      ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
-                      : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                  }`}
+                      ? "text-gray-400 hover:text-gray-300 bg-gray-700/50 hover:bg-gray-700 border border-gray-600/50"
+                      : "text-gray-400 hover:text-gray-600 bg-gray-100/70 hover:bg-gray-200 border border-gray-200/50"
+                  } backdrop-blur-sm transform hover:scale-105`}
                 >
                   ✕
                 </button>
               </div>
             </div>
 
-            <div className="p-6">
-              <div className="prose max-w-none">
-                <pre
-                  className={`whitespace-pre-wrap font-sans ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  } leading-relaxed`}
+            <div className="overflow-y-auto max-h-[calc(85vh-200px)] relative z-10">
+              <div className="p-8">
+                <div
+                  className={`${
+                    darkMode
+                      ? "bg-gray-800/30 border border-gray-700/50"
+                      : "bg-white/70 border border-gray-200/50"
+                  } rounded-2xl p-8 backdrop-blur-sm shadow-inner`}
                 >
-                  {selectedRecommendation.contenido}
-                </pre>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4 text-sm">
-                    <span
-                      className={`flex items-center space-x-2 ${
-                        darkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
+                  <div className="prose prose-lg max-w-none">
+                    <div
+                      className={`whitespace-pre-wrap font-sans ${
+                        darkMode ? "text-gray-200" : "text-gray-700"
+                      } leading-relaxed text-base`}
+                      style={{
+                        lineHeight: "1.8",
+                        textAlign: "justify",
+                      }}
                     >
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        Válida hasta:{" "}
-                        {new Date(
-                          selectedRecommendation.vigenciaHasta
-                        ).toLocaleDateString()}
-                      </span>
-                    </span>
-                    {selectedRecommendation.activa ? (
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                      {selectedRecommendation.contenido}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`mt-8 pt-6 border-t-2 ${
+                    darkMode ? "border-gray-700/50" : "border-gray-200/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-6">
+                      <div
+                        className={`flex items-center space-x-3 p-4 rounded-xl ${
                           darkMode
-                            ? "bg-green-900/30 text-green-400"
-                            : "bg-green-100 text-green-800"
-                        }`}
+                            ? "bg-gray-800/50 border border-gray-700/50"
+                            : "bg-white/70 border border-gray-200/50"
+                        } backdrop-blur-sm shadow-sm`}
                       >
-                        Activa
-                      </span>
-                    ) : (
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                        <div
+                          className={`p-2 rounded-lg ${
+                            isExpired(selectedRecommendation.vigenciaHasta)
+                              ? darkMode
+                                ? "bg-red-900/30"
+                                : "bg-red-100"
+                              : darkMode
+                              ? "bg-green-900/30"
+                              : "bg-green-100"
+                          }`}
+                        >
+                          <Calendar
+                            className={`w-5 h-5 ${
+                              isExpired(selectedRecommendation.vigenciaHasta)
+                                ? darkMode
+                                  ? "text-red-400"
+                                  : "text-red-600"
+                                : darkMode
+                                ? "text-green-400"
+                                : "text-green-600"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <span
+                            className={`block text-xs font-medium ${
+                              darkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            Válida hasta
+                          </span>
+                          <span
+                            className={`font-bold ${
+                              isExpired(selectedRecommendation.vigenciaHasta)
+                                ? darkMode
+                                  ? "text-red-400"
+                                  : "text-red-600"
+                                : darkMode
+                                ? "text-gray-200"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {new Date(
+                              selectedRecommendation.vigenciaHasta
+                            ).toLocaleDateString("es-ES", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {selectedRecommendation.activa ? (
+                        <span
+                          className={`px-6 py-3 text-sm font-bold rounded-xl shadow-md ${
+                            darkMode
+                              ? "bg-green-900/40 text-green-300 border border-green-700/50"
+                              : "bg-green-100 text-green-800 border border-green-200"
+                          } backdrop-blur-sm`}
+                        >
+                          ✅ Activa
+                        </span>
+                      ) : (
+                        <span
+                          className={`px-6 py-3 text-sm font-bold rounded-xl shadow-md ${
+                            darkMode
+                              ? "bg-gray-700/50 text-gray-400 border border-gray-600/50"
+                              : "bg-gray-100 text-gray-600 border border-gray-200"
+                          } backdrop-blur-sm`}
+                        >
+                          💤 Inactiva
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedRecommendation.activa && (
+                      <button
+                        onClick={() => {
+                          deactivateRecommendation(selectedRecommendation.id);
+                          setSelectedRecommendation(null);
+                        }}
+                        className={`flex items-center space-x-3 px-6 py-3 text-sm font-bold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl ${
                           darkMode
-                            ? "bg-gray-700 text-gray-400"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
+                            ? "bg-red-900/30 text-red-300 hover:bg-red-900/40 border border-red-700/50 hover:border-red-600"
+                            : "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 hover:border-red-300"
+                        } transform hover:scale-105 backdrop-blur-sm`}
                       >
-                        Inactiva
-                      </span>
+                        <Trash2 className="w-5 h-5" />
+                        <span>Desactivar</span>
+                      </button>
                     )}
                   </div>
-
-                  {selectedRecommendation.activa && (
-                    <button
-                      onClick={() => {
-                        deactivateRecommendation(selectedRecommendation.id);
-                        setSelectedRecommendation(null);
-                      }}
-                      className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
-                        darkMode
-                          ? "bg-red-900/20 text-red-400 hover:bg-red-900/30"
-                          : "bg-red-50 text-red-600 hover:bg-red-100"
-                      }`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Desactivar</span>
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

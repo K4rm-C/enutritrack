@@ -17,12 +17,12 @@ export class RecommendationService {
 
   async generateRecommendation(
     createRecommendationDto: any,
-    authHeader?: string,
+    authToken: string,
   ) {
     try {
       const userData = await this.getUserDataFromServices(
         createRecommendationDto.usuarioId,
-        authHeader,
+        authToken,
       );
       const prompt = this.generatePrompt(
         createRecommendationDto.tipo,
@@ -36,12 +36,16 @@ export class RecommendationService {
         vigenciaHasta: this.calculateExpiryDate(createRecommendationDto.tipo),
         activa: true,
       };
-      const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
         this.httpService.post(
           `${this.RECOMMENDATION_SERVICE_URL}/recommendations`,
           recommendationData,
-          { headers },
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
         ),
       );
 
@@ -83,57 +87,6 @@ export class RecommendationService {
         ),
       );
       const user = userResponse.data;
-      let medicalHistory = {};
-      try {
-        const medicalHistoryResponse = await firstValueFrom(
-          this.httpService.get(
-            `${this.RECOMMENDATION_SERVICE_URL}/medical-history/user/${cleanUserId}`,
-            {
-              headers,
-              timeout: 10000,
-            },
-          ),
-        );
-        medicalHistory = medicalHistoryResponse.data || {};
-      } catch (error) {
-        this.logger.warn(
-          `Could not fetch medical history for user ${cleanUserId}: ${error.message}`,
-        );
-      }
-      let recentNutrition = [];
-      try {
-        const nutritionResponse = await firstValueFrom(
-          this.httpService.get(
-            `${this.RECOMMENDATION_SERVICE_URL}/nutrition/user/${cleanUserId}`,
-            {
-              headers,
-              timeout: 10000,
-            },
-          ),
-        );
-        recentNutrition = (nutritionResponse.data || []).slice(0, 7);
-      } catch (error) {
-        this.logger.warn(
-          `Could not fetch nutrition data for user ${cleanUserId}: ${error.message}`,
-        );
-      }
-      let recentActivities = [];
-      try {
-        const activityResponse = await firstValueFrom(
-          this.httpService.get(
-            `${this.RECOMMENDATION_SERVICE_URL}/activity/user/${cleanUserId}`,
-            {
-              headers,
-              timeout: 10000,
-            },
-          ),
-        );
-        recentActivities = (activityResponse.data || []).slice(0, 7);
-      } catch (error) {
-        this.logger.warn(
-          `Could not fetch activity data for user ${cleanUserId}: ${error.message}`,
-        );
-      }
       return {
         user: {
           nombre: user.nombre || 'Usuario',
@@ -146,9 +99,6 @@ export class RecommendationService {
           objetivoPeso: user.objetivoPeso || user.pesoActual || 70,
           nivelActividad: user.nivelActividad || 'moderado',
         },
-        medicalHistory,
-        recentNutrition,
-        recentActivities,
       };
     } catch (error) {
       this.logger.error(
@@ -164,9 +114,6 @@ export class RecommendationService {
           objetivoPeso: 70,
           nivelActividad: 'moderado',
         },
-        medicalHistory: {},
-        recentNutrition: [],
-        recentActivities: [],
       };
     }
   }
@@ -300,14 +247,17 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
     return expiryDate;
   }
 
-  async findByUser(userId: string, authHeader?: string) {
+  async findByUser(userId: string, authToken: string) {
     try {
-      const headers = authHeader ? { Authorization: authHeader } : {};
-
       const response = await firstValueFrom(
         this.httpService.get(
           `${this.RECOMMENDATION_SERVICE_URL}/recommendations/user/${userId}`,
-          { headers },
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
         ),
       );
 
@@ -323,15 +273,18 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
   async findActiveByUserAndType(
     userId: string,
     tipo: string,
-    authHeader?: string,
+    authToken: string,
   ) {
     try {
-      const headers = authHeader ? { Authorization: authHeader } : {};
-
       const response = await firstValueFrom(
         this.httpService.get(
           `${this.RECOMMENDATION_SERVICE_URL}/recommendations/user/${userId}/${tipo}`,
-          { headers },
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
         ),
       );
 
@@ -344,15 +297,18 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
     }
   }
 
-  async deactivate(id: string, authHeader?: string) {
+  async deactivate(id: string, authToken?: string) {
     try {
-      const headers = authHeader ? { Authorization: authHeader } : {};
-
       const response = await firstValueFrom(
         this.httpService.patch(
           `${this.RECOMMENDATION_SERVICE_URL}/recommendations/${id}/deactivate`,
           {},
-          { headers },
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
         ),
       );
 
@@ -375,15 +331,15 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
   }
 
   async testRecommendationServiceConnection(
-    authHeader?: string,
+    authToken?: string,
   ): Promise<boolean> {
     try {
-      const headers = authHeader ? { Authorization: authHeader } : {};
-
       await firstValueFrom(
         this.httpService.get(`${this.RECOMMENDATION_SERVICE_URL}/health`, {
-          headers,
-          timeout: 5000,
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
         }),
       );
       return true;
@@ -396,117 +352,275 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
     }
   }
 
+  // Agregar este método privado para guardar recomendaciones
+  // Método mejorado con debug logging
+  // En RecommendationService - Corregir el formato del token
+  private async saveRecommendation(
+    recommendationData: any,
+    authHeader?: string,
+  ): Promise<any> {
+    try {
+      this.logger.debug('=== SAVING RECOMMENDATION DEBUG ===');
+      this.logger.debug(
+        `URL: ${this.RECOMMENDATION_SERVICE_URL}/recommendations`,
+      );
+      let headers = {};
+      if (authHeader) {
+        const token = authHeader.startsWith('Bearer ')
+          ? authHeader
+          : `Bearer ${authHeader}`;
+
+        headers = { Authorization: token };
+      }
+
+      this.logger.debug('Auth Header original:', authHeader);
+      this.logger.debug('Headers formatted:', JSON.stringify(headers, null, 2));
+      this.logger.debug(
+        'Recommendation Data:',
+        JSON.stringify(recommendationData, null, 2),
+      );
+
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${this.RECOMMENDATION_SERVICE_URL}/recommendations`,
+          recommendationData,
+          {
+            headers,
+            timeout: 10000,
+          },
+        ),
+      );
+
+      this.logger.debug(
+        'Success Response:',
+        JSON.stringify(response.data, null, 2),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error('=== SAVE RECOMMENDATION ERROR ===');
+      this.logger.error(`Error message: ${error.message}`);
+      this.logger.error(`Error status: ${error.response?.status}`);
+      this.logger.error(
+        `Error data:`,
+        JSON.stringify(error.response?.data, null, 2),
+      );
+
+      // Si es error 401, intentar diferentes formatos de token
+      if (error.response?.status === 401 && authHeader) {
+        this.logger.warn('=== TRYING ALTERNATIVE TOKEN FORMATS ===');
+
+        // Intentar con Bearer prefix si no lo tiene
+        if (!authHeader.startsWith('Bearer ')) {
+          try {
+            const alternativeHeaders = {
+              Authorization: `Bearer ${authHeader}`,
+            };
+            this.logger.debug('Trying Bearer format:', alternativeHeaders);
+
+            const retryResponse = await firstValueFrom(
+              this.httpService.post(
+                `${this.RECOMMENDATION_SERVICE_URL}/recommendations`,
+                recommendationData,
+                {
+                  headers: alternativeHeaders,
+                  timeout: 10000,
+                },
+              ),
+            );
+
+            this.logger.debug('SUCCESS with Bearer format!');
+            return retryResponse.data;
+          } catch (retryError) {
+            this.logger.error(
+              'Bearer format also failed:',
+              retryError.response?.data,
+            );
+          }
+        }
+
+        // Intentar sin Bearer prefix si lo tiene
+        if (authHeader.startsWith('Bearer ')) {
+          try {
+            const tokenOnly = authHeader.replace('Bearer ', '');
+            const alternativeHeaders = { Authorization: tokenOnly };
+            this.logger.debug('Trying token only format:', alternativeHeaders);
+
+            const retryResponse = await firstValueFrom(
+              this.httpService.post(
+                `${this.RECOMMENDATION_SERVICE_URL}/recommendations`,
+                recommendationData,
+                {
+                  headers: alternativeHeaders,
+                  timeout: 10000,
+                },
+              ),
+            );
+
+            this.logger.debug('SUCCESS with token only format!');
+            return retryResponse.data;
+          } catch (retryError) {
+            this.logger.error(
+              'Token only format also failed:',
+              retryError.response?.data,
+            );
+          }
+        }
+      }
+
+      // Si todos los formatos fallan, devolver la recomendación sin guardar
+      this.logger.error(
+        'All token formats failed, returning unsaved recommendation',
+      );
+      return recommendationData;
+    }
+  }
+  // También agregar logging en los métodos quick:
   async quickNutritionRecommendation(
     userId: string,
     authHeader?: string,
   ): Promise<any> {
+    this.logger.debug(`=== QUICK NUTRITION RECOMMENDATION START ===`);
+    this.logger.debug(`UserId: ${userId}`);
+    this.logger.debug(`AuthHeader present: ${!!authHeader}`);
+
     try {
       if (!userId || typeof userId !== 'string') {
         throw new Error(`Invalid userId: ${userId}`);
       }
 
-      this.logger.log(
-        `Generating quick nutrition recommendation for user: ${userId}`,
-      );
-
       const userData = await this.getUserDataFromServices(userId, authHeader);
+      this.logger.debug(
+        'User data retrieved:',
+        JSON.stringify(userData, null, 2),
+      );
 
       const quickPrompt = `Eres un nutricionista experto. Basándote en estos datos del usuario: 
-      Edad: ${userData.user.edad}, Género: ${userData.user.genero}, Peso: ${userData.user.pesoActual}kg, 
-      Altura: ${userData.user.altura}cm, Objetivo: ${userData.user.objetivoPeso}kg, 
-      Nivel actividad: ${userData.user.nivelActividad}.
-      
-      Genera una recomendación nutricional rápida y práctica en español con:
-      1. Calorías diarias recomendadas
-      2. 3 comidas principales sugeridas para hoy
-      3. 2 consejos nutricionales clave
-      Máximo 200 palabras.`;
+    Edad: ${userData.user.edad}, Género: ${userData.user.genero}, Peso: ${userData.user.pesoActual}kg, 
+    Altura: ${userData.user.altura}cm, Objetivo: ${userData.user.objetivoPeso}kg, 
+    Nivel actividad: ${userData.user.nivelActividad}.
+    Genera una recomendación nutricional rápida y práctica en español con:
+    1. Calorías diarias recomendadas
+    2. 3 comidas principales sugeridas para hoy
+    3. 2 consejos nutricionales clave
+    Máximo 200 palabras.`;
 
       const geminiResponse = await this.callGeminiApiDirectly(quickPrompt);
+      this.logger.debug('Gemini response length:', geminiResponse.length);
 
+      // VALIDAR DATOS ANTES DE ENVIAR
       const quickRecommendation = {
-        usuarioId: userId,
+        usuarioId: String(userId).trim(), // Asegurar que sea string limpio
         tipo: 'nutrition',
-        contenido: geminiResponse,
-        datosEntrada: { quick: true, timestamp: new Date() },
-        vigenciaHasta: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
-        activa: true,
+        datosEntrada: {
+          quick: true,
+          timestamp: new Date().toISOString(), // Usar ISO string
+        },
       };
 
-      return quickRecommendation;
-    } catch (error) {
-      this.logger.error(
-        `Error generating quick nutrition recommendation: ${error.message}`,
+      this.logger.debug(
+        'Quick recommendation object created:',
+        JSON.stringify(quickRecommendation, null, 2),
       );
-      return {
-        usuarioId: userId,
+
+      // VALIDACIONES ANTES DE GUARDAR
+      if (!quickRecommendation.usuarioId) {
+        throw new Error('usuarioId is required');
+      }
+      if (!quickRecommendation.tipo) {
+        throw new Error('tipo is required');
+      }
+
+      const savedRecommendation = await this.saveRecommendation(
+        quickRecommendation,
+        authHeader,
+      );
+
+      this.logger.debug('=== QUICK NUTRITION RECOMMENDATION SUCCESS ===');
+      return savedRecommendation;
+    } catch (error) {
+      this.logger.error(`=== QUICK NUTRITION RECOMMENDATION ERROR ===`);
+      this.logger.error(`Error: ${error.message}`);
+      this.logger.error(`Stack: ${error.stack}`);
+
+      // Fallback con los mismos campos validados
+      const fallbackRecommendation = {
+        usuarioId: String(userId).trim(),
         tipo: 'nutrition',
         contenido: `Recomendación nutricional rápida:
-        
+      
 1. Consume aproximadamente 2000-2200 calorías diarias
 2. Desayuno: Avena con frutas y nueces
 3. Almuerzo: Ensalada con proteína magra (pollo, pescado)
 4. Cena: Vegetales al vapor con quinoa
 5. Mantén hidratación constante (2-3 litros de agua)
 6. Evita alimentos procesados y azúcares refinados`,
-        datosEntrada: { quick: true, fallback: true },
-        vigenciaHasta: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        datosEntrada: {
+          quick: true,
+          fallback: true,
+          timestamp: new Date().toISOString(),
+        },
+        vigenciaHasta: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         activa: true,
       };
+
+      const savedFallback = await this.saveRecommendation(
+        fallbackRecommendation,
+        authHeader,
+      );
+
+      return savedFallback;
     }
   }
 
   async quickExerciseRecommendation(
     userId: string,
-    authHeader?: string,
+    authToken: string,
   ): Promise<any> {
     try {
-      // Validar que userId sea un string válido
       if (!userId || typeof userId !== 'string') {
         throw new Error(`Invalid userId: ${userId}`);
       }
-
-      this.logger.log(
-        `Generating quick exercise recommendation for user: ${userId}`,
-      );
-
-      // Obtener datos básicos del usuario
-      const userData = await this.getUserDataFromServices(userId, authHeader);
-
-      // Prompt específico para recomendación rápida de ejercicio
+      const userData = await this.getUserDataFromServices(userId, authToken);
       const quickPrompt = `Eres un entrenador personal experto. Basándote en estos datos del usuario:
-      Edad: ${userData.user.edad}, Género: ${userData.user.genero}, Peso: ${userData.user.pesoActual}kg,
-      Altura: ${userData.user.altura}cm, Objetivo: ${userData.user.objetivoPeso}kg,
-      Nivel actividad: ${userData.user.nivelActividad}.
-      
-      Genera una rutina de ejercicio rápida para hoy en español con:
-      1. Calentamiento (5 min)
-      2. 4-5 ejercicios principales con repeticiones
-      3. Enfriamiento (5 min)
-      4. Duración total estimada
-      Máximo 200 palabras.`;
+    Edad: ${userData.user.edad}, Género: ${userData.user.genero}, Peso: ${userData.user.pesoActual}kg,
+    Altura: ${userData.user.altura}cm, Objetivo: ${userData.user.objetivoPeso}kg,
+    Nivel actividad: ${userData.user.nivelActividad}.
+    Genera una rutina de ejercicio rápida para hoy en español con:
+    1. Calentamiento (5 min)
+    2. 4-5 ejercicios principales con repeticiones
+    3. Enfriamiento (5 min)
+    4. Duración total estimada
+    Máximo 200 palabras.`;
 
       const geminiResponse = await this.callGeminiApiDirectly(quickPrompt);
+      this.logger.debug('Gemini response length:', geminiResponse.length);
 
       const quickRecommendation = {
-        usuarioId: userId,
+        usuarioId: String(userId).trim(), // Asegurar que sea string limpio
         tipo: 'exercise',
-        contenido: geminiResponse,
-        datosEntrada: { quick: true, timestamp: new Date() },
-        vigenciaHasta: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
-        activa: true,
+        datosEntrada: {
+          quick: true,
+          timestamp: new Date().toISOString(), // Usar ISO string
+        },
       };
 
-      return quickRecommendation;
+      // GUARDAR LA RECOMENDACIÓN EN LA BASE DE DATOS
+      const savedRecommendation = await this.saveRecommendation(
+        quickRecommendation,
+        authToken,
+      );
+
+      return savedRecommendation;
     } catch (error) {
       this.logger.error(
         `Error generating quick exercise recommendation: ${error.message}`,
       );
-      return {
+
+      const fallbackRecommendation = {
         usuarioId: userId,
         tipo: 'exercise',
         contenido: `Rutina de ejercicio rápida (30 min):
-        
+      
 Calentamiento (5 min):
 - Marcha en el lugar: 2 min
 - Estiramientos dinámicos: 3 min
@@ -525,59 +639,63 @@ Enfriamiento (5 min):
         vigenciaHasta: new Date(Date.now() + 24 * 60 * 60 * 1000),
         activa: true,
       };
+
+      const savedFallback = await this.saveRecommendation(
+        fallbackRecommendation,
+        authToken,
+      );
+
+      return savedFallback;
     }
   }
 
   async quickMedicalRecommendation(
     userId: string,
-    authHeader?: string,
+    authToken: string,
   ): Promise<any> {
     try {
-      // Validar que userId sea un string válido
       if (!userId || typeof userId !== 'string') {
         throw new Error(`Invalid userId: ${userId}`);
       }
-
-      this.logger.log(
-        `Generating quick medical recommendation for user: ${userId}`,
-      );
-
-      // Obtener datos básicos del usuario
-      const userData = await this.getUserDataFromServices(userId, authHeader);
-
-      // Prompt específico para recomendación médica rápida
+      const userData = await this.getUserDataFromServices(userId, authToken);
       const quickPrompt = `Eres un asistente médico virtual. Basándote en estos datos del usuario:
-      Edad: ${userData.user.edad}, Género: ${userData.user.genero}, 
-      Historial médico: ${JSON.stringify(userData.medicalHistory)}.
-      
-      Genera recomendaciones de salud preventiva rápidas en español con:
-      1. 2 consejos de salud general
-      2. Signos de alerta a observar
-      3. Recomendación de chequeo médico
-      4. Hábitos saludables diarios
-      Máximo 200 palabras. NOTA: Estas son recomendaciones generales, no reemplazan consulta médica.`;
+    Edad: ${userData.user.edad}, Género: ${userData.user.genero}, 
+    Historial médico: ${JSON.stringify(userData.medicalHistory)}.
+    Genera recomendaciones de salud preventiva rápidas en español con:
+    1. 2 consejos de salud general
+    2. Signos de alerta a observar
+    3. Recomendación de chequeo médico
+    4. Hábitos saludables diarios
+    Máximo 200 palabras. NOTA: Estas son recomendaciones generales, no reemplazan consulta médica.`;
 
       const geminiResponse = await this.callGeminiApiDirectly(quickPrompt);
+      this.logger.debug('Gemini response length:', geminiResponse.length);
 
       const quickRecommendation = {
-        usuarioId: userId,
+        usuarioId: String(userId).trim(), // Asegurar que sea string limpio
         tipo: 'medical',
-        contenido: `${geminiResponse}\n\n⚠️ IMPORTANTE: Estas son recomendaciones generales. Siempre consulta con tu médico para evaluación personalizada.`,
-        datosEntrada: { quick: true, timestamp: new Date() },
-        vigenciaHasta: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 días
-        activa: true,
+        datosEntrada: {
+          quick: true,
+          timestamp: new Date().toISOString(), // Usar ISO string
+        },
       };
+      // GUARDAR LA RECOMENDACIÓN EN LA BASE DE DATOS
+      const savedRecommendation = await this.saveRecommendation(
+        quickRecommendation,
+        authToken,
+      );
 
-      return quickRecommendation;
+      return savedRecommendation;
     } catch (error) {
       this.logger.error(
         `Error generating quick medical recommendation: ${error.message}`,
       );
-      return {
+
+      const fallbackRecommendation = {
         usuarioId: userId,
         tipo: 'medical',
         contenido: `Recomendaciones de salud preventiva:
-        
+      
 1. Mantén horarios regulares de sueño (7-8 horas diarias)
 2. Realiza chequeos médicos anuales preventivos
 3. Controla regularmente presión arterial y peso
@@ -600,6 +718,13 @@ Hábitos saludables:
         vigenciaHasta: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         activa: true,
       };
+
+      const savedFallback = await this.saveRecommendation(
+        fallbackRecommendation,
+        authToken,
+      );
+
+      return savedFallback;
     }
   }
 }

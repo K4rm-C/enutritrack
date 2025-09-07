@@ -8,9 +8,6 @@ import {
 } from './models/recommendation.model';
 import { CreateRecommendationDto } from './dto/create-recommendation.dto';
 import { UserService } from '../users/users.service';
-import { MedicalHistoryService } from '../medical-history/medical-history.service';
-import { NutritionService } from '../nutrition/nutrition.service';
-import { PhysicalActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class RecommendationService {
@@ -21,9 +18,6 @@ export class RecommendationService {
     @InjectRepository(Recommendation)
     private recommendationRepository: Repository<Recommendation>,
     private userService: UserService,
-    private medicalHistoryService: MedicalHistoryService,
-    private nutritionService: NutritionService,
-    private physicalActivityService: PhysicalActivityService,
   ) {
     // Inicializar Gemini AI con tu API key (debería estar en variables de entorno)
     this.genAI = new GoogleGenerativeAI(
@@ -137,10 +131,6 @@ export class RecommendationService {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    const medicalHistory = await this.medicalHistoryService.findByUser(userId);
-    const recentNutrition = await this.nutritionService.findAllByUser(userId);
-    const recentActivities =
-      await this.physicalActivityService.findAllByUser(userId);
     return {
       user: {
         nombre: user.nombre,
@@ -151,9 +141,6 @@ export class RecommendationService {
         objetivoPeso: user.objetivoPeso,
         nivelActividad: user.nivelActividad,
       },
-      medicalHistory,
-      recentNutrition: recentNutrition.slice(0, 7),
-      recentActivities: recentActivities.slice(0, 7),
     };
   }
 
@@ -257,7 +244,7 @@ Para recomendaciones más específicas, por favor contacta a nuestro equipo de e
   async findByUser(userId: string): Promise<Recommendation[]> {
     return this.recommendationRepository.find({
       where: { usuario: { id: userId }, activa: true },
-      order: { fechaGeneracion: 'DESC' },
+      relations: ['usuario'],
     });
   }
 
