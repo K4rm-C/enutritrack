@@ -53,15 +53,15 @@ const NutritionDashboard = ({ darkMode = false }) => {
   });
 
   useEffect(() => {
-    getFoodRecordsByUser(user.id);
-    getDailySummary(user.id, selectedDate);
-  }, [user.id, selectedDate]);
+    getFoodRecordsByUser(user.userId);
+    getDailySummary(user.userId, selectedDate);
+  }, [user.userId, selectedDate]);
 
   const handleAddFoodRecord = async () => {
     try {
       await createFoodRecord({
         ...newFoodRecord,
-        usuarioId: user.id,
+        usuarioId: user.userId,
       });
       setShowAddForm(false);
       setNewFoodRecord({
@@ -72,7 +72,7 @@ const NutritionDashboard = ({ darkMode = false }) => {
         carbohidratos: 0,
         grasas: 0,
       });
-      getFoodRecordsByUser(user.id);
+      getFoodRecordsByUser(user.userId);
       toast.success("Comida agregada correctamente", {
         position: "top-right",
         autoClose: 3000,

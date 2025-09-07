@@ -37,7 +37,6 @@ export class UsersService {
       pesoActual: savedUser.pesoActual,
       objetivoPeso: savedUser.objetivoPeso,
       nivelActividad: savedUser.nivelActividad,
-      nutritional_profile: await this.calculateNutritionalProfile(savedUser),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -138,7 +137,6 @@ export class UsersService {
         pesoActual: response.data.pesoActual,
         objetivoPeso: response.data.objetivoPeso,
         nivelActividad: response.data.nivelActividad,
-        nutritional_profile: await this.calculateNutritionalProfile(user),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -215,14 +213,11 @@ export class UsersService {
         updateUserDto,
       ),
     );
-
     const updatedUser = response.data;
-
     try {
       const existingProfile = await this.couchbaseService.getDocument(
         `user::${id}`,
       );
-
       const userProfile = {
         id: updatedUser.id,
         nombre: updatedUser.nombre,
@@ -233,25 +228,19 @@ export class UsersService {
         pesoActual: updatedUser.pesoActual,
         objetivoPeso: updatedUser.objetivoPeso,
         nivelActividad: updatedUser.nivelActividad,
-        nutritional_profile:
-          await this.calculateNutritionalProfile(updatedUser),
         created_at: existingProfile?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
       await this.couchbaseService.upsertDocument(`user::${id}`, userProfile);
-
       await this.cacheManager.set(`user:${id}`, userProfile, 3600);
-
       if (updateUserDto.email) {
         await this.cacheManager.set(`email:${updateUserDto.email}`, id, 3600);
       }
     } catch (error) {
       console.warn('Error updating cache/couchbase:', error);
     }
-
     await this.cacheManager.del('users:all');
-
     return updatedUser;
   }
 
@@ -282,67 +271,6 @@ export class UsersService {
     await this.cacheManager.del('users:all');
 
     return response.data;
-  }
-
-  private async calculateNutritionalProfile(user: any): Promise<any> {
-    const bmr = this.calculateBMR(user);
-    const tdee = this.calculateTDEE(bmr, (user as any).nivelActividad);
-
-    return {
-      daily_calories: Math.round(tdee),
-      protein_percentage: 30,
-      carb_percentage: 40,
-      fat_percentage: 30,
-      dietary_restrictions: [],
-      bmr: Math.round(bmr),
-      tdee: Math.round(tdee),
-    };
-  }
-
-  private calculateBMR(user: any): number {
-    if ((user as any).genero === 'masculino') {
-      return (
-        10 * (user as any).pesoActual +
-        6.25 * (user as any).altura -
-        5 * this.calculateAge((user as any).fechaNacimiento) +
-        5
-      );
-    } else {
-      return (
-        10 * (user as any).pesoActual +
-        6.25 * (user as any).altura -
-        5 * this.calculateAge((user as any).fechaNacimiento) -
-        161
-      );
-    }
-  }
-
-  private calculateTDEE(bmr: number, activityLevel: string): number {
-    const activityMultipliers = {
-      sedentario: 1.2,
-      ligera: 1.375,
-      moderada: 1.55,
-      intensa: 1.725,
-      muy_intensa: 1.9,
-    };
-
-    return bmr * (activityMultipliers[activityLevel] || 1.2);
-  }
-
-  private calculateAge(birthDate: string | Date): number {
-    const birth = new Date(birthDate);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      age--;
-    }
-
-    return age;
   }
 
   async testCouchbaseConnection(): Promise<boolean> {

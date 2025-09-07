@@ -45,7 +45,7 @@ const RecommendationType = {
 };
 
 const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const {
     recommendations,
     getRecommendationsByUser,
@@ -66,10 +66,10 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
   const [debugInfo, setDebugInfo] = useState(null);
   const [showForm, setShowForm] = useState(null);
   const [formData, setFormData] = useState({});
-  const userId = user.id;
+  const userId = user.userId;
 
   useEffect(() => {
-    getRecommendationsByUser(user.id);
+    getRecommendationsByUser(user.userId);
   }, [userId]);
 
   const getTypeIcon = (type) => {
@@ -138,31 +138,31 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
       console.log("Generando recomendación con datos:", {
         tipo,
         datosEntrada,
-        userId: user.id,
+        userId: user.userId,
       });
       switch (tipo) {
         case RecommendationType.NUTRITION:
           // Pasar datosEntrada como segundo parámetro
           newRecommendation = await quickNutritionRecommendation(
-            user.id,
+            user.userId,
             datosEntrada // Asegúrate de que esto se pase
           );
           break;
         case RecommendationType.EXERCISE:
           newRecommendation = await quickExerciseRecommendation(
-            user.id,
+            user.userId,
             datosEntrada // Asegúrate de que esto se pase
           );
           break;
         case RecommendationType.MEDICAL:
           newRecommendation = await quickMedicalRecommendation(
-            user.id,
+            user.userId,
             datosEntrada // Asegúrate de que esto se pase
           );
           break;
         default:
           const recommendationData = {
-            usuarioId: user.id,
+            usuarioId: user.userId,
             tipo,
             datosEntrada,
           };
@@ -187,8 +187,8 @@ const RecommendationApp = ({ darkMode = false, toggleDarkMode }) => {
   const deactivateRecommendation = async (id) => {
     try {
       await deleteRecommendation(id);
-      if (user && user.id) {
-        await getRecommendationsByUser(user.id);
+      if (user && user.userId) {
+        await getRecommendationsByUser(user.userId);
       }
     } catch (error) {
       console.error("Error deactivating recommendation:", error);

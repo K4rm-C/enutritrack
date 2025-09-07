@@ -29,7 +29,7 @@ const MedicalHistoryDashboard = ({ darkMode = false }) => {
   } = useMedicalHistory();
 
   const { user } = useAuth();
-  const userId = user.id;
+  const userId = user.userId;
 
   const [editing, setEditing] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -59,10 +59,7 @@ const MedicalHistoryDashboard = ({ darkMode = false }) => {
       setSuccessMessage(null);
 
       if (editing && editingIndex !== null) {
-        console.log("🆔 ID del historial a actualizar:", user.id);
-        console.log("📊 Datos a enviar:", formData);
-
-        await updateMedicalHistory(user.id, formData);
+        await updateMedicalHistory(user.userId, formData);
         setSuccessMessage("✅ Historial médico actualizado correctamente");
         await getMedicalHistoryByUser(userId);
       } else {

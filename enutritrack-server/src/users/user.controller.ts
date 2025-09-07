@@ -34,6 +34,12 @@ export class UsersController {
   }
 
   @UseGuards(CookieAuthGuard)
+  @Get('/users/:email')
+  findByEmail(@Param('email') email: string) {
+    return this.usersService.findByEmail(email);
+  }
+
+  @UseGuards(CookieAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: any) {
     return this.usersService.update(id, updateUserDto);

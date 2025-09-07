@@ -19,7 +19,7 @@ const PhysicalActivityDashboard = ({ darkMode = false }) => {
     getWeeklySummary,
   } = usePhysicalActivity();
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = user?.userId;
 
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [showAddForm, setShowAddForm] = useState(false);
@@ -27,25 +27,28 @@ const PhysicalActivityDashboard = ({ darkMode = false }) => {
     tipo_actividad: "",
     duracion: 0,
     caloriasQuemadas: 0,
-    fecha: new Date().toISOString(),
+    fecha: new Date().toISOString().slice(0, 16),
   });
 
   useEffect(() => {
-    getPhysicalActivitiesByUser(userId);
-    getWeeklySummary(userId, selectedWeek);
+    if (userId) {
+      getPhysicalActivitiesByUser(userId);
+      getWeeklySummary(userId, selectedWeek);
+    }
   }, [userId, selectedWeek]);
 
   const handleAddActivity = async () => {
     try {
       await createPhysicalActivity({
         ...newActivity,
-        usuarioId: user.id,
+        usuarioId: user.userId,
       });
       setShowAddForm(false);
       setNewActivity({
         tipo_actividad: "",
         duracion: 0,
         caloriasQuemadas: 0,
+        fecha: new Date().toISOString().slice(0, 16),
       });
     } catch (error) {
       console.error("Error adding activity:", error);
@@ -53,21 +56,29 @@ const PhysicalActivityDashboard = ({ darkMode = false }) => {
   };
 
   const getWeekDates = (date) => {
-    const startDate = new Date(date);
-    startDate.setDate(startDate.getDate() - startDate.getDay());
+    try {
+      const startDate = new Date(date);
+      startDate.setDate(startDate.getDate() - startDate.getDay());
 
-    const dates = [];
-    for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
-      dates.push(currentDate);
+      const dates = [];
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        // Validar que la fecha sea válida
+        if (!isNaN(currentDate.getTime())) {
+          dates.push(currentDate);
+        }
+      }
+      return dates;
+    } catch (error) {
+      console.error("Error generating week dates:", error);
+      return [];
     }
-
-    return dates;
   };
 
   // Función para formatear números
   const formatNumber = (num) => {
+    if (!num) return "0";
     if (num >= 1000) {
       return (num / 1000).toFixed(1) + "k";
     }
@@ -76,7 +87,56 @@ const PhysicalActivityDashboard = ({ darkMode = false }) => {
 
   // Función para formatear calorías
   const formatCalories = (calories) => {
+    if (!calories) return "0";
     return calories.toLocaleString("es-ES");
+  };
+
+  // Función auxiliar para obtener el valor del input week
+  const getWeekInputValue = (date) => {
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return "";
+
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - d.getDay());
+
+      const year = d.getFullYear();
+      const weekNumber = getWeekNumber(d);
+
+      return `${year}-W${weekNumber.toString().padStart(2, "0")}`;
+    } catch (error) {
+      console.error("Error getting week input value:", error);
+      return "";
+    }
+  };
+
+  // Función para obtener el número de semana
+  const getWeekNumber = (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+    return weekNo;
+  };
+
+  // Manejar cambio de semana
+  const handleWeekChange = (e) => {
+    try {
+      const value = e.target.value;
+      if (!value) return;
+
+      const [year, week] = value.split("-W");
+      const firstDayOfYear = new Date(year, 0, 1);
+      const days = (week - 1) * 7;
+      const date = new Date(
+        firstDayOfYear.setDate(firstDayOfYear.getDate() + days)
+      );
+
+      setSelectedWeek(date);
+    } catch (error) {
+      console.error("Error handling week change:", error);
+    }
   };
 
   const weekDates = getWeekDates(selectedWeek);
@@ -123,7 +183,7 @@ const PhysicalActivityDashboard = ({ darkMode = false }) => {
             <input
               type="week"
               value={getWeekInputValue(selectedWeek)}
-              onChange={(e) => setSelectedWeek(new Date(e.target.value))}
+              onChange={handleWeekChange}
               className={`px-4 py-2 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                 darkMode
                   ? "bg-gray-700 border-gray-600 text-white hover:border-gray-500"
@@ -360,7 +420,7 @@ const PhysicalActivityDashboard = ({ darkMode = false }) => {
                 </label>
                 <input
                   type="datetime-local"
-                  value={newActivity.fecha.slice(0, 16)}
+                  value={newActivity.fecha}
                   onChange={(e) =>
                     setNewActivity({ ...newActivity, fecha: e.target.value })
                   }
@@ -395,9 +455,16 @@ const PhysicalActivityDashboard = ({ darkMode = false }) => {
 
         <div className="space-y-4">
           {weekDates.map((date) => {
+            // Validar que la fecha sea válida antes de usarla
+            if (isNaN(date.getTime())) {
+              return null;
+            }
+
+            const dateString = date.toDateString();
             const dateActivities = activities.filter((activity) => {
+              if (!activity.fecha) return false;
               const activityDate = new Date(activity.fecha).toDateString();
-              return activityDate === date.toDateString();
+              return activityDate === dateString;
             });
 
             return (
@@ -503,17 +570,5 @@ const PhysicalActivityDashboard = ({ darkMode = false }) => {
     </div>
   );
 };
-
-// Función auxiliar para formatear la fecha en formato week
-function getWeekInputValue(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - d.getDay());
-
-  const year = d.getFullYear();
-  const week = Math.ceil((d.getDate() + 1 - d.getDay()) / 7);
-
-  return `${year}-W${week.toString().padStart(2, "0")}`;
-}
 
 export default PhysicalActivityDashboard;
