@@ -80,7 +80,7 @@ docker-compose up -d
 4. **Iniciar los microservicios**
 ```bash
 # En terminales separadas
-PARA EL BACKEND Y MICROSERVICIOS: npm run dev:gateway
+PARA EL BACKEND: npm run start:dev Y MICROSERVICIOS: npm run dev:gateway
   -- MICROSERVICIO DE USUARIOS: npm run dev:user
   -- MICROSERVICIO DE HISTORIAL MEDICO: npm run dev:medical
   -- MICROSERVICIO DE NUTRICION: npm run dev:nutrition
