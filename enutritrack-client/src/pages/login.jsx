@@ -379,27 +379,6 @@ const AuthContainer = () => {
       };
       await createUser(userData);
       setSuccess("¡Registro exitoso! Iniciando sesión automáticamente...");
-
-      // Login automático después del registro
-      setTimeout(async () => {
-        try {
-          const loginCredentials = {
-            email: registerData.email,
-            password: registerData.contraseña_hash,
-          };
-          await login(loginCredentials);
-          navigate("/dashboard");
-        } catch (loginError) {
-          console.error("Error en login automático:", loginError);
-          // Si falla el login automático, redirigir al login manual
-          setSuccess("Registro exitoso. Por favor, inicia sesión manualmente.");
-          setTimeout(() => {
-            setCurrentView("login");
-            setRegisterStep(0);
-            setSuccess("");
-          }, 2000);
-        }
-      }, 1500);
     } catch (error) {
       console.error("Error en registro:", error);
       setErrors({ general: "Error al registrar usuario. Inténtalo de nuevo." });
