@@ -23,18 +23,12 @@ export class UserService {
       throw new ConflictException('User with this email already exists');
     }
 
-    let hashedPassword: string;
-
-    if (createUserDto.contraseña) {
-      hashedPassword = createUserDto.contraseña;
-      console.log('Usando contraseña ya hasheada desde backend');
-    } else if (createUserDto.contraseña) {
-      const saltRounds = 10;
-      hashedPassword = await bcrypt.hash(createUserDto.contraseña, saltRounds);
-      console.log('Hasheando contraseña en microservicio');
-    } else {
-      throw new Error('No password provided');
-    }
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.contraseña,
+      saltRounds,
+    );
+    console.log('Contraseña hasheada en microservicio');
 
     const user = this.userRepository.create({
       nombre: createUserDto.nombre,
