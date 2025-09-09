@@ -35,11 +35,6 @@
 
 ## 🏗️ Arquitectura del Sistema
 
-### Microservicios
-```
-
-```
-
 ### Bases de Datos
 - **PostgreSQL**: Datos transaccionales y relaciones complejas
 - **Couchbase**: Documentos JSON y perfiles de usuarios
@@ -50,45 +45,64 @@
 ### Prerrequisitos
 
 - **Node.js** 18+ 
-- **Docker** y **Docker Compose**
-- **npm**
+- **NestJs**
+- **Docker** y **Docker Compose** - deberia dejar prendido
+- **npm (para la instalacion de dependencias)**
+- **VSCODE**
 
 ### Instalación
 
 1. **Clonar el repositorio**
 ```bash
-git clone https://github.com/tuusuario/enutritrack.git
-cd enutritrack
-cd enutritrack-client (FRONTEND)
-cd enutritrack-server (BACKEND)
-cd enutritrack-microservices (MICROSERVICIOS)
+git clone https://github.com/AlfredoPerez73/enutritrack.git
 ```
 
-2. **Instalar dependencias**
+2. **Iniciar contenedores Docker**
 ```bash
-# Instalar en cada microservicio
+docker-compose up -d
+  - REDIS
+  - COUCHBASE
+  - POSTGRES
+```
+
+3. **Instalar dependencias**
+```bash
+# Instalar para cada directorio:
 cd enutrireack-client && npm install
 cd enutrireack-server && npm install
 cd enutrireack-microservices && npm install
 ```
 
-3. **Iniciar contenedores Docker**
+4. **Clonar el repositorio**
 ```bash
-docker-compose up -d
+git clone https://github.com/AlfredoPerez73/enutritrack.git
+EN LA CONSOLA DE VSCODE O EL CMD IR A ESTOS DIRECTORIOS
+cd enutritrack
+cd enutritrack-client (FRONTEND)
+cd enutritrack-server (BACKEND)
+cd enutritrack-microservices (MICROSERVICIOS) MAIN
+    cd enutritrack-microservices/src/auth
+    cd enutritrack-microservices/src/users
+    cd enutritrack-microservices/src/nutrition
+    cd enutritrack-microservices/src/activity
+    cd enutritrack-microservices/src/recommendation
+    cd enutritrack-microservices/src/medical-history
+    cd enutritrack-microservices/src/doctor
+
 ```
 
-4. **Iniciar los microservicios**
+5. **Iniciar los microservicios**
 ```bash
 # En terminales separadas
-PARA EL BACKEND: npm run start:dev Y MICROSERVICIOS: npm run dev:gateway
+PARA EL BACKEND: npm run start:dev Y MICROSERVICIOS (MAIN): npm run dev:gateway
   -- MICROSERVICIO DE USUARIOS: npm run dev:user
   -- MICROSERVICIO DE HISTORIAL MEDICO: npm run dev:medical
   -- MICROSERVICIO DE NUTRICION: npm run dev:nutrition
   -- MICROSERVICIO DE AUNTENTICACION: npm run dev:auth
   -- MICROSERVICIO DE ACTIVIDAD: npm run dev:activity
   -- MICROSERVICIO DE RECOMENDACIONES: npm run dev:recommendation
+  -- MICROSERVICIO DE DOCTOR: npm run dev:doctor
 PARA EL FRONTEND: npm run dev
-
 ```
 
 ## 📁 Estructura del Proyecto
@@ -112,6 +126,7 @@ enutritrack/enutritrack-microservices/src/
 ├── auth/
 ├── medical-history/
 ├── nutrition/
+├── doctor/
 ├── recommendation/
 ├── users/
 ├── app.module.ts
@@ -122,6 +137,7 @@ enutritrack/enutritrack-server/src/
 ├── auth/
 ├── couchbase/
 ├── medical-history/
+├── doctor/
 ├── nutrition/
 ├── recommendation/
 ├── redis/
@@ -132,33 +148,6 @@ enutritrack/enutritrack-server/src/
 ```
 
 ## 🔧 Configuración
-
-### Variables de Entorno
-
-```env
-# PostgreSQL
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=1234
-DB_DATABASE=enutritrack
-
-# Couchbase
-COUCHBASE_URL=couchbase://localhost
-COUCHBASE_USERNAME=admin
-COUCHBASE_PASSWORD=password
-COUCHBASE_BUCKET=enutritrack
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=redispassword
-
-# JWT
-JWT_SECRET=tu-token-super-secreto
-JWT_EXPIRES_IN=24h
-```
-
 ### Puertos de los Servicios
 
 | Servicio | Puerto | Descripción |
@@ -171,16 +160,8 @@ JWT_EXPIRES_IN=24h
 | MICROSERVICIOS AUTENTICACION | 3004 | Autorizacion y validacion de usuario |
 | MICROSERVICIOS ACTIVIDAD FISICA | 3005 | Gestion de actividades fiscias del usuario |
 | MICROSERVICIOS RECOMENDACIONES IA | 3006 | Gestion de recomendaciones hechas por IA |
-| FRONTEND | 5174 | Gestión de usuarios |
-
-### Endpoints Principales
-
-#### Autenticación
-```http
-POST /auth/login
-POST /auth/register
-POST /auth/refresh
-```
+| MICROSERVICIOS DOCTORES | 3007 | Microservicio para los doctores |
+| FRONTEND | 5174 | Gestión de usuarios por el doctor |
 
 ### Problemas comunes
 
@@ -194,29 +175,15 @@ POST /auth/refresh
    docker-compose restart redis
    ```
 
-3. **Microservicios no se comunican**
-   Verificar que RabbitMQ esté ejecutándose:
+2. **Error de conexión a postgres**
    ```bash
-   docker-compose logs rabbitmq
+   docker-compose restart postgres
    ```
-
-### Logs y Monitoreo
-
-Ver logs de un servicio específico:
-```bash
-docker-compose logs [nombre-servicio]
-```
-
+   
 ## 🏆 Equipo
 
-- **Alfredo José** - Desarrollo Backend & Arquitectura
-- **Contribuidores** - [Lista de contribuidores](https://github.com/tuusuario/enutritrack/contributors)
-
-## 📞 Soporte
-
-Si tienes preguntas o necesitas ayuda:
-
-- 📧 **Email**: soporte@enutritrack.com}
----
-
-**Enutritrack** - Transformando la salud preventiva through tecnología inteligente 🚀
+- **Alfredo José** - Project Manager
+- **Contribuidores**
+  -- **Juan Carmona**
+  -- **Andres Gonzalez**
+  -- **Angel Muñoz**
