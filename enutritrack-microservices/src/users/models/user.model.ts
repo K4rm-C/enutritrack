@@ -1,9 +1,17 @@
-// src/user/entities/user.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+// src/users/models/user.model.ts
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { FoodRecord } from '../../nutrition/models/nutrition.model';
 import { MedicalHistory } from '../../medical-history/model/medical-history.model';
 import { PhysicalActivity } from '../../activity/models/activity.model';
 import { Recommendation } from '../../recommendation/models/recommendation.model';
+import { Doctor } from '../../doctor/models/doctor.model';
 
 export enum Gender {
   MALE = 'M',
@@ -44,11 +52,29 @@ export class User {
   @Column({ type: 'decimal', precision: 5, scale: 2, name: 'peso_actual' })
   pesoActual: number;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, name: 'objetivo_peso' })
-  objetivoPeso: number;
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    name: 'objetivo_peso',
+    nullable: true,
+  })
+  objetivoPeso?: number;
 
   @Column({ type: 'enum', enum: ActivityLevel, name: 'nivel_actividad' })
   nivelActividad: ActivityLevel;
+
+  // Foreign key para el doctor
+  @Column({ type: 'uuid', nullable: true, name: 'doctor_id' })
+  doctorId?: string;
+
+  // Relación con Doctor
+  @ManyToOne(() => Doctor, (doctor) => doctor.patients, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'doctor_id' })
+  doctor?: Doctor;
 
   @Column({
     type: 'timestamp',
@@ -65,7 +91,7 @@ export class User {
   })
   updatedAt: Date;
 
-  // Relaciones
+  // Relaciones con otras entidades
   @OneToMany(() => FoodRecord, (foodRecord) => foodRecord.usuario)
   foodRecords: FoodRecord[];
 

@@ -6,6 +6,7 @@ import {
   getUserByEmailRequest,
   getUserByIdRequest,
   updateUsersRequest,
+  deleteUserByIdRequest,
 } from "../../api/user/user.api";
 
 const UsersContext = createContext();
@@ -25,7 +26,7 @@ export function UsersProvider({ children }) {
   const getUsers = async () => {
     try {
       const res = await getUsersRequest();
-      setUsers(res.data);
+      return res.data;
     } catch (error) {
       console.log(error);
     }
@@ -34,7 +35,6 @@ export function UsersProvider({ children }) {
   const createUser = async (user) => {
     try {
       const res = await createUsersRequest(user);
-      console.log(res);
       return res.data;
     } catch (error) {
       throw error;
@@ -54,8 +54,22 @@ export function UsersProvider({ children }) {
   const getUserById = async (id) => {
     try {
       const res = await getUserByIdRequest(id);
-      setCurrentUser(res.data);
       return res.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  };
+
+  const deleteUser = async (id) => {
+    try {
+      const res = await deleteUserByIdRequest(id);
+      if (res.status === 200 || res.status === 204) {
+        setUsers(users.filter((record) => record.id !== id));
+        return res;
+      } else {
+        throw new Error(`Delete failed with status: ${res.status}`);
+      }
     } catch (error) {
       console.log(error);
       throw error;
@@ -82,6 +96,7 @@ export function UsersProvider({ children }) {
         getUserByEmail,
         getUserById,
         updateUser,
+        deleteUser,
         getUsers,
       }}
     >

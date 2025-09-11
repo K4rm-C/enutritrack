@@ -15,59 +15,46 @@ import Layout from "../components/layout/layout";
 
 // Components/Forms
 import Profile from "../components/profile";
-import NutritionTracker from "../components/nutrition-tracker";
-import ActivityTracker from "../components/activity-tracker";
-import Recommendations from "../components/recommendations";
-import HistoryMedical from "../components/history-medical";
+import UsersTracker from "../components/usuario/users-tracker";
 
 const AppRoutes = () => {
   return (
-    <>
-      <AuthProvider>
-        <UsersProvider>
-          <RecommendationsProvider>
-            <NutritionProvider>
-              <MedicalHistoryProvider>
-                <PhysicalActivityProvider>
-                  <BrowserRouter>
-                    <Routes>
-                      <Route path="/login" element={<Login />} />
-                      <Route
-                        path="/"
-                        element={<Navigate to="/dashboard" replace />}
-                      />
+    <AuthProvider>
+      <UsersProvider>
+        <RecommendationsProvider>
+          <NutritionProvider>
+            <MedicalHistoryProvider>
+              <PhysicalActivityProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
 
-                      <Route element={<ProtectedRoutes />}>
-                        <Route path="/" element={<Layout />}>
-                          <Route path="dashboard" element={<Dashboard />} />
-                          <Route path="perfil" element={<Profile />} />
-                          <Route
-                            path="nutrition"
-                            element={<NutritionTracker />}
-                          />
-                          <Route
-                            path="activity"
-                            element={<ActivityTracker />}
-                          />
-                          <Route
-                            path="historyMedical"
-                            element={<HistoryMedical />}
-                          />
-                          <Route
-                            path="recommendations"
-                            element={<Recommendations />}
-                          />
-                        </Route>
+                    <Route element={<ProtectedRoutes />}>
+                      <Route path="/" element={<Layout />}>
+                        {/* Solo redirige si estás exactamente en "/" */}
+                        <Route
+                          index
+                          element={<Navigate to="/dashboard" replace />}
+                        />
+                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="perfil" element={<Profile />} />
+                        <Route path="users" element={<UsersTracker />} />
                       </Route>
-                    </Routes>
-                  </BrowserRouter>
-                </PhysicalActivityProvider>
-              </MedicalHistoryProvider>
-            </NutritionProvider>
-          </RecommendationsProvider>
-        </UsersProvider>
-      </AuthProvider>
-    </>
+                    </Route>
+
+                    {/* Ruta catch-all para rutas no encontradas */}
+                    <Route
+                      path="*"
+                      element={<Navigate to="/dashboard" replace />}
+                    />
+                  </Routes>
+                </BrowserRouter>
+              </PhysicalActivityProvider>
+            </MedicalHistoryProvider>
+          </NutritionProvider>
+        </RecommendationsProvider>
+      </UsersProvider>
+    </AuthProvider>
   );
 };
 

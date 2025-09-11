@@ -1,45 +1,59 @@
-// src/config/axios.js
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:4000/";
+// URLs base para cada microservicio
+const API_BASE_URL_USER = "http://localhost:3001/";
+const API_BASE_URL_MEDICAL = "http://localhost:3002/";
+const API_BASE_URL_NUTRITION = "http://localhost:3003/";
+const API_BASE_URL_AUTH = "http://localhost:3004/";
+const API_BASE_URL_ACTIVITY = "http://localhost:3005/";
+const API_BASE_URL_RECOMMENDATION = "http://localhost:3006/";
 
-const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+const createAxiosInstance = (baseURL) => {
+  const instance = axios.create({
+    baseURL,
+    withCredentials: true,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
-// Interceptor para requests - agregar token si existe
-axiosInstance.interceptors.request.use(
-  (config) => {
-    // Obtener token de cookies
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("access_token="))
-      ?.split("=")[1];
+  instance.interceptors.request.use(
+    (config) => {
+      // Obtener token de cookies
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("access_token="))
+        ?.split("=")[1];
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
     }
+  );
 
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor para responses - manejar errores de autenticación
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.error("Error de autenticación:", error.response.data);
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        console.error("Error de autenticación:", error.response.data);
+      }
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
-);
+  );
 
-export default axiosInstance;
+  return instance;
+};
+
+export const userAPI = createAxiosInstance(API_BASE_URL_USER);
+export const medicalAPI = createAxiosInstance(API_BASE_URL_MEDICAL);
+export const nutritionAPI = createAxiosInstance(API_BASE_URL_NUTRITION);
+export const authAPI = createAxiosInstance(API_BASE_URL_AUTH);
+export const activityAPI = createAxiosInstance(API_BASE_URL_ACTIVITY);
+export const recommendationAPI = createAxiosInstance(
+  API_BASE_URL_RECOMMENDATION
+);

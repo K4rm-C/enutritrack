@@ -6,194 +6,49 @@ import {
   Camera,
   Mail,
   Calendar,
-  Ruler,
-  Weight,
-  Target,
-  Activity,
   X,
-  Heart,
-  Flame,
+  Users,
+  Stethoscope,
+  FileText,
+  Utensils,
+  Lightbulb,
   Clock,
   TrendingUp,
+  Bell,
+  Shield,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "../context/auth/auth.context";
-import { useUsers } from "../context/user/user.context";
-import { useNutrition } from "../context/nutrition/nutrition.context";
-import { usePhysicalActivity } from "../context/activity/activity.context";
 
 const ProfileDashboard = ({ darkMode = false }) => {
   const [activeTab, setActiveTab] = useState("perfil");
   const [editingProfile, setEditingProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
-  const { user } = useAuth();
-  const { updateUser, getUserById } = useUsers();
-  const { weeklySummary, getWeeklySummary } = usePhysicalActivity();
-  const { foodRecords, getFoodRecordsByUser } = useNutrition();
-  const [userData, setUserData] = useState(null);
-  const [totalCalories, setTotalCalories] = useState(0);
-  const [totalMinutes, setTotalMinutes] = useState(0);
+  const { user, updateProfile } = useAuth();
 
   const [profileData, setProfileData] = useState({
     nombre: "",
     email: "",
-    fecha_nacimiento: "",
-    género: "",
-    altura: "",
-    peso_actual: "",
-    objetivo_peso: "",
-    nivel_actividad: "",
+    especialidad: "",
+    experiencia: "",
+    telefono: "",
+    direccion: "",
   });
 
-  const calcularEdad = (fechaNacimiento) => {
-    if (!fechaNacimiento) return null;
-
-    try {
-      const hoy = new Date();
-      const nacimiento = new Date(fechaNacimiento);
-
-      // Verificar que la fecha sea válida
-      if (isNaN(nacimiento.getTime())) return null;
-
-      let edad = hoy.getFullYear() - nacimiento.getFullYear();
-      const mes = hoy.getMonth() - nacimiento.getMonth();
-
-      if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-        edad--;
-      }
-
-      return edad;
-    } catch (error) {
-      console.error("Error calculando edad:", error);
-      return null;
-    }
-  };
-
-  // Función para calcular el IMC
-  const calcularIMC = () => {
-    if (!userData || !userData.pesoActual || !userData.altura) return null;
-
-    const alturaEnMetros = parseFloat(userData.altura) / 100;
-    const peso = parseFloat(userData.pesoActual);
-
-    if (alturaEnMetros <= 0 || peso <= 0) return null;
-
-    return (peso / (alturaEnMetros * alturaEnMetros)).toFixed(1);
-  };
-
-  // Función para obtener el estado del IMC
-  const getEstadoIMC = (imc) => {
-    if (!imc) return { estado: "Sin datos", color: "gray" };
-
-    const valorIMC = parseFloat(imc);
-    if (valorIMC < 18.5) return { estado: "Bajo peso", color: "blue" };
-    if (valorIMC < 25) return { estado: "Peso normal", color: "green" };
-    if (valorIMC < 30) return { estado: "Sobrepeso", color: "yellow" };
-    return { estado: "Obesidad", color: "red" };
-  };
-
-  // Cargar datos del usuario
+  // Cargar datos del doctor
   useEffect(() => {
-    const loadUserData = async () => {
-      if (!user || !user.userId) {
-        return;
-      }
-      setIsLoadingUser(true);
-      try {
-        const userDataForm = await getUserById(user.userId);
-        setUserData(userDataForm);
-        setProfileData({
-          nombre: userDataForm.nombre || "",
-          email: userDataForm.email || "",
-          fecha_nacimiento:
-            userDataForm.fechaNacimiento || userDataForm.fecha_nacimiento || "",
-          género: userDataForm.género || userDataForm.genero || "",
-          altura: userDataForm.altura || "",
-          peso_actual:
-            userDataForm.pesoActual || userDataForm.peso_actual || "",
-          objetivo_peso:
-            userDataForm.objetivoPeso || userDataForm.objetivo_peso || "",
-          nivel_actividad:
-            userDataForm.nivelActividad || userDataForm.nivel_actividad || "",
-        });
-      } catch (error) {
-        console.error("Error cargando datos del usuario:", error);
-      } finally {
-        setIsLoadingUser(false);
-      }
-    };
-
-    loadUserData();
+    if (user) {
+      setProfileData({
+        nombre: user.nombre || "",
+        email: user.email || "",
+      });
+    }
   }, [user]);
-
-  useEffect(() => {
-    const loadActivityAndNutritionData = async () => {
-      if (!user || !user.userId) return;
-
-      try {
-        // Obtener resumen semanal de actividad física
-        await getWeeklySummary(user.userId);
-
-        // Obtener registros de comida de la semana actual
-        const startOfWeek = new Date();
-        startOfWeek.setHours(0, 0, 0, 0);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Inicio de la semana (domingo)
-
-        const endOfWeek = new Date();
-        endOfWeek.setHours(23, 59, 59, 999);
-        endOfWeek.setDate(endOfWeek.getDate() + (6 - endOfWeek.getDay())); // Fin de la semana (sábado)
-
-        await getFoodRecordsByUser(user.userId, startOfWeek, endOfWeek);
-      } catch (error) {
-        console.error("Error cargando datos de actividad y nutrición:", error);
-      }
-    };
-
-    loadActivityAndNutritionData();
-  }, [user]);
-
-  // Calcular total de calorías cuando cambien los registros de comida
-  useEffect(() => {
-    if (foodRecords && foodRecords.length > 0) {
-      const calories = foodRecords.reduce((total, record) => {
-        // Convertir a número y sumar
-        return total + (parseFloat(record.calorias) || 0);
-      }, 0);
-      setTotalCalories(calories);
-    } else {
-      setTotalCalories(0);
-    }
-  }, [foodRecords]);
-
-  // Obtener minutos de actividad cuando cambie el resumen semanal
-  useEffect(() => {
-    if (weeklySummary && weeklySummary.totalMinutes !== undefined) {
-      setTotalMinutes(weeklySummary.totalMinutes);
-    } else {
-      setTotalMinutes(0);
-    }
-  }, [weeklySummary]);
 
   const handleSaveProfile = async () => {
     setIsLoading(true);
     try {
-      // Preparar datos para actualizar
-      const updatedData = {
-        nombre: profileData.nombre,
-        email: profileData.email,
-        fechaNacimiento: profileData.fecha_nacimiento,
-        genero: profileData.género,
-        altura: profileData.altura,
-        pesoActual: profileData.peso_actual,
-        objetivoPeso: profileData.objetivo_peso,
-        nivelActividad: profileData.nivel_actividad,
-      };
-
-      // Actualizar usuario
-      await updateUser(user.userId, updatedData); // Recargar datos actualizados
-      const updatedUser = await getUserById(user.userId);
-      setUserData(updatedUser);
-
+      await updateProfile(profileData);
       setEditingProfile(false);
       console.log("Perfil actualizado exitosamente");
     } catch (error) {
@@ -205,109 +60,65 @@ const ProfileDashboard = ({ darkMode = false }) => {
 
   const tabs = [{ id: "perfil", name: "Perfil", icon: User, color: "emerald" }];
 
+  // Datos simulados para el dashboard del doctor
+  const doctorStats = [
+    {
+      icon: Users,
+      title: "42",
+      subtitle: "Pacientes Totales",
+      status: "+3 esta semana",
+      change: "+8.2%",
+      changeColor: "text-emerald-600",
+      bgColor: darkMode ? "bg-blue-500/10" : "bg-blue-50",
+      iconBg: darkMode ? "bg-blue-500/20" : "bg-blue-100",
+      iconColor: "text-blue-600",
+      statusColor: "text-blue-600",
+    },
+    {
+      icon: FileText,
+      title: "156",
+      subtitle: "Historiales Médicos",
+      status: "12 actualizados hoy",
+      change: "+12.5%",
+      changeColor: "text-emerald-600",
+      bgColor: darkMode ? "bg-purple-500/10" : "bg-purple-50",
+      iconBg: darkMode ? "bg-purple-500/20" : "bg-purple-100",
+      iconColor: "text-purple-600",
+      statusColor: "text-purple-600",
+    },
+    {
+      icon: Utensils,
+      title: "892",
+      subtitle: "Registros de Comidas",
+      status: "34 registrados hoy",
+      change: "+18.3%",
+      changeColor: "text-emerald-600",
+      bgColor: darkMode ? "bg-amber-500/10" : "bg-amber-50",
+      iconBg: darkMode ? "bg-amber-500/20" : "bg-amber-100",
+      iconColor: "text-amber-600",
+      statusColor: "text-amber-600",
+    },
+    {
+      icon: Lightbulb,
+      title: "215",
+      subtitle: "Recomendaciones Generadas",
+      status: "7 nuevas hoy",
+      change: "+9.7%",
+      changeColor: "text-emerald-600",
+      bgColor: darkMode ? "bg-emerald-500/10" : "bg-emerald-50",
+      iconBg: darkMode ? "bg-emerald-500/20" : "bg-emerald-100",
+      iconColor: "text-emerald-600",
+      statusColor: "text-emerald-600",
+    },
+  ];
+
   // Componente de Perfil
   const ProfileSection = () => {
-    if (isLoadingUser) {
-      return (
-        <div className="flex items-center justify-center h-96">
-          <div
-            className={`animate-spin rounded-full h-12 w-12 border-2 ${
-              darkMode
-                ? "border-emerald-400 border-t-transparent"
-                : "border-emerald-600 border-t-transparent"
-            }`}
-          ></div>
-        </div>
-      );
-    }
-
-    const edad = calcularEdad(profileData.fecha_nacimiento);
-    const imc = calcularIMC();
-    const estadoIMC = getEstadoIMC(imc);
-
-    // Calcular diferencia de peso para el objetivo
-    const diferenciaPeso =
-      userData && userData.pesoActual && userData.objetivoPeso
-        ? (
-            parseFloat(userData.objetivoPeso) - parseFloat(userData.pesoActual)
-          ).toFixed(1)
-        : null;
-
-    // Cards de métricas principales con datos dinámicos
-    const metrics = [
-      {
-        icon: Target,
-        title: imc || "--",
-        subtitle: "IMC (kg/m²)",
-        status: estadoIMC.estado,
-        change: "+0.2",
-        changeColor: "text-emerald-600",
-        bgColor: darkMode ? "bg-emerald-500/10" : "bg-emerald-50",
-        iconBg: darkMode ? "bg-emerald-500/20" : "bg-emerald-100",
-        iconColor: "text-emerald-600",
-        statusColor:
-          estadoIMC.color === "green"
-            ? "text-emerald-600"
-            : estadoIMC.color === "yellow"
-            ? "text-yellow-600"
-            : estadoIMC.color === "red"
-            ? "text-red-600"
-            : "text-blue-600",
-      },
-      {
-        icon: TrendingUp,
-        title: diferenciaPeso ? Math.abs(diferenciaPeso) : "--",
-        subtitle: "Peso Objetivo (kg restantes)",
-        status: diferenciaPeso > 0 ? "En progreso" : "Logrado",
-        change: diferenciaPeso > 0 ? "-1.2" : "¡Meta alcanzada!",
-        changeColor: diferenciaPeso > 0 ? "text-red-500" : "text-emerald-600",
-        bgColor: darkMode ? "bg-blue-500/10" : "bg-blue-50",
-        iconBg: darkMode ? "bg-blue-500/20" : "bg-blue-100",
-        iconColor: "text-blue-600",
-        statusColor: diferenciaPeso > 0 ? "text-blue-600" : "text-emerald-600",
-      },
-      {
-        icon: Activity,
-        title:
-          userData?.nivelActividad === "bajo"
-            ? "2.5"
-            : userData?.nivelActividad === "moderado"
-            ? "4.2"
-            : "6.8",
-        subtitle: "Actividad Semanal (horas)",
-        status:
-          userData?.nivelActividad === "bajo"
-            ? "Principiante"
-            : userData?.nivelActividad === "moderado"
-            ? "Activo"
-            : "Avanzado",
-        change: "+15%",
-        changeColor: "text-emerald-600",
-        bgColor: darkMode ? "bg-green-500/10" : "bg-green-50",
-        iconBg: darkMode ? "bg-green-500/20" : "bg-green-100",
-        iconColor: "text-green-600",
-        statusColor: "text-green-600",
-      },
-      {
-        icon: Flame,
-        title: totalCalories.toLocaleString() || "--",
-        subtitle: "Calorías Consumidas (semana)",
-        status:
-          totalMinutes > 0 ? `${totalMinutes} min actividad` : "Sin actividad",
-        change: "+5%",
-        changeColor: "text-emerald-600",
-        bgColor: darkMode ? "bg-orange-500/10" : "bg-orange-50",
-        iconBg: darkMode ? "bg-orange-500/20" : "bg-orange-100",
-        iconColor: "text-orange-600",
-        statusColor: "text-orange-600",
-      },
-    ];
-
     return (
       <div className="space-y-8">
         {/* Cards de métricas principales */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {metrics.map((metric, index) => (
+          {doctorStats.map((metric, index) => (
             <div
               key={index}
               className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-105 ${
@@ -398,7 +209,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
                       darkMode ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    {profileData.nombre || "Usuario"}
+                    Dr. {profileData.nombre}
                   </h2>
                   <p
                     className={`text-base mt-1 ${
@@ -407,12 +218,6 @@ const ProfileDashboard = ({ darkMode = false }) => {
                   >
                     {profileData.email}
                   </p>
-                  <div className="flex items-center mt-3 space-x-2">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                      Perfil Activo
-                    </span>
-                  </div>
                 </div>
               </div>
 
@@ -457,7 +262,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
           {/* Contenido del perfil */}
           <div className="p-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Información personal */}
+              {/* Información profesional */}
               <div className="space-y-6">
                 <div className="flex items-center space-x-3 mb-6">
                   <div
@@ -465,7 +270,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
                       darkMode ? "bg-emerald-500/20" : "bg-emerald-100"
                     }`}
                   >
-                    <User
+                    <Stethoscope
                       className={`h-5 w-5 ${
                         darkMode ? "text-emerald-400" : "text-emerald-600"
                       }`}
@@ -476,7 +281,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
                       darkMode ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    Información Personal
+                    Información Profesional
                   </h3>
                 </div>
 
@@ -488,22 +293,6 @@ const ProfileDashboard = ({ darkMode = false }) => {
                       value: profileData.email,
                       field: "email",
                       type: "email",
-                    },
-                    {
-                      icon: Calendar,
-                      label: "Edad",
-                      value: edad !== null ? `${edad} años` : "No especificado",
-                      field: "fecha_nacimiento",
-                      type: "date",
-                      showAge: true,
-                    },
-                    {
-                      icon: User,
-                      label: "Género",
-                      value: profileData.género || "No especificado",
-                      field: "género",
-                      type: "select",
-                      options: ["masculino", "femenino", "otro"],
                     },
                   ].map((item, index) => (
                     <div
@@ -535,52 +324,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
                         >
                           {item.label}
                         </p>
-                        {editingProfile && item.field === "fecha_nacimiento" ? (
-                          <div>
-                            <input
-                              type="date"
-                              value={profileData.fecha_nacimiento || ""}
-                              onChange={(e) =>
-                                setProfileData((prev) => ({
-                                  ...prev,
-                                  fecha_nacimiento: e.target.value,
-                                }))
-                              }
-                              className={`w-full px-3 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
-                                darkMode
-                                  ? "border-white/20 bg-white/10 text-white placeholder-gray-400"
-                                  : "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
-                              }`}
-                            />
-                            {profileData.fecha_nacimiento && (
-                              <p className="text-sm text-gray-500 mt-1">
-                                Edad calculada:{" "}
-                                {calcularEdad(profileData.fecha_nacimiento)}{" "}
-                                años
-                              </p>
-                            )}
-                          </div>
-                        ) : editingProfile && item.field === "género" ? (
-                          <select
-                            value={profileData.género || ""}
-                            onChange={(e) =>
-                              setProfileData((prev) => ({
-                                ...prev,
-                                género: e.target.value,
-                              }))
-                            }
-                            className={`w-full px-3 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
-                              darkMode
-                                ? "border-white/20 bg-white/10 text-white"
-                                : "border-gray-300 bg-white text-gray-900"
-                            }`}
-                          >
-                            <option value="">Seleccionar género</option>
-                            <option value="masculino">Masculino</option>
-                            <option value="femenino">Femenino</option>
-                            <option value="otro">Otro</option>
-                          </select>
-                        ) : editingProfile ? (
+                        {editingProfile ? (
                           <input
                             type={item.type}
                             value={profileData[item.field] || ""}
@@ -611,7 +355,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
                 </div>
               </div>
 
-              {/* Métricas corporales */}
+              {/* Información de contacto */}
               <div className="space-y-6">
                 <div className="flex items-center space-x-3 mb-6">
                   <div
@@ -619,7 +363,7 @@ const ProfileDashboard = ({ darkMode = false }) => {
                       darkMode ? "bg-blue-500/20" : "bg-blue-100"
                     }`}
                   >
-                    <Activity
+                    <Bell
                       className={`h-5 w-5 ${
                         darkMode ? "text-blue-400" : "text-blue-600"
                       }`}
@@ -630,35 +374,25 @@ const ProfileDashboard = ({ darkMode = false }) => {
                       darkMode ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    Métricas Corporales
+                    Información de Contacto
                   </h3>
                 </div>
 
                 <div className="space-y-4">
                   {[
                     {
-                      icon: Ruler,
-                      label: "Altura",
-                      value: profileData.altura,
-                      field: "altura",
-                      type: "number",
-                      unidad: "cm",
+                      icon: Users,
+                      label: "Nombre Completo",
+                      value: profileData.nombre,
+                      field: "nombre",
+                      type: "text",
                     },
                     {
-                      icon: Weight,
-                      label: "Peso Actual",
-                      value: profileData.peso_actual,
-                      field: "peso_actual",
-                      type: "number",
-                      unidad: "kg",
-                    },
-                    {
-                      icon: Target,
-                      label: "Peso Objetivo",
-                      value: profileData.objetivo_peso,
-                      field: "objetivo_peso",
-                      type: "number",
-                      unidad: "kg",
+                      icon: Shield,
+                      label: "Direccion de Correo Electronico",
+                      value: profileData.email || "No especificado",
+                      field: "email",
+                      type: "email",
                     },
                   ].map((item, index) => (
                     <div
@@ -691,34 +425,29 @@ const ProfileDashboard = ({ darkMode = false }) => {
                           {item.label}
                         </p>
                         {editingProfile ? (
-                          <div className="flex items-center">
-                            <input
-                              type={item.type}
-                              value={profileData[item.field] || ""}
-                              onChange={(e) =>
-                                setProfileData((prev) => ({
-                                  ...prev,
-                                  [item.field]: e.target.value,
-                                }))
-                              }
-                              className={`w-full px-3 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${
-                                darkMode
-                                  ? "border-white/20 bg-white/10 text-white placeholder-gray-400"
-                                  : "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
-                              }`}
-                            />
-                            <span className="ml-2 text-gray-500">
-                              {item.unidad}
-                            </span>
-                          </div>
+                          <input
+                            type={item.type}
+                            value={profileData[item.field] || ""}
+                            onChange={(e) =>
+                              setProfileData((prev) => ({
+                                ...prev,
+                                [item.field]: e.target.value,
+                              }))
+                            }
+                            className={`w-full px-3 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${
+                              darkMode
+                                ? "border-white/20 bg-white/10 text-white placeholder-gray-400"
+                                : "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
+                            }`}
+                            placeholder={`Ingrese ${item.label.toLowerCase()}`}
+                          />
                         ) : (
                           <p
                             className={`font-semibold ${
                               darkMode ? "text-white" : "text-gray-900"
                             }`}
                           >
-                            {item.value || "No especificado"}{" "}
-                            {item.value && item.unidad}
+                            {item.value}
                           </p>
                         )}
                       </div>
@@ -772,14 +501,14 @@ const ProfileDashboard = ({ darkMode = false }) => {
               darkMode ? "text-white" : "text-gray-900"
             }`}
           >
-            Mi Dashboard
+            Panel del Doctor
           </h1>
           <p
             className={`text-lg ${
               darkMode ? "text-gray-300" : "text-gray-600"
             }`}
           >
-            Tu centro de control para una vida saludable
+            Gestión de su perfil médico y estadísticas
           </p>
         </div>
 

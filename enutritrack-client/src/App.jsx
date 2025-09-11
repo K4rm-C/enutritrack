@@ -1,9 +1,11 @@
 import { useState } from "react";
 import AppRoutes from "./routes/routes";
+import { ToastContainer } from "react-toastify";
 
 function App() {
   return (
     <>
+      <ToastContainer />
       <AppRoutes />
     </>
   );

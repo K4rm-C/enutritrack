@@ -12,42 +12,32 @@ import {
   Minus,
   Activity,
   Weight,
-  BarChart3,
-  Flame,
-  Clock,
   Calendar,
-  Droplets,
   Apple,
-  Bed,
   UserCircle,
   Menu,
-  Search,
   LayoutDashboard,
-  Utensils,
-  Lightbulb,
-  History,
   LogOut,
-  ChevronUp,
   ChevronDown,
   Moon,
   Sun,
   X,
   Bell,
-  Target,
-  Plus,
-  Settings,
   ArrowRight,
   ChevronRight,
-  Award,
   Zap,
   BookOpen,
+  Clock,
+  Users,
+  Heart,
+  Stethoscope,
+  UserCheck,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "../context/auth/auth.context";
 import Perfil from "../components/profile";
-import Recomendaciones from "../components/recommendations";
-import NutricionTracker from "../components/nutrition-tracker";
-import ActivityTracker from "../components/activity-tracker";
-import HistoryMedical from "../components/history-medical";
+import UsuariosTracker from "../components/usuario/users-tracker";
+
 // Constants
 const THEME = {
   colors: {
@@ -60,18 +50,7 @@ const THEME = {
   spacing: {
     xs: "0.25rem",
     sm: "0.5rem",
-    md: "1rem",
-    lg: "1.5rem",
-    xl: "2rem",
   },
-};
-
-const NUTRITION_TARGETS = {
-  calories: 2000,
-  protein: 150,
-  carbs: 250,
-  fats: 65,
-  water: 2000,
 };
 
 // Theme Context
@@ -86,11 +65,9 @@ const useTheme = () => {
 };
 
 const formatNumber = (num) => {
-  // Verificar si num es undefined, null, o no es un número
   if (num === undefined || num === null || isNaN(num)) {
-    return "0"; // o cualquier valor por defecto que prefieras
+    return "0";
   }
-
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + "M";
   }
@@ -184,7 +161,6 @@ const MetricCard = ({
         ${onClick ? "transform-gpu" : ""}
       `}
     >
-      {/* Background Pattern */}
       <div
         className={`absolute inset-0 bg-gradient-to-br ${
           colorVariants[color] || colorVariants.emerald
@@ -308,199 +284,163 @@ const QuickActionCard = ({
   );
 };
 
-const NutritionProgressBar = ({ name, current, target, unit, color, icon }) => {
+const PatientCard = ({ patient, onClick }) => {
   const { darkMode } = useTheme();
-  const percentage = Math.min((current / target) * 100, 100);
-  const isLow = percentage < 30;
-  const isComplete = percentage >= 100;
+  const bmi = calculateBMI(patient.pesoActual, patient.altura);
+  const bmiCategory = getBMICategory(bmi);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
+    <div
+      onClick={onClick}
+      className={`p-4 rounded-xl border ${
+        darkMode
+          ? "bg-gray-800/50 border-gray-700 hover:bg-gray-700/50"
+          : "bg-white border-gray-200 hover:bg-gray-50"
+      } transition-all duration-300 cursor-pointer hover:shadow-md`}
+    >
+      <div className="flex items-start justify-between">
         <div className="flex items-center">
-          <span className="text-lg mr-3">{icon}</span>
-          <span
-            className={`font-medium ${
-              darkMode ? "text-gray-200" : "text-gray-700"
-            }`}
-          >
-            {name}
-          </span>
-        </div>
-        <div className="flex items-center space-x-2">
-          {isComplete && (
-            <Award
-              className={`w-4 h-4 ${
-                darkMode ? "text-green-400" : "text-green-600"
-              }`}
-            />
-          )}
-          {isLow && (
-            <span
-              className={`text-xs px-2 py-1 rounded-full ${
-                darkMode
-                  ? "bg-amber-900/30 text-amber-400"
-                  : "bg-amber-100 text-amber-600"
-              }`}
-            >
-              Necesitas más
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
+            <span className="text-white font-semibold text-sm">
+              {patient.nombre.charAt(0)}
             </span>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span
-            className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}
-          >
-            {formatNumber(current)}
-          </span>
-          <span className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-            de {formatNumber(target)} {unit}
-          </span>
-        </div>
-
-        <div
-          className={`w-full ${
-            darkMode ? "bg-gray-700" : "bg-gray-200"
-          } rounded-full h-3 overflow-hidden`}
-        >
-          <div
-            className={`h-3 rounded-full transition-all duration-700 ${color} ${
-              isComplete ? "animate-pulse" : ""
-            }`}
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-
-        <div className="flex justify-between text-xs">
-          <span className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-            0
-          </span>
-          <span
-            className={`font-medium ${
-              darkMode ? "text-gray-300" : "text-gray-600"
-            }`}
-          >
-            {percentage.toFixed(0)}%
-          </span>
-          <span className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-            {formatNumber(target)} {unit}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ActivityChart = ({ data }) => {
-  const { darkMode } = useTheme();
-  const maxMinutes = Math.max(...data.map((d) => d.minutes));
-
-  return (
-    <div className="space-y-4">
-      {data.map((item, index) => {
-        const heightPercentage = (item.minutes / maxMinutes) * 100;
-        const isToday = item.isToday;
-
-        return (
-          <div key={index} className="flex items-center space-x-4 group">
-            <div
-              className={`w-10 text-sm font-medium ${
-                darkMode ? "text-gray-400" : "text-gray-600"
+          </div>
+          <div>
+            <h4
+              className={`font-semibold ${
+                darkMode ? "text-white" : "text-gray-900"
               }`}
             >
-              {item.day}
-            </div>
-
-            <div className="flex-1 flex items-center space-x-3">
-              <div
-                className={`flex-1 ${
-                  darkMode ? "bg-gray-700" : "bg-gray-200"
-                } rounded-full h-4 relative overflow-hidden`}
-              >
-                <div
-                  className={`h-4 rounded-full transition-all duration-700 ${
-                    isToday
-                      ? "bg-gradient-to-r from-emerald-500 to-blue-500"
-                      : darkMode
-                      ? "bg-gradient-to-r from-blue-600 to-blue-500"
-                      : "bg-gradient-to-r from-blue-500 to-blue-400"
-                  } group-hover:shadow-lg`}
-                  style={{ width: `${heightPercentage}%` }}
-                />
-              </div>
-
-              <div
-                className={`text-sm font-medium ${
-                  darkMode ? "text-gray-300" : "text-gray-700"
-                } w-16 text-right`}
-              >
-                {item.minutes}min
-              </div>
-
-              <div
-                className={`text-xs ${
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                } w-20 text-right`}
-              >
-                {formatNumber(item.calories)} cal
-              </div>
-            </div>
+              {patient.nombre}
+            </h4>
+            <p
+              className={`text-sm ${
+                darkMode ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              {patient.edad} años • {patient.genero}
+            </p>
           </div>
-        );
-      })}
+        </div>
+        <div
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            patient.estado === "activo"
+              ? darkMode
+                ? "bg-green-900/30 text-green-400"
+                : "bg-green-100 text-green-700"
+              : darkMode
+              ? "bg-amber-900/30 text-amber-400"
+              : "bg-amber-100 text-amber-700"
+          }`}
+        >
+          {patient.estado}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mt-4">
+        <div>
+          <p
+            className={`text-xs ${
+              darkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            IMC
+          </p>
+          <p
+            className={`font-semibold ${bmiCategory.color} ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            {bmi}{" "}
+            <span className="text-xs font-normal">({bmiCategory.label})</span>
+          </p>
+        </div>
+        <div>
+          <p
+            className={`text-xs ${
+              darkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            Peso
+          </p>
+          <p
+            className={`font-semibold ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            {patient.pesoActual} kg
+          </p>
+        </div>
+      </div>
+
+      {patient.ultimaCita && (
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <p
+            className={`text-xs ${
+              darkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            Última consulta: {patient.ultimaCita}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
 
-const RecommendationCard = ({
-  type,
-  title,
-  description,
-  priority,
-  icon,
-  actionText = "Ver más",
-}) => {
+const AlertCard = ({ type, message, patient, priority, time }) => {
   const { darkMode } = useTheme();
 
   const priorityStyles = {
     high: darkMode
       ? "border-red-500/50 bg-red-900/20"
       : "border-red-200 bg-red-50",
-    success: darkMode
-      ? "border-green-500/50 bg-green-900/20"
-      : "border-green-200 bg-green-50",
     medium: darkMode
+      ? "border-amber-500/50 bg-amber-900/20"
+      : "border-amber-200 bg-amber-50",
+    low: darkMode
       ? "border-blue-500/50 bg-blue-900/20"
       : "border-blue-200 bg-blue-50",
   };
 
+  const typeIcons = {
+    weight: <Weight className="w-5 h-5" />,
+    nutrition: <Apple className="w-5 h-5" />,
+    activity: <Activity className="w-5 h-5" />,
+    medical: <Heart className="w-5 h-5" />,
+  };
+
   return (
     <div
-      className={`p-4 rounded-xl border-l-4 ${priorityStyles[priority]} hover:shadow-md transition-all duration-300 group`}
+      className={`p-4 rounded-xl border-l-4 ${priorityStyles[priority]} hover:shadow-md transition-all duration-300`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3 flex-1">
-          <span className="text-xl flex-shrink-0 group-hover:scale-110 transition-transform">
-            {icon}
-          </span>
+          <span className="text-xl flex-shrink-0">{typeIcons[type]}</span>
           <div className="flex-1 min-w-0">
             <h4
               className={`font-medium ${
                 darkMode ? "text-white" : "text-gray-900"
               } mb-1`}
             >
-              {title}
+              {message}
             </h4>
             <p
               className={`text-sm ${
                 darkMode ? "text-gray-400" : "text-gray-600"
               } leading-relaxed`}
             >
-              {description}
+              Paciente: <span className="font-medium">{patient}</span>
             </p>
+            {time && (
+              <p
+                className={`text-xs ${
+                  darkMode ? "text-gray-500" : "text-gray-400"
+                } mt-1`}
+              >
+                {time}
+              </p>
+            )}
           </div>
         </div>
 
@@ -511,7 +451,7 @@ const RecommendationCard = ({
               : "bg-gray-100 hover:bg-gray-200 text-gray-600"
           }`}
         >
-          {actionText}
+          Ver
         </button>
       </div>
     </div>
@@ -545,7 +485,7 @@ const DashboardHeader = ({ user }) => {
             darkMode ? "text-white" : "text-gray-900"
           } mb-2`}
         >
-          {getTimeBasedGreeting()}, {user.nombre.split(" ")[0]}
+          {getTimeBasedGreeting()}, Dr. {user.nombre.split(" ")[0]}
         </h1>
         <div className="flex items-center space-x-6">
           <p
@@ -560,9 +500,10 @@ const DashboardHeader = ({ user }) => {
             className={`${
               darkMode ? "text-gray-400" : "text-gray-600"
             } flex items-center`}
+            title="Especialidad médica"
           >
-            <Target className="w-4 h-4 mr-2" />
-            {user.objetivo}
+            <Stethoscope className="w-4 h-4 mr-2" />
+            Nutriólogo
           </p>
         </div>
       </div>
@@ -605,51 +546,48 @@ const DashboardHeader = ({ user }) => {
   );
 };
 
-const DashboardStats = ({ user }) => {
-  const { darkMode } = useTheme();
-  const bmi = calculateBMI(user.pesoActual, user.altura);
-  const bmiCategory = getBMICategory(bmi);
-
+const DashboardStats = () => {
+  // Datos simulados para el dashboard del doctor
   const stats = useMemo(
     () => [
       {
-        title: "Calorías Consumidas",
-        value: 1250,
-        unit: "kcal",
-        icon: Flame,
-        color: "red",
-        trend: +5.2,
-        subtitle: "Meta: 2000 kcal",
-      },
-      {
-        title: "Actividad Semanal",
-        value: 285,
-        unit: "min",
-        icon: Activity,
-        color: "blue",
-        trend: +12.8,
-        subtitle: "Meta: 300 min",
-      },
-      {
-        title: "Peso Actual",
-        value: user.pesoActual,
-        unit: "kg",
-        icon: Weight,
-        color: "purple",
-        trend: -2.1,
-        subtitle: "Última semana",
-      },
-      {
-        title: "Índice de Masa Corporal",
-        value: bmi,
+        title: "Pacientes Totales",
+        value: 42,
         unit: "",
-        icon: BarChart3,
+        icon: Users,
+        color: "blue",
+        trend: +8.2,
+        subtitle: "+3 esta semana",
+      },
+      {
+        title: "Consultas Hoy",
+        value: 7,
+        unit: "",
+        icon: UserCheck,
         color: "emerald",
-        trend: -0.5,
-        subtitle: bmiCategory.label,
+        trend: -2.1,
+        subtitle: "de 10 programadas",
+      },
+      {
+        title: "Alertas Pendientes",
+        value: 5,
+        unit: "",
+        icon: AlertCircle,
+        color: "red",
+        trend: +25.0,
+        subtitle: "3 requieren atención urgente",
+      },
+      {
+        title: "Pacientes Activos",
+        value: 35,
+        unit: "",
+        icon: Activity,
+        color: "purple",
+        trend: +5.6,
+        subtitle: "84% de los pacientes",
       },
     ],
-    [user.pesoActual, bmi, bmiCategory]
+    []
   );
 
   return (
@@ -666,29 +604,29 @@ const QuickActionsSection = () => {
 
   const actions = [
     {
-      title: "Registrar Comida",
-      subtitle: "Añade tu última comida y calcula las calorías automáticamente",
+      title: "Nueva Consulta",
+      subtitle: "Agregar una nueva consulta médica a un paciente",
       gradient: "bg-gradient-to-br from-emerald-500 to-emerald-600",
-      icon: "🍽️",
+      icon: "📋",
       badge: "Nuevo",
     },
     {
-      title: "Log Ejercicio",
-      subtitle: "Registra tu actividad física y monitorea tu progreso",
+      title: "Agregar Paciente",
+      subtitle: "Registrar un nuevo paciente en el sistema",
       gradient: "bg-gradient-to-br from-blue-500 to-blue-600",
-      icon: "🏃‍♂️",
+      icon: "👤",
     },
     {
-      title: "Ver Progreso",
-      subtitle: "Analiza tus estadísticas y tendencias de salud",
+      title: "Ver Reportes",
+      subtitle: "Generar reportes de progreso de pacientes",
       gradient: "bg-gradient-to-br from-purple-500 to-purple-600",
       icon: "📊",
     },
     {
-      title: "Consultar IA",
-      subtitle: "Obtén recomendaciones personalizadas basadas en tus datos",
-      gradient: "bg-gradient-to-br from-pink-500 to-rose-600",
-      icon: "🤖",
+      title: "Calendario",
+      subtitle: "Ver agenda de consultas programadas",
+      gradient: "bg-gradient-to-br from-amber-500 to-amber-600",
+      icon: "📅",
     },
   ];
 
@@ -734,41 +672,50 @@ const QuickActionsSection = () => {
   );
 };
 
-const NutritionOverview = () => {
+const PatientsOverview = () => {
   const { darkMode } = useTheme();
 
-  const nutritionData = [
+  // Datos de pacientes simulados
+  const patients = [
     {
-      name: "Calorías",
-      current: 1250,
-      target: NUTRITION_TARGETS.calories,
-      unit: "kcal",
-      color: "bg-gradient-to-r from-red-500 to-red-600",
-      icon: "🔥",
+      id: 1,
+      nombre: "María González",
+      edad: 42,
+      genero: "Femenino",
+      pesoActual: 68,
+      altura: 165,
+      estado: "activo",
+      ultimaCita: "15 Nov 2023",
     },
     {
-      name: "Proteínas",
-      current: 85,
-      target: NUTRITION_TARGETS.protein,
-      unit: "g",
-      color: "bg-gradient-to-r from-blue-500 to-blue-600",
-      icon: "🥩",
+      id: 2,
+      nombre: "Carlos Rodríguez",
+      edad: 35,
+      genero: "Masculino",
+      pesoActual: 92,
+      altura: 178,
+      estado: "activo",
+      ultimaCita: "14 Nov 2023",
     },
     {
-      name: "Carbohidratos",
-      current: 180,
-      target: NUTRITION_TARGETS.carbs,
-      unit: "g",
-      color: "bg-gradient-to-r from-amber-500 to-amber-600",
-      icon: "🍞",
+      id: 3,
+      nombre: "Ana Martínez",
+      edad: 28,
+      genero: "Femenino",
+      pesoActual: 58,
+      altura: 160,
+      estado: "inactivo",
+      ultimaCita: "10 Nov 2023",
     },
     {
-      name: "Grasas",
-      current: 45,
-      target: NUTRITION_TARGETS.fats,
-      unit: "g",
-      color: "bg-gradient-to-r from-green-500 to-green-600",
-      icon: "🥑",
+      id: 4,
+      nombre: "Jorge López",
+      edad: 50,
+      genero: "Masculino",
+      pesoActual: 105,
+      altura: 175,
+      estado: "activo",
+      ultimaCita: "13 Nov 2023",
     },
   ];
 
@@ -782,74 +729,7 @@ const NutritionOverview = () => {
     >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <Apple
-            className={`w-6 h-6 mr-3 ${
-              darkMode ? "text-emerald-400" : "text-emerald-600"
-            }`}
-          />
-          <h3
-            className={`text-xl font-semibold ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Resumen Nutricional
-          </h3>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span
-            className={`text-sm ${
-              darkMode ? "text-gray-400" : "text-gray-500"
-            }`}
-          >
-            Hoy
-          </span>
-          <div
-            className={`w-2 h-2 rounded-full ${
-              darkMode ? "bg-emerald-400" : "bg-emerald-500"
-            }`}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {nutritionData.map((nutrient, index) => (
-          <NutritionProgressBar key={index} {...nutrient} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const ActivityOverview = () => {
-  const { darkMode } = useTheme();
-
-  const weeklyData = [
-    { day: "Lun", minutes: 45, calories: 320, isToday: false },
-    { day: "Mar", minutes: 60, calories: 450, isToday: false },
-    { day: "Mié", minutes: 30, calories: 210, isToday: false },
-    { day: "Jue", minutes: 75, calories: 520, isToday: false },
-    { day: "Vie", minutes: 40, calories: 280, isToday: false },
-    { day: "Sáb", minutes: 90, calories: 630, isToday: true },
-    { day: "Dom", minutes: 0, calories: 0, isToday: false },
-  ];
-
-  const totalWeeklyMinutes = weeklyData.reduce(
-    (sum, day) => sum + day.minutes,
-    0
-  );
-  const averageDaily = Math.round(totalWeeklyMinutes / 7);
-
-  return (
-    <div
-      className={`${
-        darkMode
-          ? "bg-gray-800/80 border-gray-700/50"
-          : "bg-white/80 border-gray-200/50"
-      } backdrop-blur-sm rounded-2xl border p-6`}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <Activity
+          <Users
             className={`w-6 h-6 mr-3 ${
               darkMode ? "text-blue-400" : "text-blue-600"
             }`}
@@ -859,50 +739,64 @@ const ActivityOverview = () => {
               darkMode ? "text-white" : "text-gray-900"
             }`}
           >
-            Actividad Semanal
+            Pacientes Recientes
           </h3>
         </div>
-        <div
-          className={`px-3 py-1 rounded-full text-sm ${
-            darkMode ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-600"
+        <button
+          className={`text-sm px-4 py-2 rounded-full transition-colors ${
+            darkMode
+              ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
           }`}
         >
-          {averageDaily} min/día promedio
-        </div>
+          Ver todos
+        </button>
       </div>
 
-      <ActivityChart data={weeklyData} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {patients.map((patient) => (
+          <PatientCard
+            key={patient.id}
+            patient={patient}
+            onClick={() => console.log("Ver paciente:", patient.nombre)}
+          />
+        ))}
+      </div>
     </div>
   );
 };
 
-const RecommendationsSection = () => {
+const AlertsOverview = () => {
   const { darkMode } = useTheme();
 
-  const recommendations = [
+  const alerts = [
+    {
+      type: "weight",
+      message: "Aumento de peso significativo",
+      patient: "Carlos Rodríguez",
+      priority: "high",
+      time: "Hace 2 horas",
+    },
     {
       type: "nutrition",
-      title: "Aumenta tu ingesta de proteína",
-      description:
-        "Te faltan 65g de proteína para alcanzar tu meta diaria. Considera agregar pollo, pescado o legumbres.",
-      priority: "high",
-      icon: "🥩",
+      message: "Bajo consumo de proteínas",
+      patient: "Ana Martínez",
+      priority: "medium",
+      time: "Hace 1 día",
     },
     {
       type: "activity",
-      title: "Excelente progreso esta semana",
-      description:
-        "Has superado tu meta semanal de ejercicio en un 12%. ¡Sigue así!",
-      priority: "success",
-      icon: "🏆",
+      message: "Meta de actividad no cumplida",
+      patient: "Jorge López",
+      priority: "medium",
+      time: "Hace 2 días",
     },
     {
-      type: "hydration",
-      title: "Mantente hidratado",
-      description:
-        "Recuerda beber al menos 2L de agua hoy. Llevas 60% de tu meta diaria.",
-      priority: "medium",
-      icon: "💧",
+      type: "medical",
+      message: "Valores de glucosa elevados",
+      patient: "María González",
+      priority: "high",
+      time: "Hace 3 horas",
     },
   ];
 
@@ -916,39 +810,31 @@ const RecommendationsSection = () => {
     >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <div
-            className={`w-10 h-10 ${
-              darkMode ? "bg-purple-900/30" : "bg-purple-100"
-            } rounded-xl flex items-center justify-center mr-4`}
-          >
-            <Lightbulb
-              className={`w-5 h-5 ${
-                darkMode ? "text-purple-400" : "text-purple-600"
-              }`}
-            />
-          </div>
+          <AlertCircle
+            className={`w-6 h-6 mr-3 ${
+              darkMode ? "text-red-400" : "text-red-600"
+            }`}
+          />
           <h3
             className={`text-xl font-semibold ${
               darkMode ? "text-white" : "text-gray-900"
             }`}
           >
-            Recomendaciones IA
+            Alertas Recientes
           </h3>
         </div>
-        <button
-          className={`text-sm px-4 py-2 rounded-full transition-colors ${
-            darkMode
-              ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
-              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+        <div
+          className={`px-3 py-1 rounded-full text-sm ${
+            darkMode ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-600"
           }`}
         >
-          Ver todas
-        </button>
+          {alerts.length} alertas
+        </div>
       </div>
 
       <div className="space-y-4">
-        {recommendations.map((rec, index) => (
-          <RecommendationCard key={index} {...rec} />
+        {alerts.map((alert, index) => (
+          <AlertCard key={index} {...alert} />
         ))}
       </div>
     </div>
@@ -960,21 +846,21 @@ const HealthTipsSection = () => {
 
   const tips = [
     {
-      category: "Hidratación",
-      tip: "Bebe un vaso de agua al despertar para activar tu metabolismo",
-      icon: Droplets,
+      category: "Nutrición",
+      tip: "Considera recomendar una dieta mediterránea para pacientes con riesgo cardiovascular",
+      icon: Apple,
       color: "emerald",
     },
     {
-      category: "Nutrición",
-      tip: "Incluye proteína en cada comida para mantener la saciedad",
-      icon: Apple,
+      category: "Ejercicio",
+      tip: "Los pacientes con sobrepeso se benefician más de ejercicios de bajo impacto como natación o ciclismo",
+      icon: Activity,
       color: "blue",
     },
     {
-      category: "Descanso",
-      tip: "Mantén un horario regular de sueño para optimizar la recuperación",
-      icon: Bed,
+      category: "Seguimiento",
+      tip: "Programa recordatorios automáticos para seguimiento de pacientes con condiciones crónicas",
+      icon: Bell,
       color: "purple",
     },
   ];
@@ -1004,7 +890,7 @@ const HealthTipsSection = () => {
             darkMode ? "text-white" : "text-gray-900"
           }`}
         >
-          Tips de Salud
+          Recomendaciones Médicas
         </h3>
       </div>
 
@@ -1048,7 +934,7 @@ const HealthTipsSection = () => {
   );
 };
 
-// Sidebar Navigation
+// Sidebar Navigation (mantenemos el mismo componente)
 const Sidebar = ({
   isOpen,
   onClose,
@@ -1062,10 +948,7 @@ const Sidebar = ({
   const navigationItems = [
     { id: "dashboard", name: "Dashboard", icon: LayoutDashboard },
     { id: "perfil", name: "Perfil", icon: UserCircle },
-    { id: "nutricion", name: "Nutrición", icon: Utensils },
-    { id: "actividad", name: "Actividad Física", icon: Activity },
-    { id: "recomendaciones", name: "Recomendaciones", icon: Lightbulb },
-    { id: "historial", name: "Historial Médico", icon: History },
+    { id: "usuarios", name: "Pacientes", icon: Users },
   ];
 
   const handleNavigation = useCallback(
@@ -1135,7 +1018,7 @@ const Sidebar = ({
                   darkMode ? "text-gray-400" : "text-gray-500"
                 }`}
               >
-                Tu asistente de salud preventiva
+                Panel Médico
               </p>
             </div>
           </div>
@@ -1220,7 +1103,7 @@ const Sidebar = ({
                   darkMode ? "text-white" : "text-gray-900"
                 } truncate`}
               >
-                {user.nombre}
+                Dr. {user.nombre}
               </p>
               <p
                 className={`text-xs ${
@@ -1326,14 +1209,14 @@ const Header = ({ onToggleSidebar, user, onLogout }) => {
                       darkMode ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    {user.nombre.split(" ")[0]}
+                    Dr. {user.nombre.split(" ")[0]}
                   </p>
                   <p
                     className={`text-xs ${
                       darkMode ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
-                    Premium
+                    Médico
                   </p>
                 </div>
                 <ChevronDown
@@ -1365,14 +1248,14 @@ const Header = ({ onToggleSidebar, user, onLogout }) => {
                         darkMode ? "text-white" : "text-gray-900"
                       }`}
                     >
-                      {user?.nombre || "Usuario"}
+                      Dr. {user?.nombre}
                     </p>
                     <p
                       className={`text-xs ${
                         darkMode ? "text-gray-400" : "text-gray-500"
                       }`}
                     >
-                      {user?.correo || user?.email || "usuario@ejemplo.com"}
+                      {user?.correo || user?.email}
                     </p>
                   </div>
                   <button
@@ -1406,21 +1289,19 @@ const DashboardContent = () => {
   return (
     <div className="p-6 space-y-8">
       <DashboardHeader user={user} />
-      <DashboardStats user={user} />
+      <DashboardStats />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <NutritionOverview />
-          <ActivityOverview />
+          <PatientsOverview />
+          <AlertsOverview />
         </div>
 
         <div className="space-y-8">
           <QuickActionsSection />
-          <RecommendationsSection />
+          <HealthTipsSection />
         </div>
       </div>
-
-      <HealthTipsSection />
     </div>
   );
 };
@@ -1507,17 +1388,8 @@ const Dashboard = () => {
     if (activeContent === "perfil") {
       return <Perfil darkMode={darkMode} />;
     }
-    if (activeContent === "recomendaciones") {
-      return <Recomendaciones darkMode={darkMode} />;
-    }
-    if (activeContent === "nutricion") {
-      return <NutricionTracker darkMode={darkMode} />;
-    }
-    if (activeContent === "actividad") {
-      return <ActivityTracker darkMode={darkMode} />;
-    }
-    if (activeContent === "historial") {
-      return <HistoryMedical darkMode={darkMode} />;
+    if (activeContent === "usuarios") {
+      return <UsuariosTracker darkMode={darkMode} />;
     }
     return <GenericContent title={getPageTitle()} darkMode={darkMode} />;
   };

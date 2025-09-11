@@ -1,7 +1,7 @@
-// api/auth/authAuth.js
-import axios from "../../api/axios";
+import { authAPI } from "../axios";
 
+// Servicios de autenticación
 export const loginRequest = (credentials) =>
-  axios.post("/auth/login", credentials);
-export const logoutRequest = () => axios.post("/auth/logout");
-export const validateTokenRequest = () => axios.post("/auth/validate");
+  authAPI.post("/auth/login", credentials);
+export const logoutRequest = () => authAPI.post("/auth/logout");
+export const validateTokenRequest = () => authAPI.post("/auth/validate");

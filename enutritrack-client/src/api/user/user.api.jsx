@@ -1,9 +1,9 @@
-// api/users/usersAuth.js
-import axios from "../../api/axios";
+import { userAPI } from "../axios";
 
-export const getUsersRequest = () => axios.get("/users");
-export const createUsersRequest = (user) => axios.post("/users", user);
-export const getUserByEmailRequest = (email) => axios.get(`/users/${email}`);
-export const getUserByIdRequest = (id) => axios.get(`/users/${id}`);
+export const getUsersRequest = () => userAPI.get("/users");
+export const createUsersRequest = (user) => userAPI.post("/users", user);
+export const getUserByEmailRequest = (email) => userAPI.get(`/users/${email}`);
+export const getUserByIdRequest = (id) => userAPI.get(`/users/${id}`);
+export const deleteUserByIdRequest = (id) => userAPI.delete(`/users/${id}`);
 export const updateUsersRequest = (id, user) =>
-  axios.patch(`/users/${id}`, user);
+  userAPI.patch(`/users/${id}`, user);

@@ -1,4 +1,3 @@
-// microservicio/src/auth/auth.controller.ts
 import {
   Controller,
   Post,
@@ -10,26 +9,37 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  ValidationPipe,
 } from '@nestjs/common';
 import express from 'express';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from './guards/local-auth.guard';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @UseGuards(LocalAuthGuard)
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(
-    @Req() req: express.Request,
+    @Body(ValidationPipe) loginDto: LoginDto,
     @Res({ passthrough: true }) res: express.Response,
   ) {
-    if (!req.user) {
+    console.log(
+      `🔐 Intento de login para: ${loginDto.email} como ${loginDto.userType || 'auto-detect'}`,
+    );
+
+    const user = await this.authService.validateUser(
+      loginDto.email,
+      loginDto.password,
+      loginDto.userType,
+    );
+
+    if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const loginResult = await this.authService.login(req.user);
+    const loginResult = await this.authService.login(user);
 
     res.cookie('access_token', loginResult.access_token, {
       httpOnly: true,
@@ -44,17 +54,14 @@ export class AuthController {
     };
   }
 
-  // Logout completamente SIN guards - solo limpia cookie
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   async logout(
     @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
   ) {
     console.log('🚪 Logout request received');
-
-    // Limpiar cookie SIEMPRE, sin validaciones
     res.clearCookie('access_token');
-
     console.log('✅ Cookie cleared successfully');
     return { message: 'Logout exitoso' };
   }
@@ -77,7 +84,6 @@ export class AuthController {
     }
   }
 
-  // Endpoint sin guards para obtener usuario
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async getCurrentUser(@Req() req: express.Request) {

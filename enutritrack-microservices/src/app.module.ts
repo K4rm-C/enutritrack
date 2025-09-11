@@ -8,6 +8,7 @@ import { PhysicalActivityModule } from './activity/activity.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
 import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DoctorModule } from './doctor/doctor.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       autoLoadEntities: true,
     }),
     UserModule,
+    DoctorModule,
     AuthModule,
     NutritionModule,
     MedicalHistoryModule,
