@@ -75,7 +75,6 @@ cd enutrireack-microservices && npm install
 
 4. **Clonar el repositorio**
 ```bash
-git clone https://github.com/AlfredoPerez73/enutritrack.git
 EN LA CONSOLA DE VSCODE O EL CMD IR A ESTOS DIRECTORIOS
 cd enutritrack
 cd enutritrack-client (FRONTEND)
