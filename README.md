@@ -36,7 +36,7 @@
 ## 🏗️ Arquitectura del Sistema
 
 ### Bases de Datos
-- **PostgreSQL**: Datos transaccionales y relaciones complejas
+- **PostgreSQL**: Datos transaccionales y relaciones complejas https://www.postgresql.org/download/
 - **Couchbase**: Documentos JSON y perfiles de usuarios
 - **Redis**: Caché, sesiones y colas de mensajes
 
@@ -108,12 +108,16 @@ cd enutrireack-microservices && npm install
 
 2. **Iniciar contenedores Docker**
 ```bash
-EN EL BACKEND EJECUTAR ESTE COMANDO: docker-compose up -d
+EN LA DIRECCION DEL BACKEND enutrireack-server EJECUTAR ESTE COMANDO: docker-compose up -d
 sirve para levantar los servicios definidos en mi archivo docker-compose.yml QUE ES EN EL DIRECTORIO PRINCIPAL DE enutritrack-server.
   🔎 Detalles:
-      docker-compose → busca el archivo docker-compose.yml en el directorio actual (a menos que uses -f archivo.yml).
+      docker-compose → busca el archivo docker-compose.yml en el directorio actual.
       up → crea y arranca los contenedores especificados (POSTGRES, REDIS Y COUCHBASE).
       -d → los ejecuta en detached mode, es decir, no muestra los logs en la terminal.
+
+-- LUEGO DIRIGIRSE AL PUERTO DE COUCHBASE: http://localhost:8091, y crear un usuario: alfredo y contraseña: alfredo124$$ DESPUES DEBE CREAR UN BUCKET: enutritrack. PARA CREARLO DEBE DIRIGIRSE A Buckets     presionar ADD BUCKET COLOCA EL NOMBRE YA MENCIONADO enutritrack, en el Bucket Type eliga Couchbase, PRESIONE Add Bucket, Y LISTO
+-- EN POSTGRES LUEGO DE HABERLO INSTALADO DEBE CREAR UN USUARIO: postgres y CONTRASEÑA: 1234 LUEGO UNA NUEVA CONEXION EN EL PUERTO 5433, POR ULTIMO CREAR LA BASE DE DATOS: enutritrack (LAS TABLAS SE GENERAN SOLAS) YA QUE SE UTILIZA ORM: Un ORM (Mapeo Objeto-Relacional) crea las tablas de una base de datos automáticamente porque mapea los objetos del código a las tablas de la base de datos
+-- ES IMPRENSINDIBLE QUE PARA LEVANTAR EL PROYECTO CREE UN USUARIO Y CONTRASEÑA EN COUCHBASE Y POSTGRES, PARA GESTIONAR LAS BASES DE DATOS DE POSTGRES PUEDE USAR DBeaver https://dbeaver.io/download/
 ```
 
 5. **Iniciar los microservicios**
