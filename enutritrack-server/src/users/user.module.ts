@@ -5,9 +5,16 @@ import { UsersController } from './user.controller';
 import { UsersService } from './user.service';
 import { CouchbaseModule } from '../couchbase/couchbase.module';
 import { TestController } from '../test/test.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './models/user.model';
 
 @Module({
-  imports: [CacheModule.register(), HttpModule, CouchbaseModule],
+  imports: [
+    TypeOrmModule.forFeature([User]),
+    CacheModule.register(),
+    HttpModule,
+    CouchbaseModule,
+  ],
   controllers: [UsersController, TestController],
   providers: [UsersService],
   exports: [UsersService],

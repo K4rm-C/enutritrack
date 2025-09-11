@@ -32,7 +32,7 @@ export class MedicalHistoryController {
       ...createMedicalHistoryDto,
       usuarioId: userId,
     };
-    return this.medicalHistoryService.create(dtoWithUserId, authToken);
+    return this.medicalHistoryService.create(dtoWithUserId);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -43,7 +43,7 @@ export class MedicalHistoryController {
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');
 
-    return this.medicalHistoryService.findByUser(userId, authToken);
+    return this.medicalHistoryService.findByUser(userId);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -61,10 +61,6 @@ export class MedicalHistoryController {
       throw new Error('Authentication token not found');
     }
 
-    return this.medicalHistoryService.update(
-      userId,
-      updateMedicalHistoryDto,
-      authToken,
-    );
+    return this.medicalHistoryService.update(userId, updateMedicalHistoryDto);
   }
 }

@@ -36,7 +36,7 @@ export class PhysicalActivityController {
       usuarioId: userId,
     };
 
-    return this.physicalActivityService.create(dtoWithUserId, authToken);
+    return this.physicalActivityService.create(dtoWithUserId);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -51,7 +51,7 @@ export class PhysicalActivityController {
       throw new Error('Authentication token not found');
     }
 
-    return this.physicalActivityService.findAllByUser(userId, authToken);
+    return this.physicalActivityService.findAllByUser(userId);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -70,11 +70,7 @@ export class PhysicalActivityController {
     }
 
     const targetDate = startDate ? new Date(startDate) : new Date();
-    return this.physicalActivityService.getWeeklySummary(
-      userId,
-      targetDate,
-      authToken,
-    );
+    return this.physicalActivityService.getWeeklySummary(userId, targetDate);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -88,7 +84,7 @@ export class PhysicalActivityController {
       throw new Error('Authentication token not found');
     }
 
-    return this.physicalActivityService.findOne(id, authToken);
+    return this.physicalActivityService.findOne(id);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -106,11 +102,7 @@ export class PhysicalActivityController {
       throw new Error('Authentication token not found');
     }
 
-    return this.physicalActivityService.update(
-      id,
-      updatePhysicalActivityDto,
-      authToken,
-    );
+    return this.physicalActivityService.update(id, updatePhysicalActivityDto);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -124,6 +116,6 @@ export class PhysicalActivityController {
       throw new Error('Authentication token not found');
     }
 
-    return this.physicalActivityService.remove(id, authToken);
+    return this.physicalActivityService.remove(id);
   }
 }

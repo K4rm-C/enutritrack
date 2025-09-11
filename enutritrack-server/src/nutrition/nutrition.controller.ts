@@ -32,7 +32,7 @@ export class NutritionController {
       usuarioId: userId,
     };
 
-    return this.nutritionService.create(dtoWithUserId, authToken);
+    return this.nutritionService.create(dtoWithUserId);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -47,7 +47,7 @@ export class NutritionController {
       throw new Error('Authentication token not found');
     }
 
-    return this.nutritionService.findAllByUser(userId, authToken);
+    return this.nutritionService.findAllByUser(userId);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -61,7 +61,7 @@ export class NutritionController {
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');
     const targetDate = date ? new Date(date) : new Date();
-    return this.nutritionService.getDailySummary(userId, targetDate, authToken);
+    return this.nutritionService.getDailySummary(userId, targetDate);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -75,7 +75,7 @@ export class NutritionController {
       throw new Error('Authentication token not found');
     }
 
-    return this.nutritionService.findOne(id, authToken);
+    return this.nutritionService.findOne(id);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -93,7 +93,7 @@ export class NutritionController {
       throw new Error('Authentication token not found');
     }
 
-    return this.nutritionService.update(id, updateFoodRecordDto, authToken);
+    return this.nutritionService.update(id, updateFoodRecordDto);
   }
 
   @UseGuards(CookieAuthGuard)
@@ -107,6 +107,6 @@ export class NutritionController {
       throw new Error('Authentication token not found');
     }
 
-    return this.nutritionService.remove(id, authToken);
+    return this.nutritionService.remove(id);
   }
 }
