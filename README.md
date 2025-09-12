@@ -117,6 +117,14 @@ sirve para levantar los servicios definidos en mi archivo docker-compose.yml QUE
 
 -- LUEGO DIRIGIRSE AL PUERTO DE COUCHBASE: http://localhost:8091, y crear un usuario: alfredo y contraseña: alfredo124$$ DESPUES DEBE CREAR UN BUCKET: enutritrack. PARA CREARLO DEBE DIRIGIRSE A Buckets     presionar ADD BUCKET COLOCA EL NOMBRE YA MENCIONADO enutritrack, en el Bucket Type eliga Couchbase, PRESIONE Add Bucket, Y LISTO
 -- EN POSTGRES LUEGO DE HABERLO INSTALADO DEBE CREAR UN USUARIO: postgres y CONTRASEÑA: 1234 LUEGO UNA NUEVA CONEXION EN EL PUERTO 5433, POR ULTIMO CREAR LA BASE DE DATOS: enutritrack (LAS TABLAS SE GENERAN SOLAS) YA QUE SE UTILIZA ORM: Un ORM (Mapeo Objeto-Relacional) crea las tablas de una base de datos automáticamente porque mapea los objetos del código a las tablas de la base de datos
+-- HAY QUE TENER EN CUENTA QUE COMO EL ADMIN DE LA BASE DE DATOS ES QUIEN LE DA EL ALTA AL MEDICO/NUTRICIONISTA/ESPECIALISTA SE DEBE HACER UNA PETICION POST DESDE EL MICROSERVCIO DEL DOCTOR http://localhost:3007/doctors/
+-- CUERPO DEL JSON PARA HACER LA PETICION
+{
+  "nombre": "doctor1",
+  "email": "doctor1@example.com",
+  "contraseña": "DoctorNU01"
+}
+-- SE ACLARA QUE SE SABE QUE EL MICROSERVICIO DEBE RECIBIR XML.
 -- ES IMPRENSINDIBLE QUE PARA LEVANTAR EL PROYECTO CREE UN USUARIO Y CONTRASEÑA EN COUCHBASE Y POSTGRES, PARA GESTIONAR LAS BASES DE DATOS DE POSTGRES PUEDE USAR DBeaver https://dbeaver.io/download/
 ```
 
