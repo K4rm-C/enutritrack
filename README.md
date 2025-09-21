@@ -36,7 +36,7 @@
 ## 🏗️ Arquitectura del Sistema
 
 ### Bases de Datos
-- **PostgreSQL**: Datos transaccionales y relaciones complejas
+- **PostgreSQL**: Datos transaccionales y relaciones complejas https://www.postgresql.org/download/
 - **Couchbase**: Documentos JSON y perfiles de usuarios
 - **Redis**: Caché, sesiones y colas de mensajes
 
@@ -46,7 +46,25 @@
 
 - **Node.js** 18+ 
 - **NestJs**
-- **Docker** y **Docker Compose** - deberia dejar prendido
+- 1. Instalar Node.js (si aún no lo tienes)
+
+Descarga la última versión LTS desde la página oficial:
+👉 https://nodejs.org/
+
+Verifica la instalación:
+
+node -v
+npm -v
+🔹 2. Instalar el CLI de NestJS
+
+  El CLI facilita la creación de proyectos y módulos:
+  npm install -g @nestjs/cli
+
+
+  Verifica:
+  nest --version
+
+- **Docker** y **Docker Compose** - deberia dejar abierto DOCKER
 - **npm (para la instalacion de dependencias)**
 - **VSCODE**
 
@@ -57,12 +75,27 @@
 git clone https://github.com/AlfredoPerez73/enutritrack.git
 ```
 
-2. **Iniciar contenedores Docker**
+3. **Instalar dependencias**
 ```bash
-docker-compose up -d
-  - REDIS
-  - COUCHBASE
-  - POSTGRES
+# Instalar para cada directorio:
+En la direccion: cd enutrireack-client, EJECUTAR ESTE COMANDO: npm install
+En la direccion: cd enutrireack-server, EJECUTAR ESTE COMANDO: npm install
+En la direccion: cd enutrireack-microservices, EJECUTAR ESTE COMANDO: npm install
+```
+
+4. **Directorios del proyecto**
+```bash
+EN LA CONSOLA DE VSCODE O EL CMD IR A ESTOS DIRECTORIOS DENTRO DEL PROYECTO
+PRIMERA CONSOLA: cd enutritrack-client (FRONTEND)
+SEGUNDA CONSOLA: cd enutritrack-server (BACKEND)
+TERCERA CONSOLA: cd enutritrack-microservices (MICROSERVICIOS) MAIN
+CUARTA CONSOLA: cd enutritrack-microservices/src/auth
+QUINTA CONSOLA: cd enutritrack-microservices/src/users
+SEXTA CONSOLA: cd enutritrack-microservices/src/nutrition
+SEPTIMA CONSOLA: cd enutritrack-microservices/src/activity
+OCTAVA CONSOLA cd enutritrack-microservices/src/recommendation
+NOVENA CONSOLA cd enutritrack-microservices/src/medical-history
+DECIMA CONSOLA: cd enutritrack-microservices/src/doctor
 ```
 
 3. **Instalar dependencias**
@@ -73,21 +106,26 @@ cd enutrireack-server && npm install
 cd enutrireack-microservices && npm install
 ```
 
-4. **Clonar el repositorio**
+2. **Iniciar contenedores Docker**
 ```bash
-EN LA CONSOLA DE VSCODE O EL CMD IR A ESTOS DIRECTORIOS
-cd enutritrack
-cd enutritrack-client (FRONTEND)
-cd enutritrack-server (BACKEND)
-cd enutritrack-microservices (MICROSERVICIOS) MAIN
-    cd enutritrack-microservices/src/auth
-    cd enutritrack-microservices/src/users
-    cd enutritrack-microservices/src/nutrition
-    cd enutritrack-microservices/src/activity
-    cd enutritrack-microservices/src/recommendation
-    cd enutritrack-microservices/src/medical-history
-    cd enutritrack-microservices/src/doctor
+EN LA DIRECCION DEL BACKEND enutrireack-server EJECUTAR ESTE COMANDO: docker-compose up -d
+sirve para levantar los servicios definidos en mi archivo docker-compose.yml QUE ES EN EL DIRECTORIO PRINCIPAL DE enutritrack-server.
+  🔎 Detalles:
+      docker-compose → busca el archivo docker-compose.yml en el directorio actual.
+      up → crea y arranca los contenedores especificados (POSTGRES, REDIS Y COUCHBASE).
+      -d → los ejecuta en detached mode, es decir, no muestra los logs en la terminal.
 
+-- LUEGO DIRIGIRSE AL PUERTO DE COUCHBASE: http://localhost:8091, y crear un usuario: alfredo y contraseña: alfredo124$$ DESPUES DEBE CREAR UN BUCKET: enutritrack. PARA CREARLO DEBE DIRIGIRSE A Buckets     presionar ADD BUCKET COLOCA EL NOMBRE YA MENCIONADO enutritrack, en el Bucket Type eliga Couchbase, PRESIONE Add Bucket, Y LISTO
+-- EN POSTGRES LUEGO DE HABERLO INSTALADO DEBE CREAR UN USUARIO: postgres y CONTRASEÑA: 1234 LUEGO UNA NUEVA CONEXION EN EL PUERTO 5433, POR ULTIMO CREAR LA BASE DE DATOS: enutritrack (LAS TABLAS SE GENERAN SOLAS) YA QUE SE UTILIZA ORM: Un ORM (Mapeo Objeto-Relacional) crea las tablas de una base de datos automáticamente porque mapea los objetos del código a las tablas de la base de datos
+-- HAY QUE TENER EN CUENTA QUE COMO EL ADMIN DE LA BASE DE DATOS ES QUIEN LE DA EL ALTA AL MEDICO/NUTRICIONISTA/ESPECIALISTA SE DEBE HACER UNA PETICION POST DESDE EL MICROSERVCIO DEL DOCTOR http://localhost:3007/doctors/
+-- CUERPO DEL JSON PARA HACER LA PETICION
+{
+  "nombre": "doctor1",
+  "email": "doctor1@example.com",
+  "contraseña": "DoctorNU01"
+}
+-- SE ACLARA QUE SE SABE QUE EL MICROSERVICIO DEBE RECIBIR XML.
+-- ES IMPRENSINDIBLE QUE PARA LEVANTAR EL PROYECTO CREE UN USUARIO Y CONTRASEÑA EN COUCHBASE Y POSTGRES, PARA GESTIONAR LAS BASES DE DATOS DE POSTGRES PUEDE USAR DBeaver https://dbeaver.io/download/
 ```
 
 5. **Iniciar los microservicios**
