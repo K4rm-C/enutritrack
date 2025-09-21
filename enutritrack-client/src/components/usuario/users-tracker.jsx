@@ -60,7 +60,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const { createUser, updateUser, getUsers, deleteUser } = useUsers();
-  const { user: currentUser } = useAuth();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -72,18 +72,18 @@ const UsersListDashboard = ({ darkMode = false }) => {
     peso_actual: "",
     objetivo_peso: "",
     nivel_actividad: "",
-    doctorId: currentUser?.userId || "",
+    doctorId: user?.userId || "",
   });
 
-  // Actualizar formData cuando currentUser cambie
+  // Actualizar formData cuando user cambie
   useEffect(() => {
-    if (currentUser?.userId) {
+    if (user?.userId) {
       setFormData((prev) => ({
         ...prev,
-        doctorId: currentUser.userId,
+        doctorId: user.userId,
       }));
     }
-  }, [currentUser]);
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -109,7 +109,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
         objetivo_peso: userdata.objetivoPeso || userdata.objetivo_peso || "",
         nivel_actividad:
           userdata.nivelActividad || userdata.nivel_actividad || "",
-        doctorId: currentUser?.userId || "",
+        doctorId: user?.userId || "",
       });
     } else {
       // Modo creación
@@ -124,7 +124,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
         peso_actual: "",
         objetivo_peso: "",
         nivel_actividad: "",
-        doctorId: currentUser?.userId || "",
+        doctorId: user?.userId || "",
       });
     }
     setShowFormModal(true);
@@ -194,13 +194,12 @@ const UsersListDashboard = ({ darkMode = false }) => {
 
   useEffect(() => {
     const loadUsers = async () => {
-      if (!currentUser?.userId) return;
-
       setIsLoading(true);
       try {
         const usersData = await getUsers();
+        console.log(usersData);
         const doctorUsers = Array.isArray(usersData)
-          ? usersData.filter((u) => u.doctorId === currentUser.userId)
+          ? usersData.filter((u) => u.doctorId === user.userId)
           : [];
         setUsers(doctorUsers);
       } catch (error) {
@@ -211,9 +210,8 @@ const UsersListDashboard = ({ darkMode = false }) => {
         setIsLoading(false);
       }
     };
-
     loadUsers();
-  }, [currentUser?.userId]);
+  }, [user?.userId]);
 
   // Filtrar y ordenar usuarios
   const filteredUsers = users.filter((user) => {
@@ -256,24 +254,24 @@ const UsersListDashboard = ({ darkMode = false }) => {
   // Paginación
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const u = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
 
   // Estadísticas generales
   const stats = {
-    total: users.length,
-    hombres: users.filter((u) => (u.genero || u.género) === "M").length,
-    mujeres: users.filter((u) => (u.genero || u.género) === "F").length,
+    total: u.length,
+    hombres: u.filter((u) => (u.genero || u.género) === "M").length,
+    mujeres: u.filter((u) => (u.genero || u.género) === "F").length,
     edadPromedio:
-      users.length > 0
+      u.length > 0
         ? (
-            users.reduce((sum, u) => {
+            u.reduce((sum, u) => {
               const edad = calcularEdad(
                 u.fechaNacimiento || u.fecha_nacimiento
               );
               return sum + (edad || 0);
             }, 0) /
-            users.filter((u) =>
+            u.filter((u) =>
               calcularEdad(u.fechaNacimiento || u.fecha_nacimiento)
             ).length
           ).toFixed(1)
@@ -296,7 +294,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
             onClick={async () => {
               try {
                 await deleteUser(userId);
-                setUsers(users.filter((user) => user.id !== userId));
+                setUsers(u.filter((user) => user.id !== userId));
                 toast.success("Usuario eliminado correctamente");
               } catch (error) {
                 console.error("Error eliminando usuario:", error);
@@ -1842,7 +1840,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
 
         {/* Lista de usuarios */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          {currentUsers.map((user) => (
+          {users.map((user) => (
             <UserCard key={user.id} user={user} />
           ))}
         </div>

@@ -4,11 +4,10 @@ import {
   IsOptional,
   IsNumber,
   IsDateString,
-  IsUUID,
   IsEnum,
 } from 'class-validator';
 import { Gender, ActivityLevel } from '../models/user.model';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateUserDto {
   @IsString()
@@ -27,13 +26,16 @@ export class CreateUserDto {
   género: Gender;
 
   @IsNumber()
+  @Type(() => Number)
   altura: number;
 
   @IsNumber()
+  @Type(() => Number)
   peso_actual: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   objetivo_peso?: number;
 
   @IsEnum(ActivityLevel)
@@ -42,7 +44,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   @Transform(({ value, obj }) => {
-    // If the request has `doctor_id`, use it, otherwise use `doctorId` (if sent in camelCase)
     return obj.doctor_id || value;
   })
   doctorId?: string;

@@ -3,7 +3,6 @@ import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
 
 export class CreateDoctorDto {
   @IsString()
-  @MinLength(2)
   nombre: string;
 
   @IsEmail()

@@ -31,7 +31,6 @@ export class Doctor {
   })
   updatedAt: Date;
 
-  // Relación corregida: Un doctor tiene muchos pacientes (usuarios)
   @OneToMany(() => User, (user) => user.doctor)
-  patients: User[]; // Cambié "doctors" por "patients"
+  patients: User[];
 }

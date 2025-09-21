@@ -3,12 +3,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import { XmlInterceptor } from '../interceptor/xml.interceptor';
+import { xmlParser } from '../middleware/xml-parser.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
-  // Configurar CORS
+  app.use('/users', xmlParser);
+  app.useGlobalInterceptors(new XmlInterceptor());
   app.enableCors({
     origin: 'http://localhost:5174',
     credentials: true,
