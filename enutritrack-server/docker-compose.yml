@@ -12,33 +12,8 @@ services:
     networks:
       - enutritrack-network
 
-  couchbase:
-    image: couchbase/server:community-7.1.1 # Nota: imagen corregida
-    ports:
-      - '8091-8096:8091-8096'
-      - '11210:11210'
-    environment:
-      - COUCHBASE_ADMINISTRATOR_USERNAME=alfredo
-      - COUCHBASE_ADMINISTRATOR_PASSWORD=alfredo124$$
-    volumes:
-      - couchbase_data:/opt/couchbase/var
-    networks:
-      - enutritrack-network
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - '6379:6379'
-    command: redis-server --requirepass redispassword
-    volumes:
-      - redis_data:/data
-    networks:
-      - enutritrack-network
-
 volumes:
   postgres_data:
-  couchbase_data:
-  redis_data:
 
 networks:
   enutritrack-network:

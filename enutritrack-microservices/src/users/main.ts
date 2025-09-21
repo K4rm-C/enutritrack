@@ -2,12 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import { xmlParser } from '../middleware/xml-parser.middleware';
+import { XmlInterceptor } from '../interceptor/xml.interceptor';
 
 async function bootstrap() {
   // Crear aplicación HTTP
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
 
+  app.use('/users', xmlParser);
+  app.useGlobalInterceptors(new XmlInterceptor());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

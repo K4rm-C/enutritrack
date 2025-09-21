@@ -1,10 +1,7 @@
 // backend/src/auth/auth.service.ts
-import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
-import { CouchbaseService } from '../couchbase/couchbase.service';
 import { UsersService } from '../users/user.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -15,8 +12,6 @@ export class AuthService {
 
   constructor(
     private httpService: HttpService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private couchbaseService: CouchbaseService,
     private jwtService: JwtService,
     private userService: UsersService,
   ) {}
@@ -78,13 +73,6 @@ export class AuthService {
 
       console.log(`Token generado exitosamente para usuario: ${user.email}`);
 
-      // Guardar token en cache con TTL
-      await this.cacheManager.set(
-        `auth:token:${token}`,
-        { userId: user.id, email: user.email },
-        24 * 60 * 60, // 24 horas en SEGUNDOS (no milisegundos)
-      );
-
       return {
         access_token: token,
         user: {
@@ -118,13 +106,7 @@ export class AuthService {
 
   async logout(token: string, userId?: string): Promise<void> {
     try {
-      if (token) {
-        await this.cacheManager.del(`auth:token:${token}`);
-      }
-
-      if (userId) {
-        await this.markSessionsInactive(userId);
-      }
+      // Notificar al microservicio sobre el logout
       try {
         await firstValueFrom(
           this.httpService.post(
@@ -147,27 +129,16 @@ export class AuthService {
   }
 
   async getUserSessions(userId: string) {
-    try {
-      const sessions = await this.cacheManager.get(`user:sessions:${userId}`);
-      if (sessions) {
-        return sessions;
-      }
-    } catch (error) {
-      console.warn('Error getting sessions from cache:', error);
-    }
-
+    // Sin cache, retornamos array vacío
+    // Podrías implementar esto consultando directamente la base de datos
+    // o manejarlo a través del microservicio
+    console.log(`Getting sessions for user: ${userId}`);
     return [];
-  }
-
-  private async markSessionsInactive(userId: string) {
-    try {
-      await this.cacheManager.del(`user:sessions:${userId}`);
-    } catch (error) {
-      console.warn('Error marking sessions inactive:', error);
-    }
   }
 
   async cleanupExpiredTokens() {
     console.log('Cleaning up expired tokens...');
+    // Con JWT stateless, los tokens expiran automáticamente
+    // No necesitas limpiar nada manualmente
   }
 }

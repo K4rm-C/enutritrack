@@ -12,7 +12,6 @@ import { Repository } from 'typeorm';
 import { User } from './models/user.model';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
-import { HttpService } from '@nestjs/axios';
 import { CouchbaseService } from '../couchbase/couchbase.service';
 import { Doctor } from '../doctor/models/doctor.model';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -22,7 +21,7 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    @InjectRepository(Doctor) // Inyectar el repositorio del Doctor
+    @InjectRepository(Doctor)
     private doctorRepository: Repository<Doctor>,
     @Inject(CACHE_MANAGER) private cacheManager: cacheManager_1.Cache,
     private couchbaseService: CouchbaseService,
