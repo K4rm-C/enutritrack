@@ -1,4 +1,4 @@
-// enutritrack-server/src/medical-history/medical-history.controller.ts
+// src/medical-history/medical-history.controller.ts
 import {
   Controller,
   Get,
@@ -10,8 +10,9 @@ import {
   Req,
 } from '@nestjs/common';
 import { MedicalHistoryService } from './medical-history.service';
+import { CreateMedicalHistoryDto } from './dto/create-medical-history.dto';
+import { UpdateMedicalHistoryDto } from './dto/update-medical-history.dto';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
-import express from 'express';
 
 @Controller('medical-history')
 export class MedicalHistoryController {
@@ -19,48 +20,38 @@ export class MedicalHistoryController {
 
   @UseGuards(CookieAuthGuard)
   @Post()
-  async create(
-    @Req() req: express.Request,
-    @Body() createMedicalHistoryDto: any,
+  create(
+    @Body() createMedicalHistoryDto: CreateMedicalHistoryDto,
+    @Req() req: any,
   ) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
-
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
+    // Obtener userId del token en lugar del body
+    const userId = req.user?.userId || req.user?.sub;
     const dtoWithUserId = {
       ...createMedicalHistoryDto,
-      usuarioId: userId,
+      usuarioId: userId, // Usar el userId del token
     };
     return this.medicalHistoryService.create(dtoWithUserId);
   }
 
   @UseGuards(CookieAuthGuard)
   @Get(':userId')
-  async findByUser(@Req() req: express.Request) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
-    return this.medicalHistoryService.findByUser(userId);
+  async findByUser(@Param('userId') userId: string) {
+    try {
+      const medicalHistory =
+        await this.medicalHistoryService.findByUser(userId);
+      return medicalHistory;
+    } catch (error) {
+      console.error('Error en controller:', error);
+      throw error;
+    }
   }
 
   @UseGuards(CookieAuthGuard)
   @Patch(':userId')
-  async update(
-    @Req() req: express.Request,
-    @Body() updateMedicalHistoryDto: any,
+  update(
+    @Param('userId') userId: string,
+    @Body() updateMedicalHistoryDto: UpdateMedicalHistoryDto,
   ) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
-    if (!authToken) {
-      throw new Error('Authentication token not found');
-    }
-
     return this.medicalHistoryService.update(userId, updateMedicalHistoryDto);
   }
 }

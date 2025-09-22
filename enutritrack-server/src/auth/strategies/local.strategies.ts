@@ -1,4 +1,3 @@
-// src/auth/strategies/local.strategy.ts
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
@@ -10,11 +9,13 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     super({
       usernameField: 'email',
       passwordField: 'password',
+      passReqToCallback: true, // Para acceder al request y obtener userType
     });
   }
 
-  async validate(email: string, password: string): Promise<any> {
-    const user = await this.authService.validateUser(email, password);
+  async validate(request: any, email: string, password: string): Promise<any> {
+    const userType = request.body?.userType;
+    const user = await this.authService.validateUser(email, password, userType);
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
