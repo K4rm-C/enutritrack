@@ -2,6 +2,8 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../users/users.service';
 import { DoctorService } from '../doctor/doctor.service';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 export interface AuthUser {
   id: string;
@@ -16,6 +18,8 @@ export class AuthService {
     private userService: UserService,
     private doctorService: DoctorService,
     private jwtService: JwtService,
+    @InjectDataSource()
+    private dataSource: DataSource,
   ) {}
 
   async validateUser(
@@ -26,64 +30,31 @@ export class AuthService {
     try {
       console.log(`🔍 Validando ${userType || 'usuario/doctor'}: ${email}`);
 
-      let user: any = null;
-      let actualUserType: 'user' | 'doctor';
+      // Usar la función SQL para validar credenciales
+      const result = await this.dataSource.query(
+        'SELECT * FROM validate_user_login($1, $2, $3)',
+        [email, password, userType]
+      ) as Array<{
+        id: string;
+        email: string;
+        nombre: string;
+        user_type: string;
+        is_valid: boolean;
+        error_message: string;
+      }>;
 
-      if (userType) {
-        if (userType === 'user') {
-          user = await this.userService.findByEmail(email);
-          actualUserType = 'user';
-        } else {
-          user = await this.doctorService.findByEmail(email);
-          actualUserType = 'doctor';
-        }
-      } else {
-        user = await this.userService.findByEmail(email);
-        if (user) {
-          actualUserType = 'user';
-        } else {
-          user = await this.doctorService.findByEmail(email);
-          actualUserType = 'doctor';
-        }
-      }
-
-      if (!user) {
-        console.log(`❌ Usuario/Doctor no encontrado: ${email}`);
+      if (!result[0]?.is_valid) {
+        console.log(`❌ Validación fallida: ${result[0]?.error_message || 'Error desconocido'}`);
         return null;
       }
 
-      if (!user.contraseñaHash) {
-        console.log(`❌ ${email} no tiene contraseña hasheada`);
-        return null;
-      }
+      console.log(`✅ ${result[0].user_type} validado exitosamente: ${email}`);
 
-      let isPasswordValid: boolean;
-      if (actualUserType === 'user') {
-        isPasswordValid = await this.userService.validatePassword(
-          password,
-          user.contraseñaHash,
-        );
-      } else {
-        const doctorPasswordResult = await this.doctorService.validatePassword(
-          password,
-          user.contraseñaHash,
-        );
-        isPasswordValid = doctorPasswordResult.isValid;
-      }
-
-      if (!isPasswordValid) {
-        console.log(`❌ Contraseña incorrecta para: ${email}`);
-        return null;
-      }
-
-      console.log(
-        `✅ ${actualUserType === 'user' ? 'Usuario' : 'Doctor'} validado exitosamente: ${email}`,
-      );
-
-      const { contraseñaHash, ...result } = user;
       return {
-        ...result,
-        userType: actualUserType,
+        id: result[0].id,
+        email: result[0].email,
+        nombre: result[0].nombre,
+        userType: result[0].user_type as 'user' | 'doctor',
       };
     } catch (error) {
       console.error('💥 Error en validateUser:', error);
@@ -91,6 +62,7 @@ export class AuthService {
     }
   }
 
+  // Los demás métodos se mantienen EXACTAMENTE igual
   async login(user: AuthUser) {
     if (!user || !user.email || !user.id) {
       console.log('❌ Datos de usuario inválidos para login');

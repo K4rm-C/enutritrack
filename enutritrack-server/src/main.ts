@@ -13,6 +13,10 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use('/users', xmlParser);
   app.use('/doctors', xmlParser);
+  app.use('/auth/login', xmlParser);
+  app.use('/auth/logout', xmlParser);
+  app.use('/auth/me', xmlParser);
+  app.use('/auth/validate', xmlParser);
   app.useGlobalInterceptors(new XmlInterceptor());
   // Configurar CORS
   app.enableCors({

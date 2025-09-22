@@ -49,7 +49,7 @@ export class XmlInterceptor implements NestInterceptor {
         single: 'physical-activity',
         multiple: 'physicals-activitys',
       },
-      '/auth': { single: 'auth', multiple: 'auths' },
+      '/auth/login': { single: 'auth/login', multiple: 'auths/login' },
     };
 
     // Encontrar la ruta correspondiente
