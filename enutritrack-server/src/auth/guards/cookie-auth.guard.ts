@@ -13,7 +13,7 @@ export class CookieAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
-    // Buscar token solo en headers (ya no en cookies)
+    // Buscar token en diferentes lugares
     let token = null;
 
     // 1. Buscar en header Authorization (Bearer token)
@@ -29,15 +29,22 @@ export class CookieAuthGuard implements CanActivate {
       token = request.headers['x-access-token'];
     }
 
+    // 3. Buscar en cookies como última opción
+    if (!token && request.cookies && request.cookies['access_token']) {
+      token = request.cookies['access_token'];
+    }
+
     console.log('Auth Guard - Token search:', {
       authHeader: request.headers.authorization,
+      xAccessToken: request.headers['x-access-token'],
+      cookieToken: request.cookies?.['access_token'],
       tokenFound: !!token,
       url: request.url,
       method: request.method,
     });
 
     if (!token) {
-      console.error('Token no proporcionado en Authorization header');
+      console.error('Token no proporcionado en ningún lugar');
       throw new UnauthorizedException('Token no proporcionado');
     }
 
@@ -46,12 +53,13 @@ export class CookieAuthGuard implements CanActivate {
         secret: process.env.JWT_SECRET || 'tu_clave_secreta_super_segura',
       });
 
+      // Agregar información del usuario a la request
       request.user = payload;
       console.log('Token verificado exitosamente:', payload);
       return true;
     } catch (error) {
       console.error('Error verificando token:', error.message);
-      throw new UnauthorizedException('Token inválido');
+      throw new UnauthorizedException('Token inválido o expirado');
     }
   }
 }

@@ -30,10 +30,10 @@ export class AuthService {
     try {
       console.log(`🔍 Validando ${userType || 'usuario/doctor'}: ${email}`);
 
-      // Usar la función SQL para validar credenciales
+      // Usar la función SQL para validar credenciales - CORRECCIÓN AQUÍ
       const result = await this.dataSource.query(
         'SELECT * FROM validate_user_login($1, $2, $3)',
-        [email, password, userType]
+        [email, password, userType || null]  // Pasar null si userType es undefined
       ) as Array<{
         id: string;
         email: string;
@@ -43,8 +43,9 @@ export class AuthService {
         error_message: string;
       }>;
 
-      if (!result[0]?.is_valid) {
-        console.log(`❌ Validación fallida: ${result[0]?.error_message || 'Error desconocido'}`);
+      // Verificar si hay resultados
+      if (!result || result.length === 0) {
+        console.log('❌ No se obtuvieron resultados de la validación');
         return null;
       }
 
@@ -62,7 +63,7 @@ export class AuthService {
     }
   }
 
-  // Los demás métodos se mantienen EXACTAMENTE igual
+  // Los demás métodos se mantienen igual...
   async login(user: AuthUser) {
     if (!user || !user.email || !user.id) {
       console.log('❌ Datos de usuario inválidos para login');
@@ -105,7 +106,7 @@ export class AuthService {
         userId: payload.sub,
         email: payload.email,
         nombre: payload.nombre,
-        userType: payload.userType || 'user', // Por retrocompatibilidad
+        userType: payload.userType || 'user',
       };
     } catch (error) {
       throw new UnauthorizedException('Token inválido');

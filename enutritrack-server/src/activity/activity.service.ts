@@ -1,116 +1,127 @@
 // src/physical-activity/physical-activity.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { InjectConnection } from '@nestjs/typeorm';
+import { Connection } from 'typeorm';
 import { PhysicalActivity } from './models/activity.model';
 import { CreatePhysicalActivityDto } from './dto/create-physical-activity.dto';
 import { UpdatePhysicalActivityDto } from './dto/update-physical-activity.dto';
-import { User } from '../users/models/user.model';
 
 @Injectable()
 export class PhysicalActivityService {
   constructor(
-    @InjectRepository(PhysicalActivity)
-    private physicalActivityRepository: Repository<PhysicalActivity>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    @InjectConnection()
+    private connection: Connection,
   ) {}
 
   async create(
     createPhysicalActivityDto: CreatePhysicalActivityDto,
-  ): Promise<PhysicalActivity> {
-    const user = await this.userRepository.findOne({
-      where: { id: createPhysicalActivityDto.usuarioId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    const physicalActivity = this.physicalActivityRepository.create({
-      ...createPhysicalActivityDto,
-      usuario: user,
-    });
-
-    return this.physicalActivityRepository.save(physicalActivity);
+  ): Promise<void> {
+    const { usuarioId, tipo_actividad, duracion, caloriasQuemadas, fecha } = createPhysicalActivityDto;
+    
+    await this.connection.query(
+      'CALL create_physical_activity($1, $2, $3, $4, $5)',
+      [usuarioId, tipo_actividad, duracion, caloriasQuemadas, fecha]
+    );
   }
 
   async findAllByUser(userId: string): Promise<PhysicalActivity[]> {
-    return this.physicalActivityRepository.find({
-      where: { usuario: { id: userId } },
-      relations: ['usuario'],
-      order: { fecha: 'DESC' },
-    });
+    const result = await this.connection.query(
+      'SELECT * FROM get_activities_by_user($1)',
+      [userId]
+    );
+    
+    return result.map(row => ({
+      id: row.id,
+      usuario: { id: row.usuario_id } as any,
+      tipo_actividad: row.tipo_actividad,
+      duracion: row.duracion_min,
+      caloriasQuemadas: parseFloat(row.calorias_quemadas),
+      fecha: row.fecha,
+      created_at: row.created_at
+    }));
   }
 
   async findOne(id: string): Promise<PhysicalActivity> {
-    const physicalActivity = await this.physicalActivityRepository.findOne({
-      where: { id },
-      relations: ['usuario'],
-    });
-
-    if (!physicalActivity) {
-      throw new NotFoundException('Actividad física no encontrada');
+    try {
+      const result = await this.connection.query(
+        'SELECT * FROM get_activity_by_id($1)',
+        [id]
+      );
+      
+      if (result.length === 0) {
+        throw new NotFoundException('Actividad física no encontrada');
+      }
+      
+      const row = result[0];
+      return {
+        id: row.id,
+        usuario: { id: row.usuario_id } as any,
+        tipo_actividad: row.tipo_actividad,
+        duracion: row.duracion_min,
+        caloriasQuemadas: parseFloat(row.calorias_quemadas),
+        fecha: row.fecha,
+        created_at: row.created_at
+      };
+    } catch (error) {
+      if (error.message.includes('no encontrada')) {
+        throw new NotFoundException('Actividad física no encontrada');
+      }
+      throw error;
     }
-
-    return physicalActivity;
   }
 
   async update(
     id: string,
     updatePhysicalActivityDto: UpdatePhysicalActivityDto,
-  ): Promise<PhysicalActivity> {
-    const physicalActivity = await this.findOne(id);
-
-    if (updatePhysicalActivityDto.usuarioId) {
-      const user = await this.userRepository.findOne({
-        where: { id: updatePhysicalActivityDto.usuarioId },
-      });
-
-      if (!user) {
-        throw new NotFoundException('Usuario no encontrado');
+  ): Promise<void> {
+    const { usuarioId, tipo_actividad, duracion, caloriasQuemadas, fecha } = updatePhysicalActivityDto;
+    
+    try {
+      await this.connection.query(
+        'CALL update_physical_activity($1, $2, $3, $4, $5, $6)',
+        [id, usuarioId, tipo_actividad, duracion, caloriasQuemadas, fecha]
+      );
+    } catch (error) {
+      if (error.message.includes('no encontrada')) {
+        throw new NotFoundException(error.message);
       }
-
-      physicalActivity.usuario = user;
+      throw error;
     }
-
-    Object.assign(physicalActivity, updatePhysicalActivityDto);
-
-    return this.physicalActivityRepository.save(physicalActivity);
   }
 
   async remove(id: string): Promise<void> {
-    const physicalActivity = await this.findOne(id);
-    await this.physicalActivityRepository.remove(physicalActivity);
+    try {
+      await this.connection.query(
+        'CALL delete_physical_activity($1)',
+        [id]
+      );
+    } catch (error) {
+      if (error.message.includes('no encontrada')) {
+        throw new NotFoundException('Actividad física no encontrada');
+      }
+      throw error;
+    }
   }
 
   async getWeeklySummary(userId: string, startDate: Date): Promise<any> {
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 7);
-
-    const activities = await this.physicalActivityRepository.find({
-      where: {
-        usuario: { id: userId },
-        fecha: Between(startDate, endDate),
-      },
-    });
-
-    const summary = activities.reduce(
-      (acc, activity) => {
-        acc.totalMinutos += activity.duracion;
-        acc.totalCaloriasQuemadas += activity.caloriasQuemadas;
-        acc.actividadesPorTipo[activity.tipo_actividad] =
-          (acc.actividadesPorTipo[activity.tipo_actividad] || 0) +
-          activity.duracion;
-        return acc;
-      },
-      {
-        totalMinutos: 0,
-        totalCaloriasQuemadas: 0,
-        actividadesPorTipo: {},
-      },
+    const result = await this.connection.query(
+      'SELECT * FROM get_weekly_summary($1, $2)',
+      [userId, startDate]
     );
-
-    return summary;
+    
+    if (result.length > 0) {
+      const row = result[0];
+      return {
+        totalMinutos: parseInt(row.total_minutos),
+        totalCaloriasQuemadas: parseFloat(row.total_calorias_quemadas),
+        actividadesPorTipo: row.actividades_por_tipo
+      };
+    }
+    
+    return {
+      totalMinutos: 0,
+      totalCaloriasQuemadas: 0,
+      actividadesPorTipo: {}
+    };
   }
 }

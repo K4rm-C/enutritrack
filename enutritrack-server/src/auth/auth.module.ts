@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { UserModule } from '../users/users.module';
-import { DoctorModule } from '../doctor/doctor.module'; // Asegúrate de que exista
+import { DoctorModule } from '../doctor/doctor.module';
 import { JwtStrategy } from '../auth/strategies/jwt.strategies';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CookieAuthGuard } from './guards/cookie-auth.guard';
