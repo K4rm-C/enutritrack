@@ -1,19 +1,13 @@
-import {
-  Injectable,
-  Logger,
-  HttpException,
-  HttpStatus,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  Recommendation,
+  RecommendationType,
+} from './models/recommendation.model';
 import { CreateRecommendationDto } from './dto/create-recommendation.dto';
-import { Recommendation } from './models/recommendation.model';
-import { RecommendationType } from './models/recommendation.model';
-import { User } from '../users/models/user.model';
+import { UserService } from '../users/users.service';
 
 @Injectable()
 export class RecommendationService {
@@ -22,11 +16,12 @@ export class RecommendationService {
 
   constructor(
     @InjectRepository(Recommendation)
-    private readonly recommendationRepository: Repository<Recommendation>,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private recommendationRepository: Repository<Recommendation>,
+    private userService: UserService,
   ) {
+    // Inicializar Gemini AI con tu API key (debería estar en variables de entorno)
     this.genAI = new GoogleGenerativeAI(
-      process.env.GEMINI_API_KEY || 'your-api-key-here',
+      process.env.GEMINI_API_KEY || 'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4',
     );
   }
 
@@ -34,283 +29,238 @@ export class RecommendationService {
     createRecommendationDto: CreateRecommendationDto,
   ): Promise<Recommendation> {
     try {
-      // Generar contenido con IA
+      const user = await this.userService.findById(
+        createRecommendationDto.usuarioId,
+      );
+      if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
+
+      const userData = await this.getUserData(
+        createRecommendationDto.usuarioId,
+      );
       const prompt = this.generatePrompt(
         createRecommendationDto.tipo,
+        userData,
         createRecommendationDto.datosEntrada,
       );
+
+      // Usar la API REST directamente en lugar del SDK
       const geminiResponse = await this.callGeminiApiDirectly(prompt);
 
       const recommendation = this.recommendationRepository.create({
-        ...createRecommendationDto,
+        usuario: user,
+        tipo: createRecommendationDto.tipo,
         contenido: geminiResponse,
+        datosEntrada: createRecommendationDto.datosEntrada,
         vigenciaHasta: this.calculateExpiryDate(createRecommendationDto.tipo),
         activa: true,
       });
 
       const savedRecommendation =
         await this.recommendationRepository.save(recommendation);
-
-      // Invalidar caché del usuario
-      await this.cacheManager.del(
-        `recommendations:user:${createRecommendationDto.usuarioId}`,
+      this.logger.log(
+        `Recommendation created with ID: ${savedRecommendation.id}`,
       );
-      await this.cacheManager.del(
-        `recommendations:active:${createRecommendationDto.usuarioId}:${createRecommendationDto.tipo}`,
-      );
-
       return savedRecommendation;
     } catch (error) {
-      this.logger.error('Error generating recommendation:', error);
-      throw new HttpException(
-        'Failed to generate recommendation',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async findByUser(usuarioId: string): Promise<Recommendation[]> {
-    const cacheKey = `recommendations:user:${usuarioId}`;
-
-    try {
-      // Verificar caché
-      const cached = await this.cacheManager.get<Recommendation[]>(cacheKey);
-      if (cached) return cached;
-
-      const recommendations = await this.recommendationRepository.find({
-        where: { usuario: { id: usuarioId } },
-        order: { fechaGeneracion: 'DESC' },
-      });
-
-      // Guardar en caché por 1 hora
-      await this.cacheManager.set(cacheKey, recommendations, 3600);
-
-      return recommendations;
-    } catch (error) {
-      this.logger.error('Error fetching user recommendations:', error);
-      throw new HttpException(
-        'Failed to fetch recommendations',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async findActiveByUserAndType(
-    usuarioId: string,
-    tipo: RecommendationType,
-  ): Promise<Recommendation[]> {
-    const cacheKey = `recommendations:active:${usuarioId}:${tipo}`;
-
-    try {
-      // Verificar caché
-      const cached = await this.cacheManager.get<Recommendation[]>(cacheKey);
-      if (cached) return cached;
-
-      const recommendations = await this.recommendationRepository.find({
-        where: {
-          usuario: { id: usuarioId },
-          tipo,
-          activa: true,
-          vigenciaHasta: MoreThan(new Date()),
-        },
-        order: { fechaGeneracion: 'DESC' },
-      });
-
-      // Guardar en caché por 30 minutos
-      await this.cacheManager.set(cacheKey, recommendations, 1800);
-
-      return recommendations;
-    } catch (error) {
-      this.logger.error('Error fetching active recommendations:', error);
-      throw new HttpException(
-        'Failed to fetch active recommendations',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async deactivate(id: string): Promise<Recommendation> {
-    try {
-      const recommendation = await this.recommendationRepository.findOne({
-        where: { id },
-      });
-
-      if (!recommendation) {
-        throw new HttpException(
-          'Recommendation not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      await this.recommendationRepository.update(id, { activa: false });
-      const updatedRecommendation = await this.recommendationRepository.findOne(
-        {
-          where: { id },
-        },
-      );
-      if (!updatedRecommendation) {
-        throw new HttpException('Entity not found', HttpStatus.NOT_FOUND);
-      }
-      // Invalidar caché
-      await this.cacheManager.del(
-        `recommendations:user:${recommendation.usuario.id}`,
-      );
-      await this.cacheManager.del(
-        `recommendations:active:${recommendation.usuario.id}:${recommendation.tipo}`,
-      );
-
-      return updatedRecommendation;
-    } catch (error) {
-      this.logger.error('Error deactivating recommendation:', error);
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        'Failed to deactivate recommendation',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  // Métodos quick simplificados
-  async quickNutritionRecommendation(
-    usuarioId: string,
-  ): Promise<Recommendation> {
-    const quickPrompt = `Genera una recomendación nutricional rápida y práctica en español con:
-    1. Calorías diarias recomendadas para un adulto promedio
-    2. 3 comidas principales sugeridas para hoy
-    3. 2 consejos nutricionales clave
-    Máximo 200 palabras.`;
-
-    return this.createQuickRecommendation(
-      usuarioId,
-      RecommendationType.NUTRITION,
-      quickPrompt,
-    );
-  }
-
-  async quickExerciseRecommendation(
-    usuarioId: string,
-  ): Promise<Recommendation> {
-    const quickPrompt = `Genera una rutina de ejercicio rápida para hoy en español con:
-    1. Calentamiento (5 min)
-    2. 4-5 ejercicios principales con repeticiones
-    3. Enfriamiento (5 min)
-    4. Duración total estimada
-    Máximo 200 palabras.`;
-
-    return this.createQuickRecommendation(
-      usuarioId,
-      RecommendationType.EXERCISE,
-      quickPrompt,
-    );
-  }
-
-  async quickMedicalRecommendation(usuarioId: string): Promise<Recommendation> {
-    const quickPrompt = `Genera recomendaciones de salud preventiva rápidas en español con:
-    1. 2 consejos de salud general
-    2. Signos de alerta a observar
-    3. Recomendación de chequeo médico
-    4. Hábitos saludables diarios
-    Máximo 200 palabras. NOTA: Estas son recomendaciones generales, no reemplazan consulta médica.`;
-
-    return this.createQuickRecommendation(
-      usuarioId,
-      RecommendationType.MEDICAL,
-      quickPrompt,
-    );
-  }
-
-  private async createQuickRecommendation(
-    usuarioId: string,
-    tipo: RecommendationType,
-    prompt: string,
-  ): Promise<Recommendation> {
-    try {
-      const geminiResponse = await this.callGeminiApiDirectly(prompt);
-
-      const recommendation = this.recommendationRepository.create({
-        usuario: { id: usuarioId } as User,
-        tipo,
-        contenido: geminiResponse,
-        datosEntrada: { quick: true, timestamp: new Date().toISOString() },
-        vigenciaHasta: this.calculateExpiryDate(tipo),
-        activa: true,
-      });
-
-      return await this.recommendationRepository.save(recommendation);
-    } catch (error) {
-      this.logger.error(`Error creating quick ${tipo} recommendation:`, error);
-      return this.getFallbackRecommendation(usuarioId, tipo);
+      this.logger.error(`Error generating recommendation: ${error.message}`);
+      // En caso de error, devolver una recomendación por defecto
+      return this.createFallbackRecommendation(createRecommendationDto);
     }
   }
 
   private async callGeminiApiDirectly(prompt: string): Promise<string> {
     try {
-      const model = this.genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-      });
-      const result = await model.generateContent(prompt);
-      return result.response.text();
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY || 'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4'}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Gemini API error: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
+      return data.candidates[0].content.parts[0].text;
     } catch (error) {
-      this.logger.error('Error calling Gemini API:', error);
-      return this.getFallbackResponseContent();
+      this.logger.error(`Error calling Gemini API: ${error.message}`);
+      return this.getFallbackResponse();
     }
   }
 
-  private generatePrompt(
-    tipo: RecommendationType,
-    datosEspecificos: any = {},
-  ): string {
-    switch (tipo) {
-      case RecommendationType.NUTRITION:
-        return `Genera un plan nutricional personalizado basado en: ${JSON.stringify(datosEspecificos)}`;
-      case RecommendationType.EXERCISE:
-        return `Genera un plan de ejercicios personalizado basado en: ${JSON.stringify(datosEspecificos)}`;
-      case RecommendationType.MEDICAL:
-        return `Genera recomendaciones médicas generales basadas en: ${JSON.stringify(datosEspecificos)}`;
-      default:
-        return `Genera una recomendación general de salud y bienestar.`;
-    }
-  }
+  private async createFallbackRecommendation(
+    createRecommendationDto: CreateRecommendationDto,
+  ): Promise<Recommendation> {
+    const user = await this.userService.findById(
+      createRecommendationDto.usuarioId,
+    );
 
-  private calculateExpiryDate(tipo: RecommendationType): Date {
-    const expiryDate = new Date();
-    switch (tipo) {
-      case RecommendationType.NUTRITION:
-        expiryDate.setDate(expiryDate.getDate() + 30);
-        break;
-      case RecommendationType.EXERCISE:
-        expiryDate.setDate(expiryDate.getDate() + 14);
-        break;
-      case RecommendationType.MEDICAL:
-        expiryDate.setDate(expiryDate.getDate() + 90);
-        break;
-      default:
-        expiryDate.setDate(expiryDate.getDate() + 7);
-    }
-    return expiryDate;
-  }
-
-  private getFallbackResponseContent(): string {
-    return `Recomendación de salud personalizada:
-1. Mantener una dieta equilibrada con énfasis en alimentos naturales
-2. Realizar al menos 30 minutos de actividad física moderada diariamente
-3. Mantener una hidratación adecuada (al menos 2 litros de agua al día)
-4. Consultar con tu médico para seguimiento regular`;
-  }
-
-  private getFallbackRecommendation(
-    usuarioId: string,
-    tipo: RecommendationType,
-  ): Recommendation {
     const recommendation = this.recommendationRepository.create({
-      usuario: { id: usuarioId } as User,
-      tipo,
-      contenido: this.getFallbackResponseContent(),
-      datosEntrada: { fallback: true, timestamp: new Date().toISOString() },
-      vigenciaHasta: this.calculateExpiryDate(tipo),
+      usuario: user,
+      tipo: createRecommendationDto.tipo,
+      contenido: this.getFallbackResponse(),
+      datosEntrada: createRecommendationDto.datosEntrada,
+      vigenciaHasta: this.calculateExpiryDate(createRecommendationDto.tipo),
       activa: true,
     });
 
-    return recommendation;
+    return this.recommendationRepository.save(recommendation);
+  }
+
+  private async getUserData(userId: string): Promise<any> {
+    const user = await this.userService.findById(userId);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    return {
+      user: {
+        nombre: user.nombre,
+        edad: this.calculateAge(user.fechaNacimiento),
+        genero: user.genero,
+        altura: user.altura,
+        pesoActual: user.pesoActual,
+        objetivoPeso: user.objetivoPeso,
+        nivelActividad: user.nivelActividad,
+      },
+    };
+  }
+
+  private calculateAge(fechaNacimiento: Date): number {
+    const today = new Date();
+    const birthDate = new Date(fechaNacimiento);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+
+    return age;
+  }
+
+  private generatePrompt(
+    tipo: string,
+    userData: any,
+    datosEspecificos: any = {},
+  ): string {
+    const basePrompt = `Eres un asistente de salud especializado en nutrición y actividad física. 
+    Genera una recomendación personalizada en español basada en los siguientes datos del usuario: 
+    ${JSON.stringify(userData, null, 2)}.`;
+
+    switch (tipo) {
+      case 'nutrition':
+        return `${basePrompt}
+        Genera un plan nutricional personalizado para este usuario. Incluye:
+        1. Recomendaciones calóricas diarias
+        2. Distribución de macronutrientes
+        3. Ejemplos de comidas para un día
+        4. Alimentos recomendados y alimentos a evitar
+        5. Consejos específicos basados en su historial médico: ${JSON.stringify(userData.medicalHistory)}`;
+
+      case 'exercise':
+        return `${basePrompt}
+        Genera un plan de ejercicios personalizado para este usuario. Incluye:
+        1. Tipo de ejercicios recomendados
+        2. Frecuencia y duración
+        3. Intensidad recomendada
+        4. Precauciones basadas en su historial médico: ${JSON.stringify(userData.medicalHistory)}
+        5. Objetivos específicos basados en sus metas: ${userData.user.objetivoPeso}`;
+
+      case 'medical':
+        return `${basePrompt}
+        Genera recomendaciones para mejorar su historial médico. Incluye:
+        1. Consejos para manejar sus condiciones: ${JSON.stringify(userData.medicalHistory.condiciones)}
+        2. Precauciones con sus alergias: ${JSON.stringify(userData.medicalHistory.alergias)}
+        3. Recomendaciones sobre sus medicamentos: ${JSON.stringify(userData.medicalHistory.medicamentos)}
+        4. Señales de alerta a observar
+        5. Recomendaciones de seguimiento médico`;
+
+      case 'general':
+      default:
+        return `${basePrompt}
+        Genera una recomendación general de salud y bienestar que integre nutrición, ejercicio y aspectos médicos.
+        Incluye consejos prácticos y realizables para mejorar su calidad de vida.`;
+    }
+  }
+
+  private getFallbackResponse(): string {
+    return `Recomendación de salud personalizada:
+
+Basado en tu perfil, te recomiendo:
+1. Mantener una dieta equilibrada con énfasis en alimentos naturales
+2. Realizar al menos 30 minutos de actividad física moderada diariamente
+3. Mantener una hidratación adecuada (al menos 2 litros de agua al día)
+4. Consultar con tu médico para seguimiento regular de tus condiciones
+
+Para recomendaciones más específicas, por favor contacta a nuestro equipo de especialistas.`;
+  }
+
+  private calculateExpiryDate(tipo: string): Date {
+    const expiryDate = new Date();
+
+    switch (tipo) {
+      case 'nutrition':
+        expiryDate.setDate(expiryDate.getDate() + 30); // 1 mes para nutrición
+        break;
+      case 'exercise':
+        expiryDate.setDate(expiryDate.getDate() + 14); // 2 semanas para ejercicio
+        break;
+      case 'medical':
+        expiryDate.setDate(expiryDate.getDate() + 90); // 3 meses para recomendaciones médicas
+        break;
+      default:
+        expiryDate.setDate(expiryDate.getDate() + 7); // 1 semana para recomendaciones generales
+    }
+
+    return expiryDate;
+  }
+
+  async deactivate(id: string): Promise<void> {
+    await this.recommendationRepository.update(id, { activa: false });
+  }
+
+  async findByUser(userId: string): Promise<Recommendation[]> {
+    return this.recommendationRepository.find({
+      where: { usuario: { id: userId }, activa: true },
+      relations: ['usuario'],
+    });
+  }
+
+  async findActiveByUserAndType(
+    userId: string,
+    tipo: RecommendationType,
+  ): Promise<Recommendation[]> {
+    const now = new Date();
+    return this.recommendationRepository.find({
+      where: {
+        usuario: { id: userId },
+        tipo,
+        activa: true,
+        vigenciaHasta: MoreThan(now),
+      },
+      order: { fechaGeneracion: 'DESC' },
+    });
   }
 }

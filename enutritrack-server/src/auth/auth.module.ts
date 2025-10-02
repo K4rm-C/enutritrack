@@ -1,28 +1,33 @@
-// src/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { UsersModule } from '../users/user.module';
+import { UserModule } from '../users/users.module';
+import { DoctorModule } from '../doctor/doctor.module';
 import { JwtStrategy } from '../auth/strategies/jwt.strategies';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CookieAuthGuard } from './guards/cookie-auth.guard';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 import { LocalStrategy } from './strategies/local.strategies';
-import { HttpModule } from '@nestjs/axios';
-import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
-    CacheModule.register(),
-    HttpModule,
-    UsersModule,
+    UserModule,
+    DoctorModule,
     PassportModule,
     JwtModule.register({
-      secret: 'tu_clave_secreta_super_segura',
+      secret: process.env.JWT_SECRET || 'tu_clave_secreta_super_segura',
       signOptions: { expiresIn: '24h' },
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    JwtStrategy,
+    LocalStrategy,
+    JwtAuthGuard,
+    CookieAuthGuard,
+    AuthService,
+  ],
+  exports: [JwtAuthGuard, CookieAuthGuard, JwtModule, AuthService],
   controllers: [AuthController],
-  exports: [AuthService],
 })
 export class AuthModule {}

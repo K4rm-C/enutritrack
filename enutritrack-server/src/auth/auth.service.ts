@@ -1,64 +1,72 @@
-// backend/src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
-import { UsersService } from '../users/user.service';
-import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { UserService } from '../users/users.service';
+import { DoctorService } from '../doctor/doctor.service';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  nombre: string;
+  userType: 'user' | 'doctor';
+}
 
 @Injectable()
 export class AuthService {
-  private readonly AUTH_SERVICE_URL = 'http://localhost:3004';
-
   constructor(
-    private httpService: HttpService,
+    private userService: UserService,
+    private doctorService: DoctorService,
     private jwtService: JwtService,
-    private userService: UsersService,
+    @InjectDataSource()
+    private dataSource: DataSource,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(
+    email: string,
+    password: string,
+    userType?: 'user' | 'doctor',
+  ): Promise<AuthUser | null> {
     try {
-      console.log(`Validando usuario: ${email}`);
+      console.log(`🔍 Validando ${userType || 'usuario/doctor'}: ${email}`);
 
-      const user = await this.userService.findByEmailWithPassword(email);
+      // Usar la función SQL para validar credenciales - CORRECCIÓN AQUÍ
+      const result = await this.dataSource.query(
+        'SELECT * FROM validate_user_login($1, $2, $3)',
+        [email, password, userType || null]  // Pasar null si userType es undefined
+      ) as Array<{
+        id: string;
+        email: string;
+        nombre: string;
+        user_type: string;
+        is_valid: boolean;
+        error_message: string;
+      }>;
 
-      if (!user) {
-        console.log(`Usuario no encontrado: ${email}`);
+      // Verificar si hay resultados
+      if (!result || result.length === 0) {
+        console.log('❌ No se obtuvieron resultados de la validación');
         return null;
       }
 
-      console.log(`Usuario encontrado: ${email}, verificando contraseña`);
+      console.log(`✅ ${result[0].user_type} validado exitosamente: ${email}`);
 
-      if (!user.contraseñaHash) {
-        console.log(`Usuario ${email} no tiene hash de contraseña`);
-        return null;
-      }
-
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        user.contraseñaHash,
-      );
-
-      if (!isPasswordValid) {
-        console.log(`Contraseña incorrecta para usuario: ${email}`);
-        return null;
-      }
-
-      console.log(`Contraseña válida para usuario: ${email}`);
-
-      const { contraseñaHash, ...result } = user;
-      return result;
+      return {
+        id: result[0].id,
+        email: result[0].email,
+        nombre: result[0].nombre,
+        userType: result[0].user_type as 'user' | 'doctor',
+      };
     } catch (error) {
-      console.error('Error en validateUser:', error);
+      console.error('💥 Error en validateUser:', error);
       return null;
     }
   }
 
-  async login(user: any) {
-    console.log('Iniciando login para usuario:', user?.email);
-
+  // Los demás métodos se mantienen igual...
+  async login(user: AuthUser) {
     if (!user || !user.email || !user.id) {
-      console.error('Datos de usuario inválidos:', user);
+      console.log('❌ Datos de usuario inválidos para login');
       throw new UnauthorizedException('Datos de usuario inválidos');
     }
 
@@ -66,29 +74,29 @@ export class AuthService {
       email: user.email,
       sub: user.id,
       nombre: user.nombre,
+      userType: user.userType,
+      iat: Math.floor(Date.now() / 1000),
     };
 
     try {
-      const token = this.jwtService.sign(payload);
-
-      console.log(`Token generado exitosamente para usuario: ${user.email}`);
+      const access_token = this.jwtService.sign(payload);
+      console.log(
+        `✅ Token generado exitosamente para ${user.userType}: ${user.email}`,
+      );
 
       return {
-        access_token: token,
+        access_token,
         user: {
           id: user.id,
           email: user.email,
           nombre: user.nombre,
+          userType: user.userType,
         },
       };
     } catch (error) {
-      console.error('Error generando token:', error);
-      throw new UnauthorizedException('Error al generar token de acceso');
+      console.error('💥 Error generando token:', error);
+      throw new UnauthorizedException('Error al generar token');
     }
-  }
-
-  generateToken(payload: any): string {
-    return this.jwtService.sign(payload);
   }
 
   async validateToken(token: string) {
@@ -98,47 +106,45 @@ export class AuthService {
         userId: payload.sub,
         email: payload.email,
         nombre: payload.nombre,
+        userType: payload.userType || 'user',
       };
     } catch (error) {
       throw new UnauthorizedException('Token inválido');
     }
   }
 
-  async logout(token: string, userId?: string): Promise<void> {
+  async getUserFromToken(token: string): Promise<AuthUser> {
     try {
-      // Notificar al microservicio sobre el logout
-      try {
-        await firstValueFrom(
-          this.httpService.post(
-            `${this.AUTH_SERVICE_URL}/auth/logout`,
-            {
-              token,
-              userId,
-            },
-            {
-              timeout: 5000,
-            },
-          ),
-        );
-      } catch (error) {
-        console.warn('Error notifying microservice about logout:', error);
+      const payload = this.jwtService.verify(token);
+      const userType = payload.userType || 'user';
+
+      let user: any;
+      if (userType === 'user') {
+        user = await this.userService.findById(payload.sub);
+      } else {
+        user = await this.doctorService.findById(payload.sub);
       }
+
+      if (!user) {
+        throw new UnauthorizedException(
+          `${userType === 'user' ? 'Usuario' : 'Doctor'} no encontrado`,
+        );
+      }
+
+      console.log(
+        `✅ ${userType === 'user' ? 'Usuario' : 'Doctor'} obtenido del token: ${user.email}`,
+      );
+      const { contraseñaHash, ...result } = user;
+      return {
+        ...result,
+        userType,
+      };
     } catch (error) {
-      console.error('Error during logout:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      console.error('💥 Error en getUserFromToken:', error);
+      throw new UnauthorizedException('Token inválido');
     }
-  }
-
-  async getUserSessions(userId: string) {
-    // Sin cache, retornamos array vacío
-    // Podrías implementar esto consultando directamente la base de datos
-    // o manejarlo a través del microservicio
-    console.log(`Getting sessions for user: ${userId}`);
-    return [];
-  }
-
-  async cleanupExpiredTokens() {
-    console.log('Cleaning up expired tokens...');
-    // Con JWT stateless, los tokens expiran automáticamente
-    // No necesitas limpiar nada manualmente
   }
 }

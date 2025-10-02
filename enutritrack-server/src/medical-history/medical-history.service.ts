@@ -1,189 +1,78 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { CouchbaseService } from '../couchbase/couchbase.service';
+// src/medical-history/medical-history.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { MedicalHistory } from './model/medical-history.model';
 import { CreateMedicalHistoryDto } from './dto/create-medical-history.dto';
+import { UpdateMedicalHistoryDto } from './dto/update-medical-history.dto';
+import { User } from '../users/models/user.model';
 
 @Injectable()
 export class MedicalHistoryService {
-  constructor(private readonly couchbaseService: CouchbaseService) {}
+  constructor(
+    @InjectRepository(MedicalHistory)
+    private medicalHistoryRepository: Repository<MedicalHistory>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
 
-  async create(createMedicalHistoryDto: CreateMedicalHistoryDto): Promise<any> {
-    try {
-      const documentId = `medical_history::${createMedicalHistoryDto.usuarioId}`;
+  async create(
+    createMedicalHistoryDto: CreateMedicalHistoryDto,
+  ): Promise<MedicalHistory> {
+    const user = await this.userRepository.findOne({
+      where: { id: createMedicalHistoryDto.usuarioId },
+    });
 
-      const medicalHistory = {
-        id: documentId,
-        ...createMedicalHistoryDto,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      await this.couchbaseService.upsertDocument(documentId, medicalHistory);
-
-      return medicalHistory;
-    } catch (error) {
-      console.error('Error creating medical history:', error);
-      throw new HttpException(
-        'Failed to create medical history',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
     }
+
+    const medicalHistory = this.medicalHistoryRepository.create({
+      ...createMedicalHistoryDto,
+      usuario: user,
+    });
+
+    return this.medicalHistoryRepository.save(medicalHistory);
   }
 
-  async findByUser(usuarioId: string): Promise<any> {
-    try {
-      const documentId = `medical_history::${usuarioId}`;
-      const medicalHistory =
-        await this.couchbaseService.getDocument(documentId);
+  async findByUser(userId: string): Promise<MedicalHistory[]> {
+    console.log(`Buscando historiales médicos para usuario: ${userId}`);
 
-      if (!medicalHistory) {
-        throw new HttpException(
-          'Medical history not found',
-          HttpStatus.NOT_FOUND,
+    try {
+      const medicalHistories = await this.medicalHistoryRepository.find({
+        where: { usuario: { id: userId } },
+        relations: ['usuario'],
+        order: { created_at: 'DESC' },
+      });
+
+      console.log('Historiales encontrados:', medicalHistories.length);
+
+      if (!medicalHistories || medicalHistories.length === 0) {
+        console.log(
+          'No se encontraron historiales médicos para usuario:',
+          userId,
         );
+        return [];
       }
 
-      return medicalHistory;
+      return medicalHistories;
     } catch (error) {
-      console.error('Error fetching medical history:', error);
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        'Failed to fetch medical history',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      console.error('Error en servicio findByUser:', error);
+      throw error;
     }
   }
 
   async update(
-    usuarioId: string,
-    updateMedicalHistoryDto: Partial<CreateMedicalHistoryDto>,
-  ): Promise<any> {
-    try {
-      const documentId = `medical_history::${usuarioId}`;
-
-      // Obtener documento existente
-      const existingHistory =
-        await this.couchbaseService.getDocument(documentId);
-
-      if (!existingHistory) {
-        throw new HttpException(
-          'Medical history not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      // Actualizar documento
-      const updatedHistory = {
-        ...existingHistory,
-        ...updateMedicalHistoryDto,
-        updated_at: new Date().toISOString(),
-      };
-
-      await this.couchbaseService.upsertDocument(documentId, updatedHistory);
-
-      return updatedHistory;
-    } catch (error) {
-      console.error('Error updating medical history:', error);
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        'Failed to update medical history',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    userId: string,
+    updateMedicalHistoryDto: UpdateMedicalHistoryDto,
+  ): Promise<MedicalHistory> {
+    const medicalHistories = await this.findByUser(userId);
+    if (!medicalHistories.length) {
+      throw new NotFoundException('Medical history not found');
     }
-  }
+    const medicalHistory = medicalHistories[0]; // Get the most recent one
+    Object.assign(medicalHistory, updateMedicalHistoryDto);
 
-  async addCondition(usuarioId: string, condition: string): Promise<any> {
-    try {
-      const documentId = `medical_history::${usuarioId}`;
-      const existingHistory =
-        await this.couchbaseService.getDocument(documentId);
-
-      if (!existingHistory) {
-        throw new HttpException(
-          'Medical history not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      const updatedHistory = {
-        ...existingHistory,
-        condiciones: [...(existingHistory.condiciones || []), condition],
-        updated_at: new Date().toISOString(),
-      };
-
-      await this.couchbaseService.upsertDocument(documentId, updatedHistory);
-
-      return updatedHistory;
-    } catch (error) {
-      console.error('Error adding condition:', error);
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        'Failed to add condition',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async addAllergy(usuarioId: string, allergy: string): Promise<any> {
-    try {
-      const documentId = `medical_history::${usuarioId}`;
-      const existingHistory =
-        await this.couchbaseService.getDocument(documentId);
-
-      if (!existingHistory) {
-        throw new HttpException(
-          'Medical history not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      const updatedHistory = {
-        ...existingHistory,
-        alergias: [...(existingHistory.alergias || []), allergy],
-        updated_at: new Date().toISOString(),
-      };
-
-      await this.couchbaseService.upsertDocument(documentId, updatedHistory);
-
-      return updatedHistory;
-    } catch (error) {
-      console.error('Error adding allergy:', error);
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        'Failed to add allergy',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async addMedication(usuarioId: string, medication: string): Promise<any> {
-    try {
-      const documentId = `medical_history::${usuarioId}`;
-      const existingHistory =
-        await this.couchbaseService.getDocument(documentId);
-
-      if (!existingHistory) {
-        throw new HttpException(
-          'Medical history not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      const updatedHistory = {
-        ...existingHistory,
-        medicamentos: [...(existingHistory.medicamentos || []), medication],
-        updated_at: new Date().toISOString(),
-      };
-
-      await this.couchbaseService.upsertDocument(documentId, updatedHistory);
-
-      return updatedHistory;
-    } catch (error) {
-      console.error('Error adding medication:', error);
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        'Failed to add medication',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return this.medicalHistoryRepository.save(medicalHistory);
   }
 }

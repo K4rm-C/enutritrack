@@ -1,20 +1,14 @@
 // src/medical-history/medical-history.module.ts
 import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { MedicalHistoryService } from './medical-history.service';
 import { MedicalHistoryController } from './medical-history.controller';
-import { CacheModule } from '@nestjs/cache-manager';
-import { CouchbaseModule } from '../couchbase/couchbase.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { MedicalHistory } from './model/medical-history.model';
+import { User } from '../users/models/user.model';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([MedicalHistory]),
-    CacheModule.register(),
-    HttpModule,
-    CouchbaseModule,
-  ],
+  imports: [TypeOrmModule.forFeature([MedicalHistory, User]), AuthModule],
   controllers: [MedicalHistoryController],
   providers: [MedicalHistoryService],
   exports: [MedicalHistoryService],
