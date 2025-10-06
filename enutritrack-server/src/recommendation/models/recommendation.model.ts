@@ -1,3 +1,4 @@
+// src/recommendation/entities/recommendation.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,

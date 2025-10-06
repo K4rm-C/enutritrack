@@ -1,127 +1,224 @@
-// src/physical-activity/physical-activity.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/typeorm';
-import { Connection } from 'typeorm';
-import { PhysicalActivity } from './models/activity.model';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Between } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { CreatePhysicalActivityDto } from './dto/create-physical-activity.dto';
-import { UpdatePhysicalActivityDto } from './dto/update-physical-activity.dto';
+import { PhysicalActivity } from './models/activity.model';
 
 @Injectable()
 export class PhysicalActivityService {
   constructor(
-    @InjectConnection()
-    private connection: Connection,
+    @InjectRepository(PhysicalActivity)
+    private readonly activityRepository: Repository<PhysicalActivity>,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   async create(
     createPhysicalActivityDto: CreatePhysicalActivityDto,
-  ): Promise<void> {
-    const { usuarioId, tipo_actividad, duracion, caloriasQuemadas, fecha } = createPhysicalActivityDto;
-    
-    await this.connection.query(
-      'CALL create_physical_activity($1, $2, $3, $4, $5)',
-      [usuarioId, tipo_actividad, duracion, caloriasQuemadas, fecha]
-    );
+  ): Promise<PhysicalActivity> {
+    try {
+      const activity = this.activityRepository.create({
+        ...createPhysicalActivityDto,
+        fecha: createPhysicalActivityDto.fecha || new Date(),
+      });
+
+      const savedActivity = await this.activityRepository.save(activity);
+
+      // Invalidar caché del usuario
+      await this.cacheManager.del(
+        `activity:user:${createPhysicalActivityDto.usuarioId}`,
+      );
+      await this.cacheManager.del(
+        `activity:weekly:${createPhysicalActivityDto.usuarioId}`,
+      );
+
+      return savedActivity;
+    } catch (error) {
+      console.error('Error creating physical activity:', error);
+      throw new HttpException(
+        'Failed to create physical activity',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
-  async findAllByUser(userId: string): Promise<PhysicalActivity[]> {
-    const result = await this.connection.query(
-      'SELECT * FROM get_activities_by_user($1)',
-      [userId]
-    );
-    
-    return result.map(row => ({
-      id: row.id,
-      usuario: { id: row.usuario_id } as any,
-      tipo_actividad: row.tipo_actividad,
-      duracion: row.duracion_min,
-      caloriasQuemadas: parseFloat(row.calorias_quemadas),
-      fecha: row.fecha,
-      created_at: row.created_at
-    }));
+  async findAllByUser(usuarioId: string): Promise<PhysicalActivity[]> {
+    const cacheKey = `activity:user:${usuarioId}`;
+
+    try {
+      // Verificar caché
+      const cached = await this.cacheManager.get<PhysicalActivity[]>(cacheKey);
+      if (cached) return cached;
+
+      // Consultar base de datos
+      const activities = await this.activityRepository.find({
+        where: { usuario: { id: usuarioId } },
+        order: { created_at: 'DESC' },
+      });
+
+      // Guardar en caché por 1 hora
+      await this.cacheManager.set(cacheKey, activities, 3600);
+
+      return activities;
+    } catch (error) {
+      console.error('Error fetching physical activities:', error);
+      throw new HttpException(
+        'Failed to fetch physical activities',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findOne(id: string): Promise<PhysicalActivity> {
     try {
-      const result = await this.connection.query(
-        'SELECT * FROM get_activity_by_id($1)',
-        [id]
-      );
-      
-      if (result.length === 0) {
-        throw new NotFoundException('Actividad física no encontrada');
+      const activity = await this.activityRepository.findOne({
+        where: { id },
+      });
+
+      if (!activity) {
+        throw new HttpException(
+          'Physical activity not found',
+          HttpStatus.NOT_FOUND,
+        );
       }
-      
-      const row = result[0];
-      return {
-        id: row.id,
-        usuario: { id: row.usuario_id } as any,
-        tipo_actividad: row.tipo_actividad,
-        duracion: row.duracion_min,
-        caloriasQuemadas: parseFloat(row.calorias_quemadas),
-        fecha: row.fecha,
-        created_at: row.created_at
-      };
+
+      return activity;
     } catch (error) {
-      if (error.message.includes('no encontrada')) {
-        throw new NotFoundException('Actividad física no encontrada');
-      }
-      throw error;
+      console.error('Error fetching physical activity:', error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(
+        'Failed to fetch physical activity',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   async update(
     id: string,
-    updatePhysicalActivityDto: UpdatePhysicalActivityDto,
-  ): Promise<void> {
-    const { usuarioId, tipo_actividad, duracion, caloriasQuemadas, fecha } = updatePhysicalActivityDto;
-    
+    updatePhysicalActivityDto: Partial<CreatePhysicalActivityDto>,
+  ): Promise<PhysicalActivity> {
     try {
-      await this.connection.query(
-        'CALL update_physical_activity($1, $2, $3, $4, $5, $6)',
-        [id, usuarioId, tipo_actividad, duracion, caloriasQuemadas, fecha]
-      );
-    } catch (error) {
-      if (error.message.includes('no encontrada')) {
-        throw new NotFoundException(error.message);
+      const activity = await this.activityRepository.findOne({
+        where: { id },
+        relations: ['usuario'], // Necesitas cargar la relación para el caché
+      });
+
+      if (!activity) {
+        throw new HttpException(
+          'Physical activity not found',
+          HttpStatus.NOT_FOUND,
+        );
       }
-      throw error;
+
+      await this.activityRepository.update(id, updatePhysicalActivityDto);
+      const updatedActivity = await this.activityRepository.findOne({
+        where: { id },
+        relations: ['usuario'], // También aquí
+      });
+
+      if (!updatedActivity) {
+        throw new HttpException(
+          'Updated activity not found',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      // Invalidar caché
+      await this.cacheManager.del(`activity:user:${activity.usuario.id}`);
+      await this.cacheManager.del(`activity:weekly:${activity.usuario.id}`);
+
+      return updatedActivity;
+    } catch (error) {
+      console.error('Error updating physical activity:', error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(
+        'Failed to update physical activity',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   async remove(id: string): Promise<void> {
     try {
-      await this.connection.query(
-        'CALL delete_physical_activity($1)',
-        [id]
-      );
-    } catch (error) {
-      if (error.message.includes('no encontrada')) {
-        throw new NotFoundException('Actividad física no encontrada');
+      const activity = await this.activityRepository.findOne({
+        where: { id },
+      });
+
+      if (!activity) {
+        throw new HttpException(
+          'Physical activity not found',
+          HttpStatus.NOT_FOUND,
+        );
       }
-      throw error;
+
+      await this.activityRepository.delete(id);
+
+      // Invalidar caché
+      await this.cacheManager.del(`activity:user:${activity.usuario.id}`);
+      await this.cacheManager.del(`activity:weekly:${activity.usuario.id}`);
+    } catch (error) {
+      console.error('Error deleting physical activity:', error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(
+        'Failed to delete physical activity',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async getWeeklySummary(userId: string, startDate: Date): Promise<any> {
-    const result = await this.connection.query(
-      'SELECT * FROM get_weekly_summary($1, $2)',
-      [userId, startDate]
-    );
-    
-    if (result.length > 0) {
-      const row = result[0];
-      return {
-        totalMinutos: parseInt(row.total_minutos),
-        totalCaloriasQuemadas: parseFloat(row.total_calorias_quemadas),
-        actividadesPorTipo: row.actividades_por_tipo
+  async getWeeklySummary(usuarioId: string, startDate: Date): Promise<any> {
+    const cacheKey = `activity:weekly:${usuarioId}:${startDate.toISOString().split('T')[0]}`;
+
+    try {
+      // Verificar caché
+      const cached = await this.cacheManager.get(cacheKey);
+      if (cached) return cached;
+
+      // Calcular rango de la semana
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 7);
+
+      const activities = await this.activityRepository.find({
+        where: {
+          usuario: { id: usuarioId },
+          fecha: Between(startDate, endDate),
+        },
+        order: { fecha: 'ASC' },
+      });
+
+      // Calcular totales semanales
+      const totalDuracion = activities.reduce(
+        (sum, activity) => sum + (activity.duracion || 0),
+        0,
+      );
+      const totalCaloriasQuemadas = activities.reduce(
+        (sum, activity) => sum + (activity.caloriasQuemadas || 0),
+        0,
+      );
+      const tiposActividad = [
+        ...new Set(activities.map((activity) => activity.tipo_actividad)),
+      ];
+
+      const summary = {
+        totalDuracion,
+        totalCaloriasQuemadas,
+        numeroActividades: activities.length,
+        tiposActividad,
+        fechaInicio: startDate.toISOString(),
+        fechaFin: endDate.toISOString(),
+        actividades: activities,
       };
+      // Guardar en caché por 2 horas
+      await this.cacheManager.set(cacheKey, summary, 7200);
+
+      return summary;
+    } catch (error) {
+      console.error('Error fetching weekly summary:', error);
+      throw new HttpException(
+        'Failed to fetch weekly summary',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-    
-    return {
-      totalMinutos: 0,
-      totalCaloriasQuemadas: 0,
-      actividadesPorTipo: {}
-    };
   }
 }

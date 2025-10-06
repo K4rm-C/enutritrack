@@ -9,52 +9,113 @@ import {
   Delete,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { PhysicalActivityService } from './activity.service';
-import { CreatePhysicalActivityDto } from './dto/create-physical-activity.dto';
-import { UpdatePhysicalActivityDto } from './dto/update-physical-activity.dto';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
+import express from 'express';
 
 @Controller('physical-activity')
 export class PhysicalActivityController {
   constructor(
     private readonly physicalActivityService: PhysicalActivityService,
   ) {}
+
   @UseGuards(CookieAuthGuard)
   @Post()
-  create(@Body() createPhysicalActivityDto: CreatePhysicalActivityDto) {
-    return this.physicalActivityService.create(createPhysicalActivityDto);
+  async create(
+    @Req() req: express.Request,
+    @Body() createPhysicalActivityDto: any,
+  ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+    const dtoWithUserId = {
+      ...createPhysicalActivityDto,
+      usuarioId: userId,
+    };
+
+    return this.physicalActivityService.create(dtoWithUserId);
   }
+
   @UseGuards(CookieAuthGuard)
   @Get('user/:userId')
-  findAllByUser(@Param('userId') userId: string) {
+  async findAllByUser(@Req() req: express.Request) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     return this.physicalActivityService.findAllByUser(userId);
   }
+
   @UseGuards(CookieAuthGuard)
   @Get('weekly-summary/:userId')
-  getWeeklySummary(
-    @Param('userId') userId: string,
+  async getWeeklySummary(
+    @Req() req: express.Request,
     @Query('startDate') startDate: string,
   ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     const targetDate = startDate ? new Date(startDate) : new Date();
     return this.physicalActivityService.getWeeklySummary(userId, targetDate);
   }
+
   @UseGuards(CookieAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Req() req: express.Request, @Param('id') id: string) {
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     return this.physicalActivityService.findOne(id);
   }
+
   @UseGuards(CookieAuthGuard)
   @Patch(':id')
-  update(
+  async update(
+    @Req() req: express.Request,
     @Param('id') id: string,
-    @Body() updatePhysicalActivityDto: UpdatePhysicalActivityDto,
+    @Body() updatePhysicalActivityDto: any,
   ) {
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     return this.physicalActivityService.update(id, updatePhysicalActivityDto);
   }
+
   @UseGuards(CookieAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Req() req: express.Request, @Param('id') id: string) {
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     return this.physicalActivityService.remove(id);
   }
 }
