@@ -1,14 +1,20 @@
 // src/nutrition/nutrition.module.ts
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
 import { NutritionService } from './nutrition.service';
 import { NutritionController } from './nutrition.controller';
+import { CacheModule } from '@nestjs/cache-manager';
+import { CouchbaseModule } from '../couchbase/couchbase.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { FoodRecord } from './models/nutrition.model';
-import { User } from '../users/models/user.model';
-import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([FoodRecord, User]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([FoodRecord]),
+    CacheModule.register(),
+    HttpModule,
+    CouchbaseModule,
+  ],
   controllers: [NutritionController],
   providers: [NutritionService],
   exports: [NutritionService],

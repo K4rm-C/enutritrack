@@ -1,14 +1,20 @@
 // src/physical-activity/physical-activity.module.ts
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
 import { PhysicalActivityService } from './activity.service';
 import { PhysicalActivityController } from './activity.controller';
+import { CacheModule } from '@nestjs/cache-manager';
+import { CouchbaseModule } from '../couchbase/couchbase.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { PhysicalActivity } from './models/activity.model';
-import { User } from '../users/models/user.model';
-import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PhysicalActivity, User]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([PhysicalActivity]),
+    CacheModule.register(),
+    HttpModule,
+    CouchbaseModule,
+  ],
   controllers: [PhysicalActivityController],
   providers: [PhysicalActivityService],
   exports: [PhysicalActivityService],

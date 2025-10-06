@@ -19,8 +19,6 @@ export class CreateRecommendationDto {
   @IsOptional()
   datosEntrada?: any;
 }
-
-// src/recommendation/dto/gemini-request.dto.ts
 export class GeminiRequestDto {
   @IsUUID()
   usuarioId: string;

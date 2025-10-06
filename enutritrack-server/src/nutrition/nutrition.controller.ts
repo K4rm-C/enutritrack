@@ -9,50 +9,104 @@ import {
   Delete,
   UseGuards,
   Query,
+  Req,
 } from '@nestjs/common';
 import { NutritionService } from './nutrition.service';
-import { CreateFoodRecordDto } from './dto/create-food-record.dto';
-import { UpdateFoodRecordDto } from './dto/update-food-record.dto';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
+import express from 'express';
 
 @Controller('nutrition')
 export class NutritionController {
   constructor(private readonly nutritionService: NutritionService) {}
+
   @UseGuards(CookieAuthGuard)
   @Post()
-  create(@Body() createFoodRecordDto: CreateFoodRecordDto) {
-    return this.nutritionService.create(createFoodRecordDto);
+  async create(@Req() req: express.Request, @Body() createFoodRecordDto: any) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+    const dtoWithUserId = {
+      ...createFoodRecordDto,
+      usuarioId: userId,
+    };
+
+    return this.nutritionService.create(dtoWithUserId);
   }
+
   @UseGuards(CookieAuthGuard)
   @Get('user/:userId')
-  findAllByUser(@Param('userId') userId: string) {
+  async findAllByUser(@Req() req: express.Request) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     return this.nutritionService.findAllByUser(userId);
   }
+
   @UseGuards(CookieAuthGuard)
   @Get('daily-summary/:userId')
-  getDailySummary(
-    @Param('userId') userId: string,
+  async getDailySummary(
+    @Req() req: express.Request,
     @Query('date') date: string,
   ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
     const targetDate = date ? new Date(date) : new Date();
     return this.nutritionService.getDailySummary(userId, targetDate);
   }
+
   @UseGuards(CookieAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Req() req: express.Request, @Param('id') id: string) {
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     return this.nutritionService.findOne(id);
   }
+
   @UseGuards(CookieAuthGuard)
   @Patch(':id')
-  update(
+  async update(
+    @Req() req: express.Request,
     @Param('id') id: string,
-    @Body() updateFoodRecordDto: UpdateFoodRecordDto,
+    @Body() updateFoodRecordDto: any,
   ) {
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     return this.nutritionService.update(id, updateFoodRecordDto);
   }
+
   @UseGuards(CookieAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Req() req: express.Request, @Param('id') id: string) {
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
     return this.nutritionService.remove(id);
   }
 }
