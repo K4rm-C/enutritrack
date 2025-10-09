@@ -1,108 +1,25 @@
-// users.service.ts - User Service Híbrido (PostgreSQL + Couchbase + Redis)
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import type { Cache } from 'cache-manager';
+import { User } from './models/user.model';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
+import { Doctor } from '../doctor/models/doctor.model';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './models/user.model';
 
 @Injectable()
-export class UsersService {
+export class UserService {
   constructor(
-    @InjectRepository(User) private readonly userRepository: Repository<User>, // PostgreSQL
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Doctor)
+    private doctorRepository: Repository<Doctor>,
   ) {}
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    try {
-      console.log('Creating user:', createUserDto.email);
-
-      const existingUser = await this.userRepository.findOne({
-        where: { email: createUserDto.email },
-      });
-
-      if (existingUser) {
-        throw new HttpException('User already exists', HttpStatus.CONFLICT);
-      }
-      const hashedPassword = await bcrypt.hash(createUserDto.contraseña, 10);
-      const userData = {
-        nombre: createUserDto.nombre,
-        email: createUserDto.email,
-        contraseñaHash: hashedPassword,
-        fechaNacimiento: createUserDto.fecha_nacimiento,
-        genero: createUserDto.género,
-        altura: createUserDto.altura,
-        pesoActual: createUserDto.peso_actual,
-        objetivoPeso: createUserDto.objetivo_peso,
-        nivelActividad: createUserDto.nivel_actividad,
-        doctorId: createUserDto.doctorId,
-      };
-
-      const savedUser = await this.userRepository.save(userData);
-
-      console.log('User created successfully:', savedUser.id);
-      return this.sanitizeUser(savedUser);
-    } catch (error) {
-      console.error('Error creating user:', error);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        'Failed to create user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async findAll(): Promise<User[]> {
-    try {
-      console.log('Cache miss - fetching from PostgreSQL');
-      const users = await this.userRepository.find({
-        select: ['id', 'nombre', 'email', 'fechaNacimiento', 'genero'], // Sin contraseña
-      });
-      return users;
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      throw new HttpException(
-        'Failed to fetch users',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async findOne(id: string): Promise<User> {
-    try {
-      console.log(`User ${id} not in Couchbase - fetching from PostgreSQL`);
-      const user = await this.userRepository.findOne({
-        where: { id },
-        select: [
-          'id',
-          'nombre',
-          'email',
-          'fechaNacimiento',
-          'genero',
-          'altura',
-          'pesoActual',
-          'objetivoPeso',
-          'nivelActividad',
-        ],
-      });
-
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-      return user;
-    } catch (error) {
-      console.error(`Error fetching user ${id}:`, error);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        'Failed to fetch user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 
   async findByEmailWithPassword(email: string): Promise<User | null> {
     try {
@@ -129,135 +46,147 @@ export class UsersService {
     }
   }
 
-  async findByEmail(email: string): Promise<User> {
-    try {
-      console.log(`Email ${email} not in cache - querying PostgreSQL`);
-      const user = await this.userRepository.findOne({
-        where: { email },
-        select: [
-          'id',
-          'nombre',
-          'email',
-          'fechaNacimiento',
-          'genero',
-          'altura',
-          'pesoActual',
-          'objetivoPeso',
-          'nivelActividad',
-        ],
-      });
-
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-      return user;
-    } catch (error) {
-      console.error(`Error fetching user by email ${email}:`, error);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        'Failed to fetch user by email',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    const existingUser = await this.findByEmail(createUserDto.email);
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
     }
+
+    // Verificar si el doctor existe (si se proporciona doctorId)
+    if (createUserDto.doctorId) {
+      const existingDoctor = await this.doctorRepository.findOne({
+        where: { id: createUserDto.doctorId },
+      });
+      if (!existingDoctor) {
+        throw new NotFoundException('Doctor not found');
+      }
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.contraseña,
+      saltRounds,
+    );
+
+    const user = this.userRepository.create({
+      nombre: createUserDto.nombre,
+      email: createUserDto.email,
+      contraseñaHash: hashedPassword,
+      fechaNacimiento: new Date(createUserDto.fecha_nacimiento),
+      genero: createUserDto.género,
+      altura: createUserDto.altura,
+      pesoActual: createUserDto.peso_actual,
+      objetivoPeso: createUserDto.objetivo_peso,
+      nivelActividad: createUserDto.nivel_actividad,
+      doctorId: createUserDto.doctorId,
+    });
+
+    const savedUser = await this.userRepository.save(user);
+    console.log('Usuario guardado en base de datos:', savedUser.id);
+
+    return savedUser;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    try {
-      console.log(`Updating user ${id}`);
-      const existingUser = await this.userRepository.findOne({
-        where: { id },
-      });
-
-      if (!existingUser) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-      let hashedPassword: string | undefined;
-      if (updateUserDto.contraseña) {
-        hashedPassword = await bcrypt.hash(updateUserDto.contraseña, 10);
-      }
-      const updateData: any = {};
-
-      if (updateUserDto.nombre !== undefined)
-        updateData.nombre = updateUserDto.nombre;
-      if (updateUserDto.email !== undefined)
-        updateData.email = updateUserDto.email;
-      if (hashedPassword !== undefined)
-        updateData.contraseñaHash = hashedPassword;
-      if (updateUserDto.fecha_nacimiento !== undefined)
-        updateData.fechaNacimiento = updateUserDto.fecha_nacimiento;
-      if (updateUserDto.género !== undefined)
-        updateData.genero = updateUserDto.género;
-      if (updateUserDto.altura !== undefined)
-        updateData.altura = updateUserDto.altura;
-      if (updateUserDto.peso_actual !== undefined)
-        updateData.pesoActual = updateUserDto.peso_actual;
-      if (updateUserDto.objetivo_peso !== undefined)
-        updateData.objetivoPeso = updateUserDto.objetivo_peso;
-      if (updateUserDto.nivel_actividad !== undefined)
-        updateData.nivelActividad = updateUserDto.nivel_actividad;
-      if (updateUserDto.doctorId !== undefined)
-        updateData.doctorId = updateUserDto.doctorId;
-
-      updateData.updated_at = new Date();
-      await this.userRepository.update(id, updateData);
-
-      const updatedUser = await this.userRepository.findOne({
-        where: { id },
-        select: [
-          'id',
-          'nombre',
-          'email',
-          'fechaNacimiento',
-          'genero',
-          'altura',
-          'pesoActual',
-          'objetivoPeso',
-          'nivelActividad',
-        ],
-      });
-
-      if (!updatedUser) {
-        throw new HttpException(
-          'User not found after update',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-      return updatedUser;
-    } catch (error) {
-      console.error(`Error updating user ${id}:`, error);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        'Failed to update user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+  // Método auxiliar para asignar un doctor a un usuario existente
+  async assignDoctor(userId: string, doctorId: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
+
+    user.doctorId = doctorId;
+    const updatedUser = await this.userRepository.save(user);
+
+    console.log('Doctor asignado al usuario correctamente');
+    return updatedUser;
   }
 
-  async remove(id: string): Promise<void> {
-    try {
-      const user = await this.userRepository.findOne({
-        where: { id },
-        select: ['email'],
-      });
+  // Método para obtener pacientes de un doctor
+  async getPatientsByDoctorId(doctorId: string): Promise<User[]> {
+    const patients = await this.userRepository.find({
+      where: { doctorId },
+      relations: ['doctor'],
+    });
 
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    return patients;
+  }
+
+  async findByEmail(email: string): Promise<User | undefined> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    return user ?? undefined;
+  }
+
+  async findById(id: string): Promise<User | undefined> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    return user ?? undefined;
+  }
+
+  async findAll(): Promise<User[]> {
+    return await this.userRepository.find();
+  }
+
+  async update(id: string, updateData: UpdateUserDto): Promise<User> {
+    const existingUser = await this.userRepository.findOne({ where: { id } });
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (updateData.email && updateData.email !== existingUser.email) {
+      const userWithEmail = await this.findByEmail(updateData.email);
+      if (userWithEmail && userWithEmail.id !== id) {
+        throw new ConflictException('User with this email already exists');
       }
-      console.log(`User ${id} removed successfully`);
-    } catch (error) {
-      console.error(`Error removing user ${id}:`, error);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        'Failed to remove user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+    }
+
+    // Transformar los datos del DTO al formato de la entidad
+    const updateDataForEntity: Partial<User> = {};
+
+    if (updateData.nombre) updateDataForEntity.nombre = updateData.nombre;
+    if (updateData.email) updateDataForEntity.email = updateData.email;
+    if (updateData.fecha_nacimiento)
+      updateDataForEntity.fechaNacimiento = new Date(
+        updateData.fecha_nacimiento,
+      );
+    if (updateData.género) updateDataForEntity.genero = updateData.género;
+    if (updateData.altura) updateDataForEntity.altura = updateData.altura;
+    if (updateData.peso_actual)
+      updateDataForEntity.pesoActual = updateData.peso_actual;
+    if (updateData.objetivo_peso)
+      updateDataForEntity.objetivoPeso = updateData.objetivo_peso;
+    if (updateData.nivel_actividad)
+      updateDataForEntity.nivelActividad = updateData.nivel_actividad;
+    if (updateData.doctorId !== undefined)
+      updateDataForEntity.doctorId = updateData.doctorId;
+
+    // Si se proporciona una nueva contraseña, hashearla
+    if (updateData.contraseña) {
+      const saltRounds = 10;
+      updateDataForEntity.contraseñaHash = await bcrypt.hash(
+        updateData.contraseña,
+        saltRounds,
       );
     }
+
+    await this.userRepository.update(id, updateDataForEntity);
+    const updatedUser = await this.userRepository.findOne({ where: { id } });
+
+    if (!updatedUser) {
+      throw new InternalServerErrorException('User not found after update');
+    }
+
+    console.log('Usuario actualizado correctamente');
+    return updatedUser;
+  }
+
+  async remove(id: string): Promise<{ affected: number }> {
+    const result = await this.userRepository.delete(id);
+
+    if (result.affected === 0) {
+      throw new NotFoundException('User not found');
+    }
+
+    console.log('Usuario eliminado correctamente');
+    return { affected: result.affected ?? 0 };
   }
 
   async validatePassword(
@@ -267,24 +196,7 @@ export class UsersService {
     try {
       return await bcrypt.compare(plainPassword, hashedPassword);
     } catch (error) {
-      console.error('Error validating password:', error);
-      return false;
-    }
-  }
-
-  private sanitizeUser(user: User): User {
-    // Remover contraseña de la respuesta
-    const { contraseñaHash, ...sanitizedUser } = user as any;
-    return sanitizedUser;
-  }
-
-  // Métodos de testing de conexiones
-  async testPostgreSQLConnection(): Promise<boolean> {
-    try {
-      await this.userRepository.query('SELECT 1');
-      return true;
-    } catch (error) {
-      console.error('PostgreSQL connection test failed:', error);
+      console.error('Error comparing passwords:', error);
       return false;
     }
   }

@@ -12,14 +12,14 @@ import {
   Req,
 } from '@nestjs/common';
 import { NutritionService } from './nutrition.service';
-import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import express from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('nutrition')
 export class NutritionController {
   constructor(private readonly nutritionService: NutritionService) {}
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Req() req: express.Request, @Body() createFoodRecordDto: any) {
     const userId = (req as any).user?.userId || (req as any).user?.sub;
@@ -35,7 +35,7 @@ export class NutritionController {
     return this.nutritionService.create(dtoWithUserId);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
   async findAllByUser(@Req() req: express.Request) {
     const userId = (req as any).user?.userId || (req as any).user?.sub;
@@ -50,7 +50,7 @@ export class NutritionController {
     return this.nutritionService.findAllByUser(userId);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('daily-summary/:userId')
   async getDailySummary(
     @Req() req: express.Request,
@@ -64,7 +64,7 @@ export class NutritionController {
     return this.nutritionService.getDailySummary(userId, targetDate);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Req() req: express.Request, @Param('id') id: string) {
     const authToken =
@@ -78,7 +78,7 @@ export class NutritionController {
     return this.nutritionService.findOne(id);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async update(
     @Req() req: express.Request,
@@ -96,7 +96,7 @@ export class NutritionController {
     return this.nutritionService.update(id, updateFoodRecordDto);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async remove(@Req() req: express.Request, @Param('id') id: string) {
     const authToken =

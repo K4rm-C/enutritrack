@@ -1,0 +1,2220 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestión Completa de Usuario - Sistema de Salud</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary-color: #4e73df;
+        --secondary-color: #858796;
+        --success-color: #1cc88a;
+        --info-color: #36b9cc;
+        --warning-color: #f6c23e;
+        --danger-color: #e74a3b;
+        --dark-color: #5a5c69;
+        --light-color: #f8f9fc;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fc;
+      }
+
+      .dashboard-body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .bg-gradient-primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          #2a4cb3 100%
+        ) !important;
+      }
+
+      .sidebar {
+        background: linear-gradient(
+          180deg,
+          #4e73df 0%,
+          #224abe 100%
+        ) !important;
+        min-height: 100vh;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+      }
+
+      .main-content {
+        padding: 2rem 0;
+        background: rgba(255, 255, 255, 0.95);
+        min-height: 100vh;
+      }
+
+      .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+      }
+
+      .personal-card {
+        border-left: 4px solid var(--primary-color);
+      }
+      .medical-card {
+        border-left: 4px solid var(--danger-color);
+      }
+      .nutrition-card {
+        border-left: 4px solid var(--success-color);
+      }
+      .activity-card {
+        border-left: 4px solid var(--warning-color);
+      }
+      .recommendation-card {
+        border-left: 4px solid var(--info-color);
+      }
+
+      .stats-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        transition: transform 0.3s ease;
+        overflow: hidden;
+      }
+
+      .stats-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .badge-custom {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+      }
+
+      .section-header {
+        border-bottom: 2px solid #e3e6f0;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .user-avatar {
+        width: 80px;
+        height: 80px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+      }
+
+      .data-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .data-item {
+        background: #f8f9fc;
+        padding: 1rem;
+        border-radius: 10px;
+        border-left: 4px solid var(--primary-color);
+      }
+
+      .nav-tabs .nav-link {
+        border: none;
+        color: var(--secondary-color);
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+      }
+
+      .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-bottom: 3px solid var(--primary-color);
+        background: transparent;
+      }
+
+      .action-buttons {
+        position: sticky;
+        top: 20px;
+        z-index: 100;
+      }
+
+      .nutrition-record,
+      .activity-record {
+        border-left: 4px solid #e3e6f0;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #f8f9fc;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .nutrition-record:hover,
+      .activity-record:hover {
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .meal-badge {
+        font-size: 0.7rem;
+        padding: 0.3em 0.6em;
+      }
+    </style>
+  </head>
+  <body class="dashboard-body">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/admins/dashboard">
+          <i class="fas fa-heartbeat me-2"></i>
+          <strong>Sistema de Salud</strong>
+        </a>
+        <div class="navbar-nav ms-auto align-items-center">
+          <div class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle text-white"
+              href="#"
+              id="userDropdown"
+              role="button"
+              data-bs-toggle="dropdown"
+            >
+              <i class="fas fa-user-circle me-1"></i>
+              <span id="user-name">Administrador</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="/admins/profile"
+                  ><i class="fas fa-user me-2"></i>Mi Perfil</a
+                >
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <a class="dropdown-item text-danger" href="#" id="logout-btn"
+                  ><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-3 col-lg-2 sidebar bg-dark text-white">
+          <div class="position-sticky pt-4">
+            <div class="sidebar-header text-center mb-4">
+              <h5 class="text-warning">Panel de Administración</h5>
+            </div>
+            <ul class="nav flex-column">
+              <li class="nav-item mb-2">
+                <a class="nav-link" href="/admins/dashboard">
+                  <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+              </li>
+              <li class="nav-item mb-2">
+                <a class="nav-link" href="/doctors/management">
+                  <i class="fas fa-user-md me-2"></i>Gestión de Doctores
+                </a>
+              </li>
+              <li class="nav-item mb-2">
+                <a class="nav-link active" href="/users/management">
+                  <i class="fas fa-users me-2"></i>Gestión de Usuarios
+                </a>
+              </li>
+              <li class="nav-item mb-2">
+                <a class="nav-link" href="/admins/profile">
+                  <i class="fas fa-cog me-2"></i>Configuración
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-4 main-content">
+          <!-- Header con información del usuario -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="card personal-card">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-md-2 text-center">
+                      <div class="user-avatar mx-auto mb-3">
+                        <i class="fas fa-user"></i>
+                      </div>
+                      <span class="badge bg-success" id="user-status"
+                        >Activo</span
+                      >
+                    </div>
+                    <div class="col-md-6">
+                      <h3 id="user-fullname">Cargando...</h3>
+                      <p class="text-muted mb-1" id="user-email">-</p>
+                      <p class="mb-1">
+                        <strong>Doctor asignado:</strong>
+                        <span id="user-doctor">-</span>
+                      </p>
+                      <p class="mb-0">
+                        <strong>Última actualización:</strong>
+                        <span id="last-update">-</span>
+                      </p>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="action-buttons">
+                        <button
+                          class="btn btn-primary w-100 mb-2"
+                          id="edit-user-btn"
+                        >
+                          <i class="fas fa-edit me-1"></i>Editar Usuario
+                        </button>
+                        <button
+                          class="btn btn-outline-danger w-100"
+                          id="delete-user-btn"
+                        >
+                          <i class="fas fa-trash me-1"></i>Eliminar Usuario
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Navegación por pestañas -->
+          <ul class="nav nav-tabs mb-4" id="userTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link active"
+                id="personal-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#personal"
+                type="button"
+                role="tab"
+              >
+                <i class="fas fa-user me-1"></i>Información Personal
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="medical-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#medical"
+                type="button"
+                role="tab"
+              >
+                <i class="fas fa-file-medical me-1"></i>Historial Médico
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="nutrition-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#nutrition"
+                type="button"
+                role="tab"
+              >
+                <i class="fas fa-utensils me-1"></i>Nutrición
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="activity-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#activity"
+                type="button"
+                role="tab"
+              >
+                <i class="fas fa-running me-1"></i>Actividad Física
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="recommendations-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#recommendations"
+                type="button"
+                role="tab"
+              >
+                <i class="fas fa-lightbulb me-1"></i>Recomendaciones
+              </button>
+            </li>
+          </ul>
+
+          <!-- Contenido de las pestañas -->
+          <div class="tab-content" id="userTabsContent">
+            <!-- Pestaña de Información Personal -->
+            <div
+              class="tab-pane fade show active"
+              id="personal"
+              role="tabpanel"
+            >
+              <div class="row">
+                <div class="col-md-8">
+                  <div class="card">
+                    <div class="card-header bg-white">
+                      <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2 text-primary"></i
+                        >Datos Personales
+                      </h5>
+                    </div>
+                    <div class="card-body">
+                      <div class="data-grid" id="personal-data">
+                        <!-- Se carga dinámicamente -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card">
+                    <div class="card-header bg-white">
+                      <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2 text-success"></i
+                        >Estadísticas de Salud
+                      </h5>
+                    </div>
+                    <div class="card-body">
+                      <div id="health-stats">
+                        <!-- Se carga dinámicamente -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pestaña de Historial Médico -->
+            <div class="tab-pane fade" id="medical" role="tabpanel">
+              <div class="row">
+                <div class="col-12">
+                  <div class="card medical-card">
+                    <div
+                      class="card-header bg-white d-flex justify-content-between align-items-center"
+                    >
+                      <h5 class="card-title mb-0">
+                        <i class="fas fa-file-medical me-2 text-danger"></i
+                        >Historial Médico Completo
+                      </h5>
+                      <button
+                        class="btn btn-sm btn-danger"
+                        id="edit-medical-btn"
+                      >
+                        <i class="fas fa-edit me-1"></i>Editar Historial
+                      </button>
+                    </div>
+                    <div class="card-body">
+                      <div class="row mb-4">
+                        <div class="col-md-4">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Condiciones</h6>
+                              <h3
+                                class="text-primary"
+                                id="medical-conditions-count"
+                              >
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Alergias</h6>
+                              <h3
+                                class="text-warning"
+                                id="medical-allergies-count"
+                              >
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Medicamentos</h6>
+                              <h3
+                                class="text-info"
+                                id="medical-medications-count"
+                              >
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="medical-content">
+                        <!-- Se carga dinámicamente -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pestaña de Nutrición -->
+            <div class="tab-pane fade" id="nutrition" role="tabpanel">
+              <div class="row">
+                <div class="col-12">
+                  <div class="card nutrition-card">
+                    <div
+                      class="card-header bg-white d-flex justify-content-between align-items-center"
+                    >
+                      <h5 class="card-title mb-0">
+                        <i class="fas fa-utensils me-2 text-success"></i
+                        >Registros de Nutrición
+                      </h5>
+                      <div>
+                        <input
+                          type="date"
+                          class="form-control form-control-sm d-inline-block w-auto me-2"
+                          id="nutrition-filter-date"
+                        />
+                        <button
+                          class="btn btn-sm btn-success"
+                          id="add-nutrition-btn"
+                        >
+                          <i class="fas fa-plus me-1"></i>Agregar Registro
+                        </button>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      <div class="row mb-4">
+                        <div class="col-md-3">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Total Calorías</h6>
+                              <h3 class="text-primary" id="total-calories">
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Proteínas</h6>
+                              <h3 class="text-success" id="total-protein">
+                                0g
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Carbohidratos</h6>
+                              <h3 class="text-warning" id="total-carbs">0g</h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Grasas</h6>
+                              <h3 class="text-danger" id="total-fats">0g</h3>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="nutrition-content">
+                        <!-- Se carga dinámicamente -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pestaña de Actividad Física -->
+            <div class="tab-pane fade" id="activity" role="tabpanel">
+              <div class="row">
+                <div class="col-12">
+                  <div class="card activity-card">
+                    <div
+                      class="card-header bg-white d-flex justify-content-between align-items-center"
+                    >
+                      <h5 class="card-title mb-0">
+                        <i class="fas fa-running me-2 text-warning"></i
+                        >Actividad Física
+                      </h5>
+                      <div>
+                        <input
+                          type="date"
+                          class="form-control form-control-sm d-inline-block w-auto me-2"
+                          id="activity-filter-date"
+                        />
+                        <button
+                          class="btn btn-sm btn-warning"
+                          id="add-activity-btn"
+                        >
+                          <i class="fas fa-plus me-1"></i>Agregar Actividad
+                        </button>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      <div class="row mb-4">
+                        <div class="col-md-4">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Total Minutos</h6>
+                              <h3 class="text-primary" id="total-minutes">0</h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Calorías Quemadas</h6>
+                              <h3 class="text-success" id="total-burned">0</h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Actividades</h6>
+                              <h3 class="text-warning" id="total-activities">
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="activity-content">
+                        <!-- Se carga dinámicamente -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pestaña de Recomendaciones -->
+            <div class="tab-pane fade" id="recommendations" role="tabpanel">
+              <div class="row">
+                <div class="col-12">
+                  <div class="card recommendation-card">
+                    <div
+                      class="card-header bg-white d-flex justify-content-between align-items-center"
+                    >
+                      <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb me-2 text-info"></i
+                        >Recomendaciones
+                      </h5>
+                      <button
+                        class="btn btn-sm btn-info"
+                        id="refresh-recommendations-btn"
+                      >
+                        <i class="fas fa-sync-alt me-1"></i>Actualizar
+                      </button>
+                    </div>
+                    <div class="card-body">
+                      <div class="row mb-4">
+                        <div class="col-md-3">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Total</h6>
+                              <h3
+                                class="text-primary"
+                                id="total-recommendations"
+                              >
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Activas</h6>
+                              <h3
+                                class="text-success"
+                                id="active-recommendations"
+                              >
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Nutrición</h6>
+                              <h3
+                                class="text-warning"
+                                id="nutrition-recommendations"
+                              >
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="card bg-light">
+                            <div class="card-body text-center">
+                              <h6>Ejercicio</h6>
+                              <h3
+                                class="text-danger"
+                                id="exercise-recommendations"
+                              >
+                                0
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="recommendations-content">
+                        <!-- Se carga dinámicamente -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Modal para Editar Usuario -->
+    <div
+      class="modal fade"
+      id="editUserModal"
+      tabindex="-1"
+      aria-labelledby="editUserModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editUserModalLabel">
+              Editar Información del Usuario
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="edit-user-form">
+              <input type="hidden" id="edit-user-id" />
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="edit-user-nombre" class="form-label"
+                      >Nombre Completo</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="edit-user-nombre"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="edit-user-email" class="form-label"
+                      >Email</label
+                    >
+                    <input
+                      type="email"
+                      class="form-control"
+                      id="edit-user-email"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="edit-user-fecha_nacimiento" class="form-label"
+                      >Fecha de Nacimiento</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="edit-user-fecha_nacimiento"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="edit-user-genero" class="form-label"
+                      >Género</label
+                    >
+                    <select class="form-select" id="edit-user-genero" required>
+                      <option value="masculino">Masculino</option>
+                      <option value="femenino">Femenino</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="edit-user-altura" class="form-label"
+                      >Altura (cm)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="edit-user-altura"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="edit-user-peso_actual" class="form-label"
+                      >Peso Actual (kg)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="edit-user-peso_actual"
+                      required
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="edit-user-objetivo_peso" class="form-label"
+                      >Peso Objetivo (kg)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="edit-user-objetivo_peso"
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="edit-user-nivel_actividad" class="form-label"
+                      >Nivel de Actividad</label
+                    >
+                    <select
+                      class="form-select"
+                      id="edit-user-nivel_actividad"
+                      required
+                    >
+                      <option value="sedentario">Sedentario</option>
+                      <option value="ligero">Ligero</option>
+                      <option value="moderado">Moderado</option>
+                      <option value="activo">Activo</option>
+                      <option value="muy_activo">Muy Activo</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="edit-user-doctor" class="form-label"
+                      >Doctor Asignado</label
+                    >
+                    <select class="form-select" id="edit-user-doctor">
+                      <option value="">Sin doctor asignado</option>
+                      <!-- Se llena dinámicamente -->
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="edit-user-contraseña" class="form-label"
+                  >Contraseña (dejar en blanco para no cambiar)</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="edit-user-contraseña"
+                />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-user-changes"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para Historial Médico -->
+    <div
+      class="modal fade"
+      id="medicalModal"
+      tabindex="-1"
+      aria-labelledby="medicalModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="medicalModalLabel">
+              Editar Historial Médico
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="medical-form">
+              <div class="mb-3">
+                <label for="edit-condiciones" class="form-label"
+                  >Condiciones Médicas (separadas por comas)</label
+                >
+                <textarea
+                  class="form-control"
+                  id="edit-condiciones"
+                  rows="3"
+                  placeholder="Ej: Diabetes, Hipertensión"
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="edit-alergias" class="form-label"
+                  >Alergias (separadas por comas)</label
+                >
+                <textarea
+                  class="form-control"
+                  id="edit-alergias"
+                  rows="3"
+                  placeholder="Ej: Penicilina, Mariscos"
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="edit-medicamentos" class="form-label"
+                  >Medicamentos (separadas por comas)</label
+                >
+                <textarea
+                  class="form-control"
+                  id="edit-medicamentos"
+                  rows="3"
+                  placeholder="Ej: Metformina, Losartán"
+                ></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              id="save-medical-history"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para Agregar Registro de Nutrición -->
+    <div
+      class="modal fade"
+      id="nutritionModal"
+      tabindex="-1"
+      aria-labelledby="nutritionModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="nutritionModalLabel">
+              Agregar Registro de Nutrición
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="nutrition-form">
+              <div class="mb-3">
+                <label for="nutrition-fecha" class="form-label">Fecha</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  id="nutrition-fecha"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="nutrition-tipo_comida" class="form-label"
+                  >Tipo de Comida</label
+                >
+                <select class="form-select" id="nutrition-tipo_comida" required>
+                  <option value="desayuno">Desayuno</option>
+                  <option value="almuerzo">Almuerzo</option>
+                  <option value="cena">Cena</option>
+                  <option value="snack">Snack</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="nutrition-descripcion" class="form-label"
+                  >Descripción</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="nutrition-descripcion"
+                  required
+                  placeholder="Ej: Ensalada de pollo"
+                />
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="nutrition-calorias" class="form-label"
+                      >Calorías</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="nutrition-calorias"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="nutrition-proteinas" class="form-label"
+                      >Proteínas (g)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="nutrition-proteinas"
+                      required
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="nutrition-carbohidratos" class="form-label"
+                      >Carbohidratos (g)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="nutrition-carbohidratos"
+                      required
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="nutrition-grasas" class="form-label"
+                      >Grasas (g)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="nutrition-grasas"
+                      required
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="btn btn-success"
+              id="save-nutrition-record"
+            >
+              Guardar Registro
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para Agregar Actividad Física -->
+    <div
+      class="modal fade"
+      id="activityModal"
+      tabindex="-1"
+      aria-labelledby="activityModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="activityModalLabel">
+              Agregar Actividad Física
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="activity-form">
+              <div class="mb-3">
+                <label for="activity-fecha" class="form-label">Fecha</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  id="activity-fecha"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="activity-tipo_actividad" class="form-label"
+                  >Tipo de Actividad</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="activity-tipo_actividad"
+                  required
+                  placeholder="Ej: Caminata, Natación, Ciclismo"
+                />
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="activity-duracion" class="form-label"
+                      >Duración (minutos)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="activity-duracion"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="activity-caloriasQuemadas" class="form-label"
+                      >Calorías Quemadas</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="activity-caloriasQuemadas"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button type="button" class="btn btn-warning" id="save-activity">
+              Guardar Actividad
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para Confirmar Eliminación -->
+    <div
+      class="modal fade"
+      id="deleteUserModal"
+      tabindex="-1"
+      aria-labelledby="deleteUserModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteUserModalLabel">
+              Confirmar Eliminación
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p>
+              ¿Está seguro de que desea eliminar al usuario
+              <strong id="delete-user-name"></strong>?
+            </p>
+            <p class="text-danger">
+              <small
+                >Esta acción eliminará todos los registros médicos,
+                nutricionales y de actividad física asociados. Esta acción no se
+                puede deshacer.</small
+              >
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              id="confirm-delete-user"
+            >
+              Eliminar Usuario
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      class AdminUserDetailManager {
+        constructor() {
+          this.baseURL = window.location.origin;
+          this.userId = this.getUserIdFromURL();
+          this.userData = null;
+          this.doctors = [];
+          this.init();
+        }
+
+        init() {
+          this.checkAuth();
+          this.setupEventListeners();
+          this.loadUserData();
+          this.loadDoctors();
+        }
+
+        getUserIdFromURL() {
+          const urlParams = new URLSearchParams(window.location.search);
+          return urlParams.get('id');
+        }
+
+        async checkAuth() {
+          const token = localStorage.getItem('access_token');
+          if (!token) {
+            window.location.href = '/auth/login';
+            return false;
+          }
+          return true;
+        }
+
+        async makeAuthenticatedRequest(url, options = {}) {
+          const token = localStorage.getItem('access_token');
+          const defaultOptions = {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          };
+          const mergedOptions = { ...defaultOptions, ...options };
+
+          try {
+            const response = await fetch(url, mergedOptions);
+            if (response.status === 401) {
+              this.logout();
+              return null;
+            }
+            return response;
+          } catch (error) {
+            console.error('Request failed:', error);
+            return null;
+          }
+        }
+
+        async loadUserData() {
+          if (!this.userId) {
+            console.error('No user ID provided');
+            return;
+          }
+
+          const response = await this.makeAuthenticatedRequest(
+            `/users/user/id/${this.userId}`,
+          );
+          this.userData = await response.json();
+          this.renderUserHeader();
+          this.loadAllUserData();
+        }
+
+        async loadAllUserData() {
+          await this.loadPersonalData();
+          await this.loadMedicalHistory();
+          await this.loadNutritionData();
+          await this.loadActivityData();
+          await this.loadRecommendations();
+        }
+
+        async loadDoctors() {
+          const response = await this.makeAuthenticatedRequest('/doctors');
+          if (response && response.ok) {
+            this.doctors = await response.json();
+            this.populateDoctorsDropdown();
+          }
+        }
+
+        populateDoctorsDropdown() {
+          const select = document.getElementById('edit-user-doctor');
+          select.innerHTML = '<option value="">Sin doctor asignado</option>';
+
+          this.doctors.forEach((doctor) => {
+            const option = document.createElement('option');
+            option.value = doctor.id;
+            option.textContent = doctor.nombre;
+            select.appendChild(option);
+          });
+
+          if (this.userData && this.userData.doctorId) {
+            select.value = this.userData.doctorId;
+          }
+        }
+
+        renderUserHeader() {
+          if (!this.userData) return;
+
+          document.getElementById('user-fullname').textContent =
+            this.userData.nombre;
+          document.getElementById('user-email').textContent =
+            this.userData.email;
+
+          const doctor = this.doctors.find(
+            (d) => d.id === this.userData.doctorId,
+          );
+          document.getElementById('user-doctor').textContent = doctor
+            ? doctor.nombre
+            : 'No asignado';
+
+          document.getElementById('last-update').textContent =
+            new Date().toLocaleDateString();
+          document.getElementById('delete-user-name').textContent =
+            this.userData.nombre;
+        }
+
+        async loadPersonalData() {
+          this.renderPersonalData();
+        }
+
+        renderPersonalData() {
+          if (!this.userData) return;
+
+          const container = document.getElementById('personal-data');
+          container.innerHTML = `
+                    <div class="data-item">
+                        <small class="text-muted">Nombre Completo</small>
+                        <div class="fw-bold">${this.userData.nombre}</div>
+                    </div>
+                    <div class="data-item">
+                        <small class="text-muted">Email</small>
+                        <div class="fw-bold">${this.userData.email}</div>
+                    </div>
+                    <div class="data-item">
+                        <small class="text-muted">Fecha de Nacimiento</small>
+                        <div class="fw-bold">${new Date(this.userData.fechaNacimiento).toLocaleDateString()}</div>
+                    </div>
+                    <div class="data-item">
+                        <small class="text-muted">Género</small>
+                        <div class="fw-bold">${this.userData.genero}</div>
+                    </div>
+                    <div class="data-item">
+                        <small class="text-muted">Altura</small>
+                        <div class="fw-bold">${this.userData.altura} cm</div>
+                    </div>
+                    <div class="data-item">
+                        <small class="text-muted">Peso Actual</small>
+                        <div class="fw-bold">${this.userData.pesoActual} kg</div>
+                    </div>
+                    <div class="data-item">
+                        <small class="text-muted">Peso Objetivo</small>
+                        <div class="fw-bold">${this.userData.objetivoPeso || 'No establecido'} kg</div>
+                    </div>
+                    <div class="data-item">
+                        <small class="text-muted">Nivel de Actividad</small>
+                        <div class="fw-bold">${this.userData.nivelActividad}</div>
+                    </div>
+                `;
+
+          this.renderHealthStats();
+        }
+
+        renderHealthStats() {
+          const container = document.getElementById('health-stats');
+          if (!this.userData) return;
+
+          const imc =
+            this.userData.pesoActual / Math.pow(this.userData.altura / 100, 2);
+          const edad = this.calculateAge(this.userData.fechaNacimiento);
+
+          container.innerHTML = `
+                    <div class="mb-3">
+                        <small class="text-muted">Edad</small>
+                        <div class="h5">${edad} años</div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">IMC</small>
+                        <div class="h5">${imc.toFixed(1)}</div>
+                        <small class="${this.getBMIColor(imc)}">${this.getBMICategory(imc)}</small>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Diferencia de Peso</small>
+                        <div class="h5 ${this.userData.objetivoPeso ? (this.userData.pesoActual > this.userData.objetivoPeso ? 'text-danger' : 'text-success') : 'text-muted'}">
+                            ${this.userData.objetivoPeso ? (this.userData.pesoActual - this.userData.objetivoPeso).toFixed(1) + ' kg' : 'No establecido'}
+                        </div>
+                    </div>
+                `;
+        }
+
+        calculateAge(birthDate) {
+          const today = new Date();
+          const birth = new Date(birthDate);
+          let age = today.getFullYear() - birth.getFullYear();
+          const monthDiff = today.getMonth() - birth.getMonth();
+
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birth.getDate())
+          ) {
+            age--;
+          }
+          return age;
+        }
+
+        getBMICategory(imc) {
+          if (imc < 18.5) return 'Bajo peso';
+          if (imc < 25) return 'Normal';
+          if (imc < 30) return 'Sobrepeso';
+          return 'Obesidad';
+        }
+
+        getBMIColor(imc) {
+          if (imc < 18.5) return 'text-warning';
+          if (imc < 25) return 'text-success';
+          if (imc < 30) return 'text-warning';
+          return 'text-danger';
+        }
+
+        // SECCIÓN: HISTORIAL MÉDICO
+        async loadMedicalHistory() {
+          const response = await this.makeAuthenticatedRequest(
+            `/medical-history/${this.userId}`,
+          );
+          if (response && response.ok) {
+            const medicalHistory = await response.json();
+            this.renderMedicalHistory(medicalHistory);
+          } else {
+            this.renderMedicalHistory(null);
+          }
+        }
+
+        renderMedicalHistory(medicalHistory) {
+          const container = document.getElementById('medical-content');
+
+          if (!medicalHistory) {
+            container.innerHTML =
+              '<p class="text-muted">No hay historial médico registrado.</p>';
+            document.getElementById('medical-conditions-count').textContent =
+              '0';
+            document.getElementById('medical-allergies-count').textContent =
+              '0';
+            document.getElementById('medical-medications-count').textContent =
+              '0';
+            return;
+          }
+
+          // Actualizar contadores
+          document.getElementById('medical-conditions-count').textContent =
+            medicalHistory.condiciones ? medicalHistory.condiciones.length : 0;
+          document.getElementById('medical-allergies-count').textContent =
+            medicalHistory.alergias ? medicalHistory.alergias.length : 0;
+          document.getElementById('medical-medications-count').textContent =
+            medicalHistory.medicamentos
+              ? medicalHistory.medicamentos.length
+              : 0;
+
+          let content = '<div class="row">';
+
+          if (
+            medicalHistory.condiciones &&
+            medicalHistory.condiciones.length > 0
+          ) {
+            content += `
+                        <div class="col-md-4">
+                            <h6 class="section-header">Condiciones Médicas</h6>
+                            ${medicalHistory.condiciones
+                              .map(
+                                (cond) => `
+                                <span class="badge bg-danger badge-custom me-1 mb-1">${cond}</span>
+                            `,
+                              )
+                              .join('')}
+                        </div>
+                    `;
+          } else {
+            content += `
+                        <div class="col-md-4">
+                            <h6 class="section-header">Condiciones Médicas</h6>
+                            <p class="text-muted">No hay condiciones registradas</p>
+                        </div>
+                    `;
+          }
+
+          if (medicalHistory.alergias && medicalHistory.alergias.length > 0) {
+            content += `
+                        <div class="col-md-4">
+                            <h6 class="section-header">Alergias</h6>
+                            ${medicalHistory.alergias
+                              .map(
+                                (alergia) => `
+                                <span class="badge bg-warning badge-custom me-1 mb-1">${alergia}</span>
+                            `,
+                              )
+                              .join('')}
+                        </div>
+                    `;
+          } else {
+            content += `
+                        <div class="col-md-4">
+                            <h6 class="section-header">Alergias</h6>
+                            <p class="text-muted">No hay alergias registradas</p>
+                        </div>
+                    `;
+          }
+
+          if (
+            medicalHistory.medicamentos &&
+            medicalHistory.medicamentos.length > 0
+          ) {
+            content += `
+                        <div class="col-md-4">
+                            <h6 class="section-header">Medicamentos</h6>
+                            ${medicalHistory.medicamentos
+                              .map(
+                                (med) => `
+                                <span class="badge bg-info badge-custom me-1 mb-1">${med}</span>
+                            `,
+                              )
+                              .join('')}
+                        </div>
+                    `;
+          } else {
+            content += `
+                        <div class="col-md-4">
+                            <h6 class="section-header">Medicamentos</h6>
+                            <p class="text-muted">No hay medicamentos registrados</p>
+                        </div>
+                    `;
+          }
+
+          content += '</div>';
+          container.innerHTML = content;
+        }
+
+        // SECCIÓN: NUTRICIÓN
+        async loadNutritionData() {
+          const date =
+            document.getElementById('nutrition-filter-date').value ||
+            new Date().toISOString().split('T')[0];
+          const response = await this.makeAuthenticatedRequest(
+            `/nutrition/daily-summary/${this.userId}?date=${date}`,
+          );
+          if (response && response.ok) {
+            const nutritionData = await response.json();
+            this.renderNutritionData(nutritionData);
+          } else {
+            this.renderNutritionData(null);
+          }
+        }
+
+        renderNutritionData(nutritionData) {
+          const container = document.getElementById('nutrition-content');
+
+          if (
+            !nutritionData ||
+            !nutritionData.registros ||
+            nutritionData.registros.length === 0
+          ) {
+            container.innerHTML =
+              '<p class="text-muted">No hay registros de nutrición para esta fecha.</p>';
+            // Resetear totales
+            document.getElementById('total-calories').textContent = '0';
+            document.getElementById('total-protein').textContent = '0g';
+            document.getElementById('total-carbs').textContent = '0g';
+            document.getElementById('total-fats').textContent = '0g';
+            return;
+          }
+
+          // Actualizar totales
+          document.getElementById('total-calories').textContent =
+            nutritionData.totalCalorias || 0;
+          document.getElementById('total-protein').textContent =
+            `${nutritionData.totalProteinas || 0}g`;
+          document.getElementById('total-carbs').textContent =
+            `${nutritionData.totalCarbohidratos || 0}g`;
+          document.getElementById('total-fats').textContent =
+            `${nutritionData.totalGrasas || 0}g`;
+
+          // Renderizar registros
+          container.innerHTML = nutritionData.registros
+            .map(
+              (record) => `
+                    <div class="nutrition-record">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="badge ${this.getMealTypeBadge(record.tipo_comida)} meal-badge">${record.tipo_comida}</span>
+                                <strong>${record.descripcion}</strong>
+                            </div>
+                            <small class="text-muted">${new Date(record.fecha).toLocaleTimeString()}</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-3">
+                                <small class="text-muted">Calorías</small>
+                                <div class="fw-bold text-primary">${record.calorias}</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">Proteínas</small>
+                                <div class="fw-bold text-success">${record.proteinas}g</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">Carbohidratos</small>
+                                <div class="fw-bold text-warning">${record.carbohidratos}g</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">Grasas</small>
+                                <div class="fw-bold text-danger">${record.grasas}g</div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            )
+            .join('');
+        }
+
+        getMealTypeBadge(tipo) {
+          const badges = {
+            desayuno: 'bg-primary',
+            almuerzo: 'bg-success',
+            cena: 'bg-info',
+            snack: 'bg-secondary',
+          };
+          return badges[tipo] || 'bg-secondary';
+        }
+
+        // SECCIÓN: ACTIVIDAD FÍSICA
+        async loadActivityData() {
+          const date =
+            document.getElementById('activity-filter-date').value ||
+            new Date().toISOString().split('T')[0];
+          const response = await this.makeAuthenticatedRequest(
+            `/physical-activity/weekly-summary/${this.userId}?startDate=${date}`,
+          );
+          if (response && response.ok) {
+            const activityData = await response.json();
+            this.renderActivityData(activityData);
+          } else {
+            this.renderActivityData(null);
+          }
+        }
+
+        renderActivityData(activityData) {
+          const container = document.getElementById('activity-content');
+
+          if (
+            !activityData ||
+            !activityData.actividades ||
+            activityData.actividades.length === 0
+          ) {
+            container.innerHTML =
+              '<p class="text-muted">No hay registros de actividad física para esta fecha.</p>';
+            // Resetear totales
+            document.getElementById('total-minutes').textContent = '0';
+            document.getElementById('total-burned').textContent = '0';
+            document.getElementById('total-activities').textContent = '0';
+            return;
+          }
+
+          // Actualizar totales
+          document.getElementById('total-minutes').textContent =
+            activityData.totalMinutos || 0;
+          document.getElementById('total-burned').textContent =
+            activityData.totalCaloriasQuemadas || 0;
+          document.getElementById('total-activities').textContent =
+            activityData.actividades.length;
+
+          // Renderizar actividades
+          container.innerHTML = activityData.actividades
+            .map(
+              (activity) => `
+                    <div class="activity-record">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>${activity.tipo_actividad}</strong>
+                            </div>
+                            <small class="text-muted">${new Date(activity.fecha).toLocaleDateString()}</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-4">
+                                <small class="text-muted">Duración</small>
+                                <div class="fw-bold text-primary">${activity.duracion} min</div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">Calorías</small>
+                                <div class="fw-bold text-success">${activity.caloriasQuemadas}</div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">Intensidad</small>
+                                <div class="fw-bold text-warning">${this.calculateIntensity(activity.duracion, activity.caloriasQuemadas)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            )
+            .join('');
+        }
+
+        calculateIntensity(duracion, calorias) {
+          const intensity = calorias / duracion;
+          if (intensity < 5) return 'Baja';
+          if (intensity < 10) return 'Moderada';
+          return 'Alta';
+        }
+
+        // SECCIÓN: RECOMENDACIONES
+        async loadRecommendations() {
+          const response = await this.makeAuthenticatedRequest(
+            `/recommendations/user/${this.userId}`,
+          );
+          if (response && response.ok) {
+            const recommendations = await response.json();
+            this.renderRecommendations(recommendations);
+          } else {
+            this.renderRecommendations([]);
+          }
+        }
+
+        renderRecommendations(recommendations) {
+          const container = document.getElementById('recommendations-content');
+
+          if (!recommendations || recommendations.length === 0) {
+            container.innerHTML =
+              '<p class="text-muted">No hay recomendaciones para este usuario.</p>';
+            // Resetear contadores
+            document.getElementById('total-recommendations').textContent = '0';
+            document.getElementById('active-recommendations').textContent = '0';
+            document.getElementById('nutrition-recommendations').textContent =
+              '0';
+            document.getElementById('exercise-recommendations').textContent =
+              '0';
+            return;
+          }
+
+          // Calcular estadísticas
+          const total = recommendations.length;
+          const active = recommendations.filter((r) => r.activo).length;
+          const nutrition = recommendations.filter(
+            (r) => r.tipo === 'nutrition',
+          ).length;
+          const exercise = recommendations.filter(
+            (r) => r.tipo === 'exercise',
+          ).length;
+
+          // Actualizar contadores
+          document.getElementById('total-recommendations').textContent = total;
+          document.getElementById('active-recommendations').textContent =
+            active;
+          document.getElementById('nutrition-recommendations').textContent =
+            nutrition;
+          document.getElementById('exercise-recommendations').textContent =
+            exercise;
+
+          // Renderizar recomendaciones
+          container.innerHTML = recommendations
+            .map(
+              (rec) => `
+                    <div class="card mb-3 ${rec.activo ? 'border-success' : 'border-secondary'}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge ${this.getRecommendationBadge(rec.tipo)}">${rec.tipo}</span>
+                                <span class="badge ${rec.activo ? 'bg-success' : 'bg-secondary'}">${rec.activo ? 'Activa' : 'Inactiva'}</span>
+                            </div>
+                            <p class="card-text">${rec.datosEntrada?.mensaje || 'Recomendación personalizada'}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Generada: ${new Date(rec.fechaGeneracion).toLocaleDateString()}</small>
+                                ${
+                                  rec.activo
+                                    ? `
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="adminUserDetailManager.deactivateRecommendation('${rec.id}')">
+                                        <i class="fas fa-times me-1"></i>Desactivar
+                                    </button>
+                                `
+                                    : ''
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `,
+            )
+            .join('');
+        }
+
+        getRecommendationBadge(tipo) {
+          const badges = {
+            nutrition: 'bg-warning',
+            exercise: 'bg-danger',
+            medical: 'bg-danger',
+            general: 'bg-info',
+          };
+          return badges[tipo] || 'bg-secondary';
+        }
+
+        setupEventListeners() {
+          // Navegación
+          document
+            .getElementById('logout-btn')
+            .addEventListener('click', (e) => {
+              e.preventDefault();
+              this.logout();
+            });
+
+          // Botones de acción principales
+          document
+            .getElementById('edit-user-btn')
+            .addEventListener('click', () => {
+              this.openEditUserModal();
+            });
+
+          document
+            .getElementById('delete-user-btn')
+            .addEventListener('click', () => {
+              this.openDeleteUserModal();
+            });
+
+          document
+            .getElementById('confirm-delete-user')
+            .addEventListener('click', () => {
+              this.deleteUser();
+            });
+
+          document
+            .getElementById('save-user-changes')
+            .addEventListener('click', () => {
+              this.saveUserChanges();
+            });
+
+          // Botones de las pestañas
+          document
+            .getElementById('edit-medical-btn')
+            .addEventListener('click', () => {
+              this.openEditMedicalModal();
+            });
+
+          document
+            .getElementById('add-nutrition-btn')
+            .addEventListener('click', () => {
+              this.openNutritionModal();
+            });
+
+          document
+            .getElementById('add-activity-btn')
+            .addEventListener('click', () => {
+              this.openActivityModal();
+            });
+
+          document
+            .getElementById('refresh-recommendations-btn')
+            .addEventListener('click', () => {
+              this.loadRecommendations();
+            });
+
+          // Guardar formularios
+          document
+            .getElementById('save-medical-history')
+            .addEventListener('click', () => {
+              this.saveMedicalHistory();
+            });
+
+          document
+            .getElementById('save-nutrition-record')
+            .addEventListener('click', () => {
+              this.saveNutritionRecord();
+            });
+
+          document
+            .getElementById('save-activity')
+            .addEventListener('click', () => {
+              this.saveActivity();
+            });
+
+          // Filtros
+          document
+            .getElementById('nutrition-filter-date')
+            .addEventListener('change', () => {
+              this.loadNutritionData();
+            });
+
+          document
+            .getElementById('activity-filter-date')
+            .addEventListener('change', () => {
+              this.loadActivityData();
+            });
+        }
+
+        openEditUserModal() {
+          if (!this.userData) return;
+
+          document.getElementById('edit-user-id').value = this.userData.id;
+          document.getElementById('edit-user-nombre').value =
+            this.userData.nombre;
+          document.getElementById('edit-user-email').value =
+            this.userData.email;
+          document.getElementById('edit-user-fecha_nacimiento').value =
+            this.userData.fecha_nacimiento;
+          document.getElementById('edit-user-genero').value =
+            this.userData.género;
+          document.getElementById('edit-user-altura').value =
+            this.userData.altura;
+          document.getElementById('edit-user-peso_actual').value =
+            this.userData.peso_actual;
+          document.getElementById('edit-user-objetivo_peso').value =
+            this.userData.objetivo_peso || '';
+          document.getElementById('edit-user-nivel_actividad').value =
+            this.userData.nivel_actividad;
+          document.getElementById('edit-user-doctor').value =
+            this.userData.doctorId || '';
+
+          const modal = new bootstrap.Modal(
+            document.getElementById('editUserModal'),
+          );
+          modal.show();
+        }
+
+        openEditMedicalModal() {
+          // En un sistema real, cargaríamos los datos actuales
+          const modal = new bootstrap.Modal(
+            document.getElementById('medicalModal'),
+          );
+          modal.show();
+        }
+
+        openNutritionModal() {
+          const now = new Date();
+          const localDateTime = now.toISOString().slice(0, 16);
+          document.getElementById('nutrition-fecha').value = localDateTime;
+
+          const modal = new bootstrap.Modal(
+            document.getElementById('nutritionModal'),
+          );
+          modal.show();
+        }
+
+        openActivityModal() {
+          const now = new Date();
+          const localDateTime = now.toISOString().slice(0, 16);
+          document.getElementById('activity-fecha').value = localDateTime;
+
+          const modal = new bootstrap.Modal(
+            document.getElementById('activityModal'),
+          );
+          modal.show();
+        }
+
+        openDeleteUserModal() {
+          const modal = new bootstrap.Modal(
+            document.getElementById('deleteUserModal'),
+          );
+          modal.show();
+        }
+
+        async saveUserChanges() {
+          const formData = {
+            nombre: document.getElementById('edit-user-nombre').value,
+            email: document.getElementById('edit-user-email').value,
+            fecha_nacimiento: document.getElementById(
+              'edit-user-fecha_nacimiento',
+            ).value,
+            género: document.getElementById('edit-user-genero').value,
+            altura: parseFloat(
+              document.getElementById('edit-user-altura').value,
+            ),
+            peso_actual: parseFloat(
+              document.getElementById('edit-user-peso_actual').value,
+            ),
+            nivel_actividad: document.getElementById(
+              'edit-user-nivel_actividad',
+            ).value,
+          };
+
+          const objetivoPeso = document.getElementById(
+            'edit-user-objetivo_peso',
+          ).value;
+          if (objetivoPeso) {
+            formData.objetivo_peso = parseFloat(objetivoPeso);
+          }
+
+          const doctorId = document.getElementById('edit-user-doctor').value;
+          if (doctorId) {
+            formData.doctorId = doctorId;
+          }
+
+          const contraseña = document.getElementById(
+            'edit-user-contraseña',
+          ).value;
+          if (contraseña) {
+            formData.contraseña = contraseña;
+          }
+
+          console.log('=== ACTUALIZANDO USUARIO ===');
+          console.log('Datos:', JSON.stringify(formData, null, 2));
+
+          const response = await this.makeAuthenticatedRequest(
+            `/users/${this.userData.id}`,
+            {
+              method: 'PATCH',
+              body: JSON.stringify(formData),
+            },
+          );
+
+          if (response && response.ok) {
+            bootstrap.Modal.getInstance(
+              document.getElementById('editUserModal'),
+            ).hide();
+            await this.loadUserData();
+            alert('Usuario actualizado correctamente');
+          } else {
+            alert('Error al actualizar el usuario');
+          }
+        }
+
+        async saveMedicalHistory() {
+          const formData = {
+            condiciones: document
+              .getElementById('edit-condiciones')
+              .value.split(',')
+              .map((item) => item.trim())
+              .filter((item) => item),
+            alergias: document
+              .getElementById('edit-alergias')
+              .value.split(',')
+              .map((item) => item.trim())
+              .filter((item) => item),
+            medicamentos: document
+              .getElementById('edit-medicamentos')
+              .value.split(',')
+              .map((item) => item.trim())
+              .filter((item) => item),
+          };
+
+          console.log('=== GUARDANDO HISTORIAL MÉDICO ===');
+          console.log('Datos:', JSON.stringify(formData, null, 2));
+
+          const response = await this.makeAuthenticatedRequest(
+            `/medical-history/${this.userId}`,
+            {
+              method: 'PATCH',
+              body: JSON.stringify(formData),
+            },
+          );
+
+          if (response && response.ok) {
+            bootstrap.Modal.getInstance(
+              document.getElementById('medicalModal'),
+            ).hide();
+            await this.loadMedicalHistory();
+            alert('Historial médico actualizado correctamente');
+          } else {
+            alert('Error al actualizar el historial médico');
+          }
+        }
+
+        async saveNutritionRecord() {
+          const formData = {
+            fecha: document.getElementById('nutrition-fecha').value,
+            tipo_comida: document.getElementById('nutrition-tipo_comida').value,
+            descripcion: document.getElementById('nutrition-descripcion').value,
+            calorias: parseInt(
+              document.getElementById('nutrition-calorias').value,
+            ),
+            proteinas: parseFloat(
+              document.getElementById('nutrition-proteinas').value,
+            ),
+            carbohidratos: parseFloat(
+              document.getElementById('nutrition-carbohidratos').value,
+            ),
+            grasas: parseFloat(
+              document.getElementById('nutrition-grasas').value,
+            ),
+          };
+
+          console.log('=== GUARDANDO REGISTRO DE NUTRICIÓN ===');
+          console.log('Datos:', JSON.stringify(formData, null, 2));
+
+          const response = await this.makeAuthenticatedRequest('/nutrition', {
+            method: 'POST',
+            body: JSON.stringify(formData),
+          });
+
+          if (response && response.ok) {
+            bootstrap.Modal.getInstance(
+              document.getElementById('nutritionModal'),
+            ).hide();
+            await this.loadNutritionData();
+            alert('Registro de nutrición guardado correctamente');
+          } else {
+            alert('Error al guardar el registro de nutrición');
+          }
+        }
+
+        async saveActivity() {
+          const formData = {
+            fecha: document.getElementById('activity-fecha').value,
+            tipo_actividad: document.getElementById('activity-tipo_actividad')
+              .value,
+            duracion: parseInt(
+              document.getElementById('activity-duracion').value,
+            ),
+            caloriasQuemadas: parseInt(
+              document.getElementById('activity-caloriasQuemadas').value,
+            ),
+          };
+
+          console.log('=== GUARDANDO ACTIVIDAD FÍSICA ===');
+          console.log('Datos:', JSON.stringify(formData, null, 2));
+
+          const response = await this.makeAuthenticatedRequest(
+            '/physical-activity',
+            {
+              method: 'POST',
+              body: JSON.stringify(formData),
+            },
+          );
+
+          if (response && response.ok) {
+            bootstrap.Modal.getInstance(
+              document.getElementById('activityModal'),
+            ).hide();
+            await this.loadActivityData();
+            alert('Actividad física guardada correctamente');
+          } else {
+            alert('Error al guardar la actividad física');
+          }
+        }
+
+        async deactivateRecommendation(recommendationId) {
+          const response = await this.makeAuthenticatedRequest(
+            `/recommendations/${recommendationId}/deactivate`,
+            {
+              method: 'PATCH',
+            },
+          );
+
+          if (response && response.ok) {
+            await this.loadRecommendations();
+            alert('Recomendación desactivada correctamente');
+          } else {
+            alert('Error al desactivar la recomendación');
+          }
+        }
+
+        async deleteUser() {
+          const response = await this.makeAuthenticatedRequest(
+            `/users/${this.userData.id}`,
+            {
+              method: 'DELETE',
+            },
+          );
+
+          if (response && response.ok) {
+            bootstrap.Modal.getInstance(
+              document.getElementById('deleteUserModal'),
+            ).hide();
+            alert('Usuario eliminado correctamente');
+            window.location.href = '/users/management';
+          } else {
+            alert('Error al eliminar el usuario');
+          }
+        }
+
+        logout() {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          window.location.href = '/auth/login';
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        window.adminUserDetailManager = new AdminUserDetailManager();
+      });
+    </script>
+  </body>
+</html>

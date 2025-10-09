@@ -10,14 +10,14 @@ import {
   Req,
 } from '@nestjs/common';
 import { MedicalHistoryService } from './medical-history.service';
-import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import express from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('medical-history')
 export class MedicalHistoryController {
   constructor(private readonly medicalHistoryService: MedicalHistoryService) {}
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(
     @Req() req: express.Request,
@@ -35,7 +35,7 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.create(dtoWithUserId);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get(':userId')
   async findByUser(@Req() req: express.Request) {
     const userId = (req as any).user?.userId || (req as any).user?.sub;
@@ -46,7 +46,7 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.findByUser(userId);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Patch(':userId')
   async update(
     @Req() req: express.Request,

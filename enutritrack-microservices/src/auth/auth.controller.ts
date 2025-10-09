@@ -2,18 +2,17 @@ import {
   Controller,
   Post,
   Body,
-  Res,
-  Req,
   UseGuards,
   UnauthorizedException,
   Get,
   HttpCode,
   HttpStatus,
   ValidationPipe,
+  Request,
 } from '@nestjs/common';
-import express from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -21,10 +20,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body(ValidationPipe) loginDto: LoginDto,
-    @Res({ passthrough: true }) res: express.Response,
-  ) {
+  async login(@Body(ValidationPipe) loginDto: LoginDto) {
     console.log(
       `🔐 Intento de login para: ${loginDto.email} como ${loginDto.userType || 'auto-detect'}`,
     );
@@ -39,44 +35,20 @@ export class AuthController {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const loginResult = await this.authService.login(user);
-
-    res.cookie('access_token', loginResult.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000,
-    });
-
-    return {
-      message: 'Login exitoso',
-      user: loginResult.user,
-    };
+    return await this.authService.login(user);
   }
 
-  @Post('logout')
+  @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @Req() req: express.Request,
-    @Res({ passthrough: true }) res: express.Response,
-  ) {
-    console.log('🚪 Logout request received');
-    res.clearCookie('access_token');
-    console.log('✅ Cookie cleared successfully');
-    return { message: 'Logout exitoso' };
+  async refreshTokens(@Body() refreshDto: { refresh_token: string }) {
+    return this.authService.refreshTokens(refreshDto.refresh_token);
   }
 
   @Post('validate')
   @HttpCode(HttpStatus.OK)
-  async validateToken(@Req() req: express.Request) {
-    const token = req.cookies?.access_token;
-
-    if (!token) {
-      throw new UnauthorizedException('Token no proporcionado');
-    }
-
+  async validateToken(@Body() validateDto: { token: string }) {
     try {
-      const user = await this.authService.validateToken(token);
+      const user = await this.authService.validateToken(validateDto.token);
       return { valid: true, user };
     } catch (error) {
       console.error('💥 Token validation error:', error.message);
@@ -84,20 +56,19 @@ export class AuthController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  async getCurrentUser(@Req() req: express.Request) {
-    const token = req.cookies?.access_token;
+  async getCurrentUser(@Request() req) {
+    // req.user viene del JwtAuthGuard
+    return { user: req.user };
+  }
 
-    if (!token) {
-      throw new UnauthorizedException('Token no proporcionado');
-    }
-
-    try {
-      const user = await this.authService.getUserFromToken(token);
-      return { user };
-    } catch (error) {
-      throw new UnauthorizedException('Token inválido');
-    }
+  // Opcional: Endpoint para logout (solo informativo para el frontend)
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout() {
+    console.log('🚪 Logout request received');
+    return { message: 'Logout exitoso - Eliminar tokens del cliente' };
   }
 }

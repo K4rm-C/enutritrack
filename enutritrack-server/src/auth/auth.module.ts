@@ -4,25 +4,24 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { UsersModule } from '../users/user.module';
-import { JwtStrategy } from '../auth/strategies/jwt.strategies';
-import { LocalStrategy } from './strategies/local.strategies';
-import { HttpModule } from '@nestjs/axios';
-import { CacheModule } from '@nestjs/cache-manager';
+import { JwtStrategy } from './strategies/jwt.strategies';
+import { AdminService } from '../admin/admin.service';
+import { Admin } from '../admin/models/admin.model';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
-    CacheModule.register(),
-    HttpModule,
-    UsersModule,
-    PassportModule,
+    TypeOrmModule.forFeature([Admin]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: 'tu_clave_secreta_super_segura',
-      signOptions: { expiresIn: '24h' },
+      secret: process.env.JWT_SECRET || 'tu_clave_secreta_super_segura',
+      signOptions: {
+        expiresIn: '15m',
+      },
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
   controllers: [AuthController],
-  exports: [AuthService],
+  providers: [AuthService, AdminService, JwtStrategy],
+  exports: [AuthService, JwtStrategy, PassportModule, JwtModule],
 })
 export class AuthModule {}
