@@ -1,19 +1,15 @@
 import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
-import { CacheModule } from '@nestjs/cache-manager';
+import { UserService } from './user.service';
 import { UsersController } from './user.controller';
-import { UsersService } from './user.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './models/user.model';
+import { HttpModule } from '@nestjs/axios';
+import { DoctorModule } from '../doctor/doctor.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User]),
-    CacheModule.register(),
-    HttpModule,
-  ],
+  imports: [TypeOrmModule.forFeature([User]), HttpModule, DoctorModule],
+  providers: [UserService],
   controllers: [UsersController],
-  providers: [UsersService],
-  exports: [UsersService],
+  exports: [UserService],
 })
-export class UsersModule {}
+export class UserModule {}

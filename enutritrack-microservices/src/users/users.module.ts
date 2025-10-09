@@ -6,7 +6,6 @@ import { User } from './models/user.model';
 import { CouchbaseModule } from '../couchbase/couchbase.module';
 import { RedisModule } from '../redis/redis.module';
 import { HttpModule } from '@nestjs/axios';
-import { TestController } from '../test/test.controller';
 import { CacheModule } from '@nestjs/cache-manager';
 import { DoctorModule } from '../doctor/doctor.module';
 
@@ -20,7 +19,7 @@ import { DoctorModule } from '../doctor/doctor.module';
     DoctorModule,
   ],
   providers: [UserService],
-  controllers: [UsersController, TestController],
+  controllers: [UsersController],
   exports: [UserService],
 })
 export class UserModule {}

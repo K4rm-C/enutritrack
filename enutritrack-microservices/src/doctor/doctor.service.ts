@@ -17,6 +17,32 @@ export class DoctorService {
     private doctorRepository: Repository<Doctor>,
   ) {}
 
+  // src/doctor/doctor.service.ts
+  async findByEmailWithPassword(email: string): Promise<Doctor | null> {
+    try {
+      const doctor = await this.doctorRepository.findOne({
+        where: { email },
+        select: [
+          'id',
+          'nombre',
+          'email',
+          'contraseñaHash',
+          'createdAt',
+          'updatedAt',
+        ],
+      });
+
+      if (!doctor || !doctor.contraseñaHash) {
+        return null;
+      }
+
+      return doctor;
+    } catch (error) {
+      console.error(`Error fetching doctor by email with password:`, error);
+      return null;
+    }
+  }
+
   async create(createDoctorDto: CreateDoctorDto): Promise<Doctor> {
     const existingUser = await this.findByEmail(createDoctorDto.email);
     if (existingUser) {

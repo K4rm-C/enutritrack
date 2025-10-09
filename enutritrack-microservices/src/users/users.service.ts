@@ -12,7 +12,6 @@ import { Repository } from 'typeorm';
 import { User } from './models/user.model';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
-import { CouchbaseService } from '../couchbase/couchbase.service';
 import { Doctor } from '../doctor/models/doctor.model';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -24,8 +23,40 @@ export class UserService {
     @InjectRepository(Doctor)
     private doctorRepository: Repository<Doctor>,
     @Inject(CACHE_MANAGER) private cacheManager: cacheManager_1.Cache,
-    private couchbaseService: CouchbaseService,
   ) {}
+
+  // src/users/users.service.ts
+  async findByEmailWithPassword(email: string): Promise<User | null> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email },
+        select: [
+          'id',
+          'nombre',
+          'email',
+          'contraseñaHash',
+          'fechaNacimiento',
+          'genero',
+          'altura',
+          'pesoActual',
+          'objetivoPeso',
+          'nivelActividad',
+          'doctorId',
+          'createdAt',
+          'updatedAt',
+        ],
+      });
+
+      if (!user || !user.contraseñaHash) {
+        return null;
+      }
+
+      return user;
+    } catch (error) {
+      console.error(`Error fetching user by email with password:`, error);
+      return null;
+    }
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existingUser = await this.findByEmail(createUserDto.email);
@@ -66,29 +97,9 @@ export class UserService {
     const savedUser = await this.userRepository.save(user);
     console.log('Usuario guardado en base de datos:', savedUser.id);
 
-    const userProfile = {
-      id: savedUser.id,
-      nombre: savedUser.nombre,
-      email: savedUser.email,
-      fechaNacimiento: savedUser.fechaNacimiento,
-      genero: savedUser.genero,
-      altura: savedUser.altura,
-      pesoActual: savedUser.pesoActual,
-      objetivoPeso: savedUser.objetivoPeso,
-      nivelActividad: savedUser.nivelActividad,
-      doctorId: savedUser.doctorId, // Incluir doctorId en el perfil
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
     try {
-      await this.couchbaseService.upsertDocument(
-        `user::${savedUser.id}`,
-        userProfile,
-      );
-      console.log('Usuario guardado en Couchbase');
-
-      const userForCache = { ...userProfile };
+      const userForCache = { ...savedUser };
+      delete (userForCache as any).contraseñaHash;
       await this.cacheManager.set(`user:${savedUser.id}`, userForCache, 3600);
       await this.cacheManager.set(
         `email:${savedUser.email}`,
@@ -104,7 +115,7 @@ export class UserService {
         await this.cacheManager.del(`doctor:${savedUser.doctorId}:patients`);
       }
     } catch (error) {
-      console.warn('Error saving to cache/couchbase:', error);
+      console.warn('Error saving to cache:', error);
     }
 
     return savedUser;
@@ -120,34 +131,15 @@ export class UserService {
     user.doctorId = doctorId;
     const updatedUser = await this.userRepository.save(user);
 
-    // Actualizar cache y Couchbase
+    // Actualizar cache
     try {
       await this.cacheManager.del(`user:${userId}`);
       await this.cacheManager.del('users:all');
       await this.cacheManager.del(`doctor:${doctorId}:patients`);
 
-      const userProfile = {
-        id: updatedUser.id,
-        nombre: updatedUser.nombre,
-        email: updatedUser.email,
-        fechaNacimiento: updatedUser.fechaNacimiento,
-        genero: updatedUser.genero,
-        altura: updatedUser.altura,
-        pesoActual: updatedUser.pesoActual,
-        objetivoPeso: updatedUser.objetivoPeso,
-        nivelActividad: updatedUser.nivelActividad,
-        doctorId: updatedUser.doctorId,
-        updatedAt: new Date(),
-      };
-
-      await this.couchbaseService.upsertDocument(
-        `user::${updatedUser.id}`,
-        userProfile,
-      );
-
       console.log('Doctor asignado al usuario correctamente');
     } catch (error) {
-      console.warn('Error updating cache/couchbase:', error);
+      console.warn('Error updating cache:', error);
     }
 
     return updatedUser;
@@ -346,28 +338,9 @@ export class UserService {
         await this.cacheManager.del(`doctor:${updateData.doctorId}:patients`);
       }
 
-      const userProfile = {
-        id: updatedUser.id,
-        nombre: updatedUser.nombre,
-        email: updatedUser.email,
-        fechaNacimiento: updatedUser.fechaNacimiento,
-        genero: updatedUser.genero,
-        altura: updatedUser.altura,
-        pesoActual: updatedUser.pesoActual,
-        objetivoPeso: updatedUser.objetivoPeso,
-        nivelActividad: updatedUser.nivelActividad,
-        doctorId: updatedUser.doctorId,
-        updatedAt: new Date(),
-      };
-
-      await this.couchbaseService.upsertDocument(
-        `user::${updatedUser.id}`,
-        userProfile,
-      );
-
-      console.log('Usuario actualizado en Couchbase y cache limpiado');
+      console.log('Cache limpiado después de actualizar usuario');
     } catch (error) {
-      console.warn('Error updating cache/couchbase:', error);
+      console.warn('Error updating cache:', error);
     }
 
     return updatedUser;
@@ -395,11 +368,9 @@ export class UserService {
       }
       await this.cacheManager.del('users:all');
 
-      await this.couchbaseService.removeDocument(`user::${id}`);
-
-      console.log('Usuario eliminado de cache y Couchbase');
+      console.log('Usuario eliminado de cache');
     } catch (error) {
-      console.warn('Error removing from cache/couchbase:', error);
+      console.warn('Error removing from cache:', error);
     }
 
     return { affected: result.affected ?? 0 };
@@ -413,39 +384,6 @@ export class UserService {
       return await bcrypt.compare(plainPassword, hashedPassword);
     } catch (error) {
       console.error('Error comparing passwords:', error);
-      return false;
-    }
-  }
-
-  async testCouchbaseConnection(): Promise<boolean> {
-    try {
-      const testDoc = {
-        test: 'connection',
-        timestamp: new Date().toISOString(),
-      };
-
-      await this.couchbaseService.upsertDocument('test::connection', testDoc);
-      const retrievedDoc =
-        await this.couchbaseService.getDocument('test::connection');
-
-      return retrievedDoc && retrievedDoc.test === 'connection';
-    } catch (error) {
-      console.error('Couchbase connection test failed:', error);
-      return false;
-    }
-  }
-
-  async testRedisConnection(): Promise<boolean> {
-    try {
-      const testKey = 'test:connection';
-      const testValue = 'redis_works';
-
-      await this.cacheManager.set(testKey, testValue, 10);
-      const retrievedValue = await this.cacheManager.get(testKey);
-
-      return retrievedValue === testValue;
-    } catch (error) {
-      console.error('Redis connection test failed:', error);
       return false;
     }
   }

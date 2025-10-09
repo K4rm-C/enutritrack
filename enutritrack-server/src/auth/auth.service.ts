@@ -1,144 +1,235 @@
-// backend/src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
-import { UsersService } from '../users/user.service';
-import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { AdminService } from '../admin/admin.service';
+import * as bcrypt from 'bcrypt';
+
+export interface AuthAdmin {
+  id: string;
+  email: string;
+  nombre: string;
+  userType: 'admin';
+}
+
+interface TokenPayload {
+  email: string;
+  sub: string;
+  nombre: string;
+  userType: 'admin';
+  iat: number;
+  type: 'access' | 'refresh';
+}
 
 @Injectable()
 export class AuthService {
-  private readonly AUTH_SERVICE_URL = 'http://localhost:3004';
-
   constructor(
-    private httpService: HttpService,
+    private adminService: AdminService,
     private jwtService: JwtService,
-    private userService: UsersService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateAdmin(
+    email: string,
+    password: string,
+  ): Promise<AuthAdmin | null> {
     try {
-      console.log(`Validando usuario: ${email}`);
+      console.log(`🔍 Validando admin: ${email}`);
 
-      const user = await this.userService.findByEmailWithPassword(email);
+      const admin = await this.adminService.findByEmailWithPassword(email);
 
-      if (!user) {
-        console.log(`Usuario no encontrado: ${email}`);
+      if (!admin) {
+        console.log(`❌ Admin no encontrado: ${email}`);
         return null;
       }
 
-      console.log(`Usuario encontrado: ${email}, verificando contraseña`);
-
-      if (!user.contraseñaHash) {
-        console.log(`Usuario ${email} no tiene hash de contraseña`);
+      if (!admin.contraseñaHash) {
+        console.log(`❌ ${email} no tiene contraseña hasheada`);
         return null;
       }
 
       const isPasswordValid = await bcrypt.compare(
         password,
-        user.contraseñaHash,
+        admin.contraseñaHash,
       );
 
       if (!isPasswordValid) {
-        console.log(`Contraseña incorrecta para usuario: ${email}`);
+        console.log(`❌ Contraseña incorrecta para: ${email}`);
         return null;
       }
 
-      console.log(`Contraseña válida para usuario: ${email}`);
+      console.log(`✅ Admin validado exitosamente: ${email}`);
 
-      const { contraseñaHash, ...result } = user;
-      return result;
+      const { contraseñaHash, ...result } = admin;
+      return {
+        ...result,
+        userType: 'admin',
+      };
     } catch (error) {
-      console.error('Error en validateUser:', error);
+      console.error('💥 Error en validateAdmin:', error);
       return null;
     }
   }
 
-  async login(user: any) {
-    console.log('Iniciando login para usuario:', user?.email);
-
-    if (!user || !user.email || !user.id) {
-      console.error('Datos de usuario inválidos:', user);
-      throw new UnauthorizedException('Datos de usuario inválidos');
+  async login(admin: AuthAdmin) {
+    if (!admin || !admin.email || !admin.id) {
+      console.log('❌ Datos de admin inválidos para login');
+      throw new UnauthorizedException('Datos de admin inválidos');
     }
 
-    const payload = {
-      email: user.email,
-      sub: user.id,
-      nombre: user.nombre,
+    const accessToken = this.generateAccessToken(admin);
+    const refreshToken = this.generateRefreshToken(admin);
+
+    console.log(`✅ Tokens generados exitosamente para admin: ${admin.email}`);
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        nombre: admin.nombre,
+        userType: admin.userType,
+      },
+    };
+  }
+
+  private generateAccessToken(admin: AuthAdmin): string {
+    const payload: TokenPayload = {
+      email: admin.email,
+      sub: admin.id,
+      nombre: admin.nombre,
+      userType: 'admin',
+      iat: Math.floor(Date.now() / 1000),
+      type: 'access',
     };
 
-    try {
-      const token = this.jwtService.sign(payload);
+    return this.jwtService.sign(payload, { expiresIn: '15m' }); // 15 minutos
+  }
 
-      console.log(`Token generado exitosamente para usuario: ${user.email}`);
+  private generateRefreshToken(admin: AuthAdmin): string {
+    const payload: TokenPayload = {
+      email: admin.email,
+      sub: admin.id,
+      nombre: admin.nombre,
+      userType: 'admin',
+      iat: Math.floor(Date.now() / 1000),
+      type: 'refresh',
+    };
+
+    return this.jwtService.sign(payload, { expiresIn: '7d' }); // 7 días
+  }
+
+  async refreshTokens(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken) as TokenPayload;
+
+      // Verificar que es un refresh token
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('Token inválido para refresh');
+      }
+
+      // Verificar que el token es de un admin
+      if (payload.userType !== 'admin') {
+        throw new UnauthorizedException('Token no es de administrador');
+      }
+
+      const admin = await this.adminService.findById(payload.sub);
+
+      if (!admin) {
+        throw new UnauthorizedException('Admin no encontrado');
+      }
+
+      console.log(`✅ Refresh token válido para admin: ${admin.email}`);
+
+      const authAdmin: AuthAdmin = {
+        id: admin.id,
+        email: admin.email,
+        nombre: admin.nombre,
+        userType: 'admin',
+      };
+
+      const newAccessToken = this.generateAccessToken(authAdmin);
+      const newRefreshToken = this.generateRefreshToken(authAdmin);
 
       return {
-        access_token: token,
-        user: {
-          id: user.id,
-          email: user.email,
-          nombre: user.nombre,
+        access_token: newAccessToken,
+        refresh_token: newRefreshToken,
+        admin: {
+          id: authAdmin.id,
+          email: authAdmin.email,
+          nombre: authAdmin.nombre,
+          userType: authAdmin.userType,
         },
       };
     } catch (error) {
-      console.error('Error generando token:', error);
-      throw new UnauthorizedException('Error al generar token de acceso');
+      console.error('💥 Error en refreshTokens:', error);
+      throw new UnauthorizedException('Refresh token inválido');
     }
-  }
-
-  generateToken(payload: any): string {
-    return this.jwtService.sign(payload);
   }
 
   async validateToken(token: string) {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token) as TokenPayload;
+
+      // Solo permitir tokens de acceso para operaciones normales
+      if (payload.type !== 'access') {
+        throw new UnauthorizedException('Tipo de token inválido');
+      }
+
       return {
-        userId: payload.sub,
+        adminId: payload.sub,
         email: payload.email,
         nombre: payload.nombre,
+        userType: payload.userType,
       };
     } catch (error) {
       throw new UnauthorizedException('Token inválido');
     }
   }
 
-  async logout(token: string, userId?: string): Promise<void> {
+  async getAdminFromToken(token: string): Promise<AuthAdmin> {
     try {
-      // Notificar al microservicio sobre el logout
-      try {
-        await firstValueFrom(
-          this.httpService.post(
-            `${this.AUTH_SERVICE_URL}/auth/logout`,
-            {
-              token,
-              userId,
-            },
-            {
-              timeout: 5000,
-            },
-          ),
-        );
-      } catch (error) {
-        console.warn('Error notifying microservice about logout:', error);
+      const payload = this.jwtService.verify(token) as TokenPayload;
+
+      // Solo permite tokens de acceso
+      if (payload.type !== 'access') {
+        throw new UnauthorizedException('Token no es de acceso');
       }
+
+      // Solo permite tokens de admin
+      if (payload.userType !== 'admin') {
+        throw new UnauthorizedException('Token no es de administrador');
+      }
+
+      const admin = await this.adminService.findById(payload.sub);
+
+      if (!admin) {
+        throw new UnauthorizedException('Admin no encontrado');
+      }
+
+      console.log(`✅ Admin obtenido del token: ${admin.email}`);
+      const { contraseñaHash, ...result } = admin;
+      return {
+        ...result,
+        userType: 'admin',
+      };
     } catch (error) {
-      console.error('Error during logout:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      console.error('💥 Error en getAdminFromToken:', error);
+      throw new UnauthorizedException('Token inválido');
     }
   }
 
-  async getUserSessions(userId: string) {
-    // Sin cache, retornamos array vacío
-    // Podrías implementar esto consultando directamente la base de datos
-    // o manejarlo a través del microservicio
-    console.log(`Getting sessions for user: ${userId}`);
-    return [];
-  }
-
-  async cleanupExpiredTokens() {
-    console.log('Cleaning up expired tokens...');
-    // Con JWT stateless, los tokens expiran automáticamente
-    // No necesitas limpiar nada manualmente
+  // Método para validar contraseña (ya que eliminamos validatePassword de AdminService)
+  async validatePassword(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
+    try {
+      return await bcrypt.compare(plainPassword, hashedPassword);
+    } catch (error) {
+      console.error('Error comparing passwords:', error);
+      return false;
+    }
   }
 }

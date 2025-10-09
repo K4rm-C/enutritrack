@@ -13,8 +13,8 @@ import {
 } from '@nestjs/common';
 import express from 'express';
 import { RecommendationService } from './recommendation.service';
-import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import { RecommendationType } from './models/recommendation.model';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('recommendations')
 export class RecommendationController {
@@ -22,33 +22,7 @@ export class RecommendationController {
 
   constructor(private readonly recommendationService: RecommendationService) {}
 
-  @UseGuards(CookieAuthGuard)
-  @Post()
-  async create(
-    @Body() createRecommendationDto: any,
-    @Req() req: express.Request,
-  ) {
-    try {
-      const userId = (req as any).user?.userId || (req as any).user?.sub;
-      const authToken =
-        req.cookies?.access_token ||
-        req.headers.authorization?.replace('Bearer ', '');
-      const dtoWithUserId = {
-        ...createRecommendationDto,
-        usuarioId: userId,
-      };
-      return await this.recommendationService.generateRecommendation(
-        dtoWithUserId,
-      );
-    } catch (error) {
-      throw new HttpException(
-        `Error creating recommendation: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
   async findByUser(@Req() req: express.Request) {
     try {
@@ -65,7 +39,7 @@ export class RecommendationController {
     }
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId/:type')
   async findActiveByUserAndType(
     @Param('type') type: RecommendationType,
@@ -98,7 +72,7 @@ export class RecommendationController {
     }
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/deactivate')
   async deactivate(@Param('id') id: string, @Req() req: express.Request) {
     try {
@@ -119,8 +93,7 @@ export class RecommendationController {
     }
   }
 
-  // Endpoint adicional para obtener estadísticas de recomendaciones por usuario
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('stats/:userId')
   async getUserRecommendationStats(@Req() req: express.Request) {
     try {
@@ -148,75 +121,6 @@ export class RecommendationController {
     } catch (error) {
       throw new HttpException(
         `Error fetching recommendation stats: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  // Recomendaciones rápidas
-  @UseGuards(CookieAuthGuard)
-  @Post('quick-nutrition/:userId')
-  async quickNutritionRecommendation(@Req() req: express.Request) {
-    try {
-      const userId = (req as any).user?.userId || (req as any).user?.sub;
-      const authToken =
-        req.cookies?.access_token ||
-        req.headers.authorization?.replace('Bearer ', '');
-
-      return await this.recommendationService.quickNutritionRecommendation(
-        userId,
-      );
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      this.logger.error(`Controller error: ${error.message}`);
-      throw new HttpException(
-        `Error generating quick nutrition recommendation: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @UseGuards(CookieAuthGuard)
-  @Post('quick-exercise/:userId')
-  async quickExerciseRecommendation(@Req() req: express.Request) {
-    try {
-      const userId = (req as any).user?.userId || (req as any).user?.sub;
-      const authToken =
-        req.cookies?.access_token ||
-        req.headers.authorization?.replace('Bearer ', '');
-      return await this.recommendationService.quickExerciseRecommendation(
-        userId,
-      );
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Error generating quick exercise recommendation: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @UseGuards(CookieAuthGuard)
-  @Post('quick-medical/:userId')
-  async quickMedicalRecommendation(@Req() req: express.Request) {
-    try {
-      const userId = (req as any).user?.userId || (req as any).user?.sub;
-      const authToken =
-        req.cookies?.access_token ||
-        req.headers.authorization?.replace('Bearer ', '');
-      return await this.recommendationService.quickMedicalRecommendation(
-        userId,
-      );
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Error generating quick medical recommendation: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

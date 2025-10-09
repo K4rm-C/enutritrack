@@ -17,7 +17,7 @@ import { LocalStrategy } from './strategies/local.strategies';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'tu_clave_secreta_super_segura',
-      signOptions: { expiresIn: '24h' },
+      signOptions: { expiresIn: '15m' },
     }),
   ],
   providers: [

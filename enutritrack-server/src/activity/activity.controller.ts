@@ -12,8 +12,8 @@ import {
   Req,
 } from '@nestjs/common';
 import { PhysicalActivityService } from './activity.service';
-import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import express from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('physical-activity')
 export class PhysicalActivityController {
@@ -21,7 +21,7 @@ export class PhysicalActivityController {
     private readonly physicalActivityService: PhysicalActivityService,
   ) {}
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(
     @Req() req: express.Request,
@@ -39,7 +39,7 @@ export class PhysicalActivityController {
     return this.physicalActivityService.create(dtoWithUserId);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
   async findAllByUser(@Req() req: express.Request) {
     const userId = (req as any).user?.userId || (req as any).user?.sub;
@@ -54,7 +54,7 @@ export class PhysicalActivityController {
     return this.physicalActivityService.findAllByUser(userId);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('weekly-summary/:userId')
   async getWeeklySummary(
     @Req() req: express.Request,
@@ -73,7 +73,7 @@ export class PhysicalActivityController {
     return this.physicalActivityService.getWeeklySummary(userId, targetDate);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Req() req: express.Request, @Param('id') id: string) {
     const authToken =
@@ -87,7 +87,7 @@ export class PhysicalActivityController {
     return this.physicalActivityService.findOne(id);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async update(
     @Req() req: express.Request,
@@ -105,7 +105,7 @@ export class PhysicalActivityController {
     return this.physicalActivityService.update(id, updatePhysicalActivityDto);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async remove(@Req() req: express.Request, @Param('id') id: string) {
     const authToken =

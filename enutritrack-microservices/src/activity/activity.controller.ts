@@ -13,24 +13,27 @@ import {
 import { PhysicalActivityService } from './activity.service';
 import { CreatePhysicalActivityDto } from './dto/create-physical-activity.dto';
 import { UpdatePhysicalActivityDto } from './dto/update-physical-activity.dto';
-import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('physical-activity')
 export class PhysicalActivityController {
   constructor(
     private readonly physicalActivityService: PhysicalActivityService,
   ) {}
-  @UseGuards(CookieAuthGuard)
+
+  @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() createPhysicalActivityDto: CreatePhysicalActivityDto) {
     return this.physicalActivityService.create(createPhysicalActivityDto);
   }
-  @UseGuards(CookieAuthGuard)
+
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
   findAllByUser(@Param('userId') userId: string) {
     return this.physicalActivityService.findAllByUser(userId);
   }
-  @UseGuards(CookieAuthGuard)
+
+  @UseGuards(JwtAuthGuard)
   @Get('weekly-summary/:userId')
   getWeeklySummary(
     @Param('userId') userId: string,
@@ -39,12 +42,14 @@ export class PhysicalActivityController {
     const targetDate = startDate ? new Date(startDate) : new Date();
     return this.physicalActivityService.getWeeklySummary(userId, targetDate);
   }
-  @UseGuards(CookieAuthGuard)
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.physicalActivityService.findOne(id);
   }
-  @UseGuards(CookieAuthGuard)
+
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -52,7 +57,8 @@ export class PhysicalActivityController {
   ) {
     return this.physicalActivityService.update(id, updatePhysicalActivityDto);
   }
-  @UseGuards(CookieAuthGuard)
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.physicalActivityService.remove(id);

@@ -18,7 +18,7 @@ import {
   Recommendation,
   RecommendationType,
 } from './models/recommendation.model';
-import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('recommendations')
 export class RecommendationController {
@@ -26,17 +26,7 @@ export class RecommendationController {
 
   constructor(private readonly recommendationService: RecommendationService) {}
 
-  // Endpoint de salud para verificar que el servicio funciona
-  @Get('health')
-  health() {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      service: 'recommendations',
-    };
-  }
-
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(
     @Body() createRecommendationDto: CreateRecommendationDto,
@@ -57,13 +47,13 @@ export class RecommendationController {
     }
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
   async findByUser(@Param('userId') userId: string) {
     return await this.recommendationService.findByUser(userId);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId/type/:type')
   async findByUserAndType(
     @Param('userId') userId: string,
@@ -87,7 +77,7 @@ export class RecommendationController {
     }
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/deactivate')
   async deactivate(@Param('id') id: string): Promise<{ message: string }> {
     try {
@@ -103,7 +93,7 @@ export class RecommendationController {
     }
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('quick-nutrition/:userId')
   async quickNutritionRecommendation(
     @Param('userId') userId: string,
@@ -128,7 +118,7 @@ export class RecommendationController {
     }
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('quick-exercise/:userId')
   async quickExerciseRecommendation(
     @Param('userId') userId: string,
@@ -153,7 +143,7 @@ export class RecommendationController {
     }
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('quick-medical/:userId')
   async quickMedicalRecommendation(
     @Param('userId') userId: string,

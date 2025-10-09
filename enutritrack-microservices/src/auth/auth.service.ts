@@ -2,12 +2,22 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../users/users.service';
 import { DoctorService } from '../doctor/doctor.service';
+import * as bcrypt from 'bcrypt';
 
 export interface AuthUser {
   id: string;
   email: string;
   nombre: string;
   userType: 'user' | 'doctor';
+}
+
+interface TokenPayload {
+  email: string;
+  sub: string;
+  nombre: string;
+  userType: 'user' | 'doctor';
+  iat: number;
+  type: 'access' | 'refresh';
 }
 
 @Injectable()
@@ -29,26 +39,35 @@ export class AuthService {
       let user: any = null;
       let actualUserType: 'user' | 'doctor';
 
+      // Buscar con el tipo específico si se proporciona
       if (userType) {
         if (userType === 'user') {
-          user = await this.userService.findByEmail(email);
+          user = await this.userService.findByEmailWithPassword(email);
           actualUserType = 'user';
         } else {
-          user = await this.doctorService.findByEmail(email);
+          user = await this.doctorService.findByEmailWithPassword(email);
           actualUserType = 'doctor';
         }
       } else {
-        user = await this.userService.findByEmail(email);
+        // Auto-detectar tipo
+        user = await this.userService.findByEmailWithPassword(email);
         if (user) {
           actualUserType = 'user';
         } else {
-          user = await this.doctorService.findByEmail(email);
-          actualUserType = 'doctor';
+          user = await this.doctorService.findByEmailWithPassword(email);
+          if (user) {
+            actualUserType = 'doctor';
+          } else {
+            console.log(`❌ Usuario/Doctor no encontrado: ${email}`);
+            return null;
+          }
         }
       }
 
       if (!user) {
-        console.log(`❌ Usuario/Doctor no encontrado: ${email}`);
+        console.log(
+          `❌ ${userType || 'Usuario/Doctor'} no encontrado: ${email}`,
+        );
         return null;
       }
 
@@ -57,18 +76,11 @@ export class AuthService {
         return null;
       }
 
-      let isPasswordValid: boolean;
-      if (actualUserType === 'user') {
-        isPasswordValid = await this.userService.validatePassword(
-          password,
-          user.contraseñaHash,
-        );
-      } else {
-        isPasswordValid = await this.doctorService.validatePassword(
-          password,
-          user.contraseñaHash,
-        );
-      }
+      // Validar contraseña usando bcrypt directamente
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.contraseñaHash,
+      );
 
       if (!isPasswordValid) {
         console.log(`❌ Contraseña incorrecta para: ${email}`);
@@ -96,22 +108,97 @@ export class AuthService {
       throw new UnauthorizedException('Datos de usuario inválidos');
     }
 
-    const payload = {
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = this.generateRefreshToken(user);
+
+    console.log(
+      `✅ Tokens generados exitosamente para ${user.userType}: ${user.email}`,
+    );
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        nombre: user.nombre,
+        userType: user.userType,
+      },
+    };
+  }
+
+  private generateAccessToken(user: AuthUser): string {
+    const payload: TokenPayload = {
       email: user.email,
       sub: user.id,
       nombre: user.nombre,
       userType: user.userType,
       iat: Math.floor(Date.now() / 1000),
+      type: 'access',
     };
 
+    return this.jwtService.sign(payload, { expiresIn: '15m' }); // 15 minutos
+  }
+
+  private generateRefreshToken(user: AuthUser): string {
+    const payload: TokenPayload = {
+      email: user.email,
+      sub: user.id,
+      nombre: user.nombre,
+      userType: user.userType,
+      iat: Math.floor(Date.now() / 1000),
+      type: 'refresh',
+    };
+
+    return this.jwtService.sign(payload, { expiresIn: '7d' }); // 7 días
+  }
+
+  async refreshTokens(refreshToken: string) {
     try {
-      const access_token = this.jwtService.sign(payload);
+      const payload = this.jwtService.verify(refreshToken) as TokenPayload;
+
+      // Verificar que es un refresh token
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('Token inválido para refresh');
+      }
+
+      let user: AuthUser;
+
+      // Buscar usuario según el tipo
+      if (payload.userType === 'user') {
+        const userData = await this.userService.findById(payload.sub);
+        if (!userData) {
+          throw new UnauthorizedException('Usuario no encontrado');
+        }
+        user = {
+          id: userData.id,
+          email: userData.email,
+          nombre: userData.nombre,
+          userType: 'user',
+        };
+      } else {
+        const doctorData = await this.doctorService.findById(payload.sub);
+        if (!doctorData) {
+          throw new UnauthorizedException('Doctor no encontrado');
+        }
+        user = {
+          id: doctorData.id,
+          email: doctorData.email,
+          nombre: doctorData.nombre,
+          userType: 'doctor',
+        };
+      }
+
       console.log(
-        `✅ Token generado exitosamente para ${user.userType}: ${user.email}`,
+        `✅ Refresh token válido para ${user.userType}: ${user.email}`,
       );
 
+      const newAccessToken = this.generateAccessToken(user);
+      const newRefreshToken = this.generateRefreshToken(user);
+
       return {
-        access_token,
+        access_token: newAccessToken,
+        refresh_token: newRefreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -120,19 +207,25 @@ export class AuthService {
         },
       };
     } catch (error) {
-      console.error('💥 Error generando token:', error);
-      throw new UnauthorizedException('Error al generar token');
+      console.error('💥 Error en refreshTokens:', error);
+      throw new UnauthorizedException('Refresh token inválido');
     }
   }
 
   async validateToken(token: string) {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token) as TokenPayload;
+
+      // Solo permitir tokens de acceso para operaciones normales
+      if (payload.type !== 'access') {
+        throw new UnauthorizedException('Tipo de token inválido');
+      }
+
       return {
         userId: payload.sub,
         email: payload.email,
         nombre: payload.nombre,
-        userType: payload.userType || 'user', // Por retrocompatibilidad
+        userType: payload.userType,
       };
     } catch (error) {
       throw new UnauthorizedException('Token inválido');
@@ -141,11 +234,15 @@ export class AuthService {
 
   async getUserFromToken(token: string): Promise<AuthUser> {
     try {
-      const payload = this.jwtService.verify(token);
-      const userType = payload.userType || 'user';
+      const payload = this.jwtService.verify(token) as TokenPayload;
+
+      // Solo permite tokens de acceso
+      if (payload.type !== 'access') {
+        throw new UnauthorizedException('Token no es de acceso');
+      }
 
       let user: any;
-      if (userType === 'user') {
+      if (payload.userType === 'user') {
         user = await this.userService.findById(payload.sub);
       } else {
         user = await this.doctorService.findById(payload.sub);
@@ -153,17 +250,17 @@ export class AuthService {
 
       if (!user) {
         throw new UnauthorizedException(
-          `${userType === 'user' ? 'Usuario' : 'Doctor'} no encontrado`,
+          `${payload.userType === 'user' ? 'Usuario' : 'Doctor'} no encontrado`,
         );
       }
 
       console.log(
-        `✅ ${userType === 'user' ? 'Usuario' : 'Doctor'} obtenido del token: ${user.email}`,
+        `✅ ${payload.userType === 'user' ? 'Usuario' : 'Doctor'} obtenido del token: ${user.email}`,
       );
       const { contraseñaHash, ...result } = user;
       return {
         ...result,
-        userType,
+        userType: payload.userType,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

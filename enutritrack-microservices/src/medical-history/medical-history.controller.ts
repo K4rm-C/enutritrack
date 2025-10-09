@@ -12,13 +12,13 @@ import {
 import { MedicalHistoryService } from './medical-history.service';
 import { CreateMedicalHistoryDto } from './dto/create-medical-history.dto';
 import { UpdateMedicalHistoryDto } from './dto/update-medical-history.dto';
-import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('medical-history')
 export class MedicalHistoryController {
   constructor(private readonly medicalHistoryService: MedicalHistoryService) {}
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post()
   create(
     @Body() createMedicalHistoryDto: CreateMedicalHistoryDto,
@@ -33,7 +33,7 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.create(dtoWithUserId);
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get(':userId')
   async findByUser(@Param('userId') userId: string) {
     try {
@@ -46,7 +46,7 @@ export class MedicalHistoryController {
     }
   }
 
-  @UseGuards(CookieAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Patch(':userId')
   update(
     @Param('userId') userId: string,

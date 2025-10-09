@@ -7,15 +7,27 @@ import {
   Param,
   Delete,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { join } from 'path';
+import type { Response } from 'express';
 
 @Controller('doctors')
 export class DoctorController {
   constructor(private readonly doctorService: DoctorService) {}
 
+  @Get('management')
+  getDoctorsManagement(@Res() res: Response) {
+    // Servir el archivo HTML de gestión de doctores
+    return res.sendFile(
+      join(process.cwd(), 'public', 'doctors-management.html'),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() createDoctorDto: CreateDoctorDto) {
     return this.doctorService.create(createDoctorDto);
