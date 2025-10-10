@@ -1,5 +1,3 @@
-# scripts/wait-for-db.ps1 - Versión MEJORADA con parámetros
-
 param(
     [int]$MaxAttempts = 30,
     [int]$DelaySeconds = 10
