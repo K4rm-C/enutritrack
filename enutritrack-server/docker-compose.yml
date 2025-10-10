@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:13
+    container_name: enutritrack_postgres
     environment:
       POSTGRES_DB: enutritrack
       POSTGRES_USER: postgres
@@ -9,11 +10,18 @@ services:
       - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - enutritrack-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   couchbase:
-    image: couchbase/server:community-7.1.1 # Nota: imagen corregida
+    image: couchbase/server:community-7.1.1
+    container_name: enutritrack_couchbase
     ports:
       - '8091-8096:8091-8096'
       - '11210:11210'
@@ -22,11 +30,21 @@ services:
       - COUCHBASE_ADMINISTRATOR_PASSWORD=alfredo124$$
     volumes:
       - couchbase_data:/opt/couchbase/var
+      - ./scripts/init-couchbase.sh:/init-couchbase.sh
     networks:
       - enutritrack-network
+    command: >
+      sh -c "
+      /opt/couchbase/entrypoint.sh couchbase-server &
+      sleep 30 &&
+      chmod +x /init-couchbase.sh &&
+      /init-couchbase.sh &&
+      wait
+      "
 
   redis:
     image: redis:7-alpine
+    container_name: enutritrack_redis
     ports:
       - '6379:6379'
     command: redis-server --requirepass redispassword
@@ -34,6 +52,11 @@ services:
       - redis_data:/data
     networks:
       - enutritrack-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:
