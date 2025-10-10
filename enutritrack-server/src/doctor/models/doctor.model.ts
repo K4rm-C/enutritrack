@@ -1,48 +1,55 @@
-// src/doctor/models/doctor.model.ts
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
-  OneToMany,
-  ManyToOne,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
   JoinColumn,
+  ManyToOne,
+  OneToMany,
 } from 'typeorm';
-import { User } from '../../users/models/user.model';
-import { Admin } from '../../admin/models/admin.model';
+import { Cuenta } from '../../cuentas/models/cuenta.model';
+import { PerfilAdmin } from '../../admin/models/admin.model';
+import { PerfilUsuario } from '../../users/models/user.model';
 
-@Entity('doctors')
-export class Doctor {
+@Entity('perfil_doctor')
+export class PerfilDoctor {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ type: 'uuid' })
+  cuenta_id: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  admin_id: string;
 
   @Column({ type: 'varchar', length: 100 })
   nombre: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  especialidad: string;
 
-  @Column({ type: 'varchar', length: 255, name: 'contraseña_hash' })
-  contraseñaHash: string;
+  @Column({ type: 'varchar', length: 50, nullable: true, unique: true })
+  cedula_profesional: string;
 
-  @ManyToOne(() => Admin, (a) => a.admins)
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updated_at: Date;
+
+  @OneToOne(() => Cuenta)
+  @JoinColumn({ name: 'cuenta_id' })
+  cuenta: Cuenta;
+
+  @ManyToOne(() => PerfilAdmin)
   @JoinColumn({ name: 'admin_id' })
-  admin: Admin;
+  admin: PerfilAdmin;
 
-  @Column({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    name: 'created_at',
-  })
-  createdAt: Date;
-
-  @Column({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
-    name: 'updated_at',
-  })
-  updatedAt: Date;
-
-  @OneToMany(() => User, (user) => user.doctor)
-  patients: User[];
+  @OneToMany(() => PerfilUsuario, (perfilUsuario) => perfilUsuario.doctor)
+  pacientes: PerfilUsuario[];
 }

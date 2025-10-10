@@ -4,7 +4,6 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import cookieParser from 'cookie-parser';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -22,7 +21,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.setBaseViewsDir(join(__dirname, '..', 'public'));
+  app.useStaticAssets(join(process.cwd(), 'public'));
+  app.setBaseViewsDir(join(process.cwd(), 'views'));
+  app.setViewEngine('html');
 
   const config = new DocumentBuilder()
     .setTitle('Enutritrack Backend API')

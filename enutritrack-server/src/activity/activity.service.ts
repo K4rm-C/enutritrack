@@ -1,19 +1,19 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { CreatePhysicalActivityDto } from './dto/create-physical-activity.dto';
-import { PhysicalActivity } from './models/activity.model';
+import { CreateActividadFisicaDto } from './dto/create-physical-activity.dto';
+import { ActividadFisica } from './models/activity.model';
 
 @Injectable()
 export class PhysicalActivityService {
   constructor(
-    @InjectRepository(PhysicalActivity)
-    private readonly activityRepository: Repository<PhysicalActivity>,
+    @InjectRepository(ActividadFisica)
+    private readonly activityRepository: Repository<ActividadFisica>,
   ) {}
 
   async create(
-    createPhysicalActivityDto: CreatePhysicalActivityDto,
-  ): Promise<PhysicalActivity> {
+    createPhysicalActivityDto: CreateActividadFisicaDto,
+  ): Promise<ActividadFisica> {
     try {
       const activity = this.activityRepository.create({
         ...createPhysicalActivityDto,
@@ -31,7 +31,7 @@ export class PhysicalActivityService {
     }
   }
 
-  async findAllByUser(usuarioId: string): Promise<PhysicalActivity[]> {
+  async findAllByUser(usuarioId: string): Promise<ActividadFisica[]> {
     try {
       const activities = await this.activityRepository.find({
         where: { usuario: { id: usuarioId } },
@@ -48,7 +48,7 @@ export class PhysicalActivityService {
     }
   }
 
-  async findOne(id: string): Promise<PhysicalActivity> {
+  async findOne(id: string): Promise<ActividadFisica> {
     try {
       const activity = await this.activityRepository.findOne({
         where: { id },
@@ -74,8 +74,8 @@ export class PhysicalActivityService {
 
   async update(
     id: string,
-    updatePhysicalActivityDto: Partial<CreatePhysicalActivityDto>,
-  ): Promise<PhysicalActivity> {
+    updatePhysicalActivityDto: Partial<CreateActividadFisicaDto>,
+  ): Promise<ActividadFisica> {
     try {
       const activity = await this.activityRepository.findOne({
         where: { id },
@@ -153,15 +153,15 @@ export class PhysicalActivityService {
 
       // Calcular totales semanales
       const totalDuracion = activities.reduce(
-        (sum, activity) => sum + (activity.duracion || 0),
+        (sum, activity) => sum + (activity.duracion_min || 0),
         0,
       );
       const totalCaloriasQuemadas = activities.reduce(
-        (sum, activity) => sum + (activity.caloriasQuemadas || 0),
+        (sum, activity) => sum + (activity.calorias_quemadas || 0),
         0,
       );
       const tiposActividad = [
-        ...new Set(activities.map((activity) => activity.tipo_actividad)),
+        ...new Set(activities.map((activity) => activity.tipoActividad.nombre)),
       ];
 
       const summary = {

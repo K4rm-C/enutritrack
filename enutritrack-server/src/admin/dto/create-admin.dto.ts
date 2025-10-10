@@ -1,18 +1,17 @@
-// src/user/dto/create-user.dto.ts
-import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
+import { IsUUID, IsString, IsOptional } from 'class-validator';
 
-export class CreateAdminDto {
+export class CreatePerfilAdminDto {
+  @IsUUID()
+  cuenta_id: string;
+
   @IsString()
   nombre: string;
 
-  @IsEmail()
-  email: string;
+  @IsString()
+  @IsOptional()
+  departamento?: string;
 
   @IsString()
-  @MinLength(8)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message:
-      'Password must contain at least one lowercase letter, one uppercase letter, and one number',
-  })
-  contraseña: string;
+  @IsOptional()
+  telefono?: string;
 }

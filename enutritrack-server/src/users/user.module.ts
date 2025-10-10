@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
-import { UserService } from './user.service';
-import { UsersController } from './user.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './models/user.model';
-import { HttpModule } from '@nestjs/axios';
-import { DoctorModule } from '../doctor/doctor.module';
+import { PerfilUsuarioService } from './user.service';
+import { PerfilUsuarioController } from './user.controller';
+import { PerfilUsuario } from './models/user.model';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), HttpModule, DoctorModule],
-  providers: [UserService],
-  controllers: [UsersController],
-  exports: [UserService],
+  imports: [TypeOrmModule.forFeature([PerfilUsuario])],
+  controllers: [PerfilUsuarioController],
+  providers: [PerfilUsuarioService],
+  exports: [PerfilUsuarioService],
 })
-export class UserModule {}
+export class PerfilUsuarioModule {}

@@ -1,21 +1,17 @@
 import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
-import { RecommendationController } from './recommendation.controller';
-import { RecommendationService } from './recommendation.service';
-import { CacheModule } from '@nestjs/cache-manager';
-import { CouchbaseModule } from '../couchbase/couchbase.module';
-import { Recommendation } from './models/recommendation.model';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { RecomendacionService } from './recommendation.service';
+import { RecomendacionController } from './recommendation.controller';
+import { Recomendacion } from './models/recommendation.model';
+import { RecomendacionDatosModule } from '../recomendacion-dato/recomendacion-dato.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Recommendation]),
-    CacheModule.register(),
-    HttpModule,
-    CouchbaseModule,
+    TypeOrmModule.forFeature([Recomendacion]),
+    RecomendacionDatosModule,
   ],
-  controllers: [RecommendationController],
-  providers: [RecommendationService],
-  exports: [RecommendationService],
+  controllers: [RecomendacionController],
+  providers: [RecomendacionService],
+  exports: [RecomendacionService],
 })
-export class RecommendationModule {}
+export class RecomendacionModule {}

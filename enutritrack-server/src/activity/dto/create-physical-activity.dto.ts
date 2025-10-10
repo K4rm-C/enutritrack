@@ -1,21 +1,33 @@
-// src/physical-activity/dto/create-physical-activity.dto.ts
-import { Transform } from 'class-transformer';
-import { IsUUID, IsString, IsNumber, IsOptional } from 'class-validator';
+import {
+  IsUUID,
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsDate,
+} from 'class-validator';
 
-export class CreatePhysicalActivityDto {
+export class CreateActividadFisicaDto {
   @IsUUID()
-  usuarioId: string;
+  usuario_id: string;
+
+  @IsUUID()
+  tipo_actividad_id: string;
+
+  @IsNumber()
+  duracion_min: number;
+
+  @IsNumber()
+  calorias_quemadas: number;
 
   @IsString()
-  tipo_actividad: string;
-
-  @IsNumber()
-  duracion: number;
-
-  @IsNumber()
-  caloriasQuemadas: number;
-
   @IsOptional()
-  @Transform(({ value }) => new Date(value))
-  fecha: Date;
+  intensidad?: string;
+
+  @IsString()
+  @IsOptional()
+  notas?: string;
+
+  @IsDate()
+  @IsOptional()
+  fecha?: Date;
 }

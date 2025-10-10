@@ -6,60 +6,86 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
-  Res,
+  UseInterceptors,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
-import { DoctorService } from './doctor.service';
-import { CreateDoctorDto } from './dto/create-doctor.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { join } from 'path';
-import type { Response } from 'express';
+import { PerfilDoctorService } from './doctor.service';
+import { CreatePerfilDoctorDto } from './dto/create-doctor.dto';
+import { UpdatePerfilDoctorDto } from './dto/update-doctor.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 
 @Controller('doctors')
-export class DoctorController {
-  constructor(private readonly doctorService: DoctorService) {}
+@UseGuards(JwtAuthGuard, AdminAuthGuard) // Solo admins pueden acceder
+@UseInterceptors(ClassSerializerInterceptor)
+export class PerfilDoctorController {
+  constructor(private readonly perfilDoctorService: PerfilDoctorService) {}
 
-  @Get('management')
-  getDoctorsManagement(@Res() res: Response) {
-    // Servir el archivo HTML de gestión de doctores
-    return res.sendFile(
-      join(process.cwd(), 'public', 'doctors-management.html'),
-    );
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createDoctorDto: CreateDoctorDto) {
-    return this.doctorService.create(createDoctorDto);
+  create(@Body() createPerfilDoctorDto: CreatePerfilDoctorDto) {
+    return this.perfilDoctorService.create(createPerfilDoctorDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   findAll() {
-    return this.doctorService.findAll();
+    return this.perfilDoctorService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.doctorService.findById(id);
+  @Get('stats')
+  getStats() {
+    return this.perfilDoctorService.getDoctorStats();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  search(@Query('q') query: string) {
+    if (!query) {
+      return this.perfilDoctorService.findAll();
+    }
+    return this.perfilDoctorService.searchDoctores(query);
+  }
+
+  @Get('especialidad/:especialidad')
+  getDoctoresPorEspecialidad(@Param('especialidad') especialidad: string) {
+    return this.perfilDoctorService.getDoctoresPorEspecialidad(especialidad);
+  }
+
+  @Get('cuenta/:cuentaId')
+  findByCuentaId(@Param('cuentaId') cuentaId: string) {
+    return this.perfilDoctorService.findByCuentaId(cuentaId);
+  }
+
   @Get('email/:email')
   findByEmail(@Param('email') email: string) {
-    return this.doctorService.findByEmail(email);
+    return this.perfilDoctorService.findByEmail(email);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Get('cedula/:cedula')
+  findByCedula(@Param('cedula') cedula: string) {
+    return this.perfilDoctorService.findByCedula(cedula);
+  }
+
+  @Get('pacientes/:id')
+  getPacientes(@Param('id') id: string) {
+    return this.perfilDoctorService.getPacientes(id);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.perfilDoctorService.findOne(id);
+  }
+
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: any) {
-    return this.doctorService.update(id, updateUserDto);
+  update(
+    @Param('id') id: string,
+    @Body() updatePerfilDoctorDto: UpdatePerfilDoctorDto,
+  ) {
+    return this.perfilDoctorService.update(id, updatePerfilDoctorDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.doctorService.remove(id);
+    return this.perfilDoctorService.remove(id);
   }
 }

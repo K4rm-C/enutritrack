@@ -1,21 +1,25 @@
-// src/user/dto/create-user.dto.ts
-import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
+import { IsUUID, IsString, IsOptional } from 'class-validator';
 
-export class CreateDoctorDto {
+export class CreatePerfilDoctorDto {
+  @IsUUID()
+  cuenta_id: string;
+
+  @IsUUID()
+  @IsOptional()
+  admin_id?: string;
+
   @IsString()
   nombre: string;
 
-  @IsEmail()
-  email: string;
+  @IsString()
+  @IsOptional()
+  especialidad?: string;
 
   @IsString()
-  @MinLength(8)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message:
-      'Password must contain at least one lowercase letter, one uppercase letter, and one number',
-  })
-  contraseña: string;
+  @IsOptional()
+  cedula_profesional?: string;
 
   @IsString()
-  adminId: string; // Nuevo campo requerido
+  @IsOptional()
+  telefono?: string;
 }

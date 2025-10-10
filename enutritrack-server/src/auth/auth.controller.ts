@@ -2,41 +2,45 @@ import {
   Controller,
   Post,
   Body,
-  UnauthorizedException,
+  UseGuards,
+  Req,
   Get,
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
+import { LoginCuentaDto } from '../cuentas/dto/login-cuenta.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { join } from 'path';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  // Servir página de login HTML
   @Get('login')
   loginPage(@Res() res: Response) {
-    res.sendFile(join(__dirname, '../../public/auth-login.html'));
+    res.sendFile(join(__dirname, '../../public/login.html'));
   }
 
-  // API de login
   @Post('login')
-  async adminLogin(@Body() loginDto: { email: string; password: string }) {
-    const admin = await this.authService.validateAdmin(
-      loginDto.email,
-      loginDto.password,
-    );
-
-    if (!admin) {
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
-
-    return this.authService.login(admin);
+  async login(@Body() loginCuentaDto: LoginCuentaDto) {
+    return this.authService.login(loginCuentaDto);
   }
 
   @Post('refresh')
-  async refreshTokens(@Body() refreshDto: { refresh_token: string }) {
-    return this.authService.refreshTokens(refreshDto.refresh_token);
+  async refresh(@Body() body: { refresh_token: string }) {
+    return this.authService.refreshToken(body.refresh_token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Req() req) {
+    return this.authService.logout(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Req() req) {
+    return this.authService.getProfile(req.user.id);
   }
 }

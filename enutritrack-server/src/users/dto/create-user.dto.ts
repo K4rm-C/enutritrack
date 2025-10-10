@@ -1,49 +1,34 @@
 import {
-  IsEmail,
-  IsString,
-  IsOptional,
-  IsNumber,
-  IsDateString,
   IsUUID,
+  IsString,
+  IsDate,
   IsEnum,
+  IsNumber,
+  IsOptional,
 } from 'class-validator';
-import { Gender, ActivityLevel } from '../models/user.model';
-import { Transform } from 'class-transformer';
+import { GeneroEnum } from '../../shared/enum';
 
-export class CreateUserDto {
+export class CreatePerfilUsuarioDto {
+  @IsUUID()
+  cuenta_id: string;
+
+  @IsUUID()
+  @IsOptional()
+  doctor_id?: string;
+
   @IsString()
   nombre: string;
 
-  @IsEmail()
-  email: string;
+  @IsDate()
+  fecha_nacimiento: Date;
 
-  @IsString()
-  contraseña: string;
-
-  @IsDateString()
-  fecha_nacimiento: string;
-
-  @IsEnum(Gender)
-  género: Gender;
+  @IsEnum(GeneroEnum)
+  genero: GeneroEnum;
 
   @IsNumber()
   altura: number;
 
-  @IsNumber()
-  peso_actual: number;
-
-  @IsOptional()
-  @IsNumber()
-  objetivo_peso?: number;
-
-  @IsEnum(ActivityLevel)
-  nivel_actividad: ActivityLevel;
-
-  @IsOptional()
   @IsString()
-  @Transform(({ value, obj }) => {
-    // If the request has `doctor_id`, use it, otherwise use `doctorId` (if sent in camelCase)
-    return obj.doctor_id || value;
-  })
-  doctorId?: string;
+  @IsOptional()
+  telefono?: string;
 }

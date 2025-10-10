@@ -1,4 +1,3 @@
-// src/users/users.controller.ts
 import {
   Controller,
   Get,
@@ -8,64 +7,62 @@ import {
   Param,
   Delete,
   UseGuards,
-  Res,
-  Query,
 } from '@nestjs/common';
-import { UserService } from './user.service';
+import { PerfilUsuarioService } from './user.service';
+import { CreatePerfilUsuarioDto } from './dto/create-user.dto';
+import { UpdatePerfilUsuarioDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { join } from 'path';
-import type { Response } from 'express';
 
 @Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UserService) {}
+@UseGuards(JwtAuthGuard)
+export class PerfilUsuarioController {
+  constructor(private readonly perfilUsuarioService: PerfilUsuarioService) {}
 
-  @Get('management')
-  getUsersManagement(@Res() res: Response) {
-    // Servir el archivo HTML de gestión de usuarios
-    return res.sendFile(join(process.cwd(), 'public', 'users-management.html'));
-  }
-
-  @Get('detail')
-  getUserDetailPage(@Res() res: Response, @Query('id') userId: string) {
-    return res.sendFile(
-      join(process.cwd(), 'public', 'admin-user-detail.html'),
-    );
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createUserDto: any) {
-    return this.usersService.create(createUserDto);
+  create(@Body() createPerfilUsuarioDto: CreatePerfilUsuarioDto) {
+    return this.perfilUsuarioService.create(createPerfilUsuarioDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   findAll() {
-    return this.usersService.findAll();
+    return this.perfilUsuarioService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('/user/email/:email')
-  findByEmail(@Param('email') email: string) {
-    return this.usersService.findByEmail(email);
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.perfilUsuarioService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('/user/id/:id')
-  findById(@Param('id') id: string) {
-    return this.usersService.findById(id);
+  @Get('cuenta/:cuentaId')
+  findByCuentaId(@Param('cuentaId') cuentaId: string) {
+    return this.perfilUsuarioService.findByCuentaId(cuentaId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: any) {
-    return this.usersService.update(id, updateUserDto);
+  update(
+    @Param('id') id: string,
+    @Body() updatePerfilUsuarioDto: UpdatePerfilUsuarioDto,
+  ) {
+    return this.perfilUsuarioService.update(id, updatePerfilUsuarioDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+    return this.perfilUsuarioService.remove(id);
+  }
+
+  @Patch(':id/asignar-doctor/:doctorId')
+  asignarDoctor(@Param('id') id: string, @Param('doctorId') doctorId: string) {
+    return this.perfilUsuarioService.asignarDoctor(id, doctorId);
+  }
+
+  @Patch(':id/remover-doctor')
+  removerDoctor(@Param('id') id: string) {
+    return this.perfilUsuarioService.removerDoctor(id);
+  }
+
+  @Get('doctor/:doctorId')
+  findByDoctorId(@Param('doctorId') doctorId: string) {
+    return this.perfilUsuarioService.findByDoctorId(doctorId);
   }
 }

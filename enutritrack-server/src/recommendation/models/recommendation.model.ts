@@ -1,48 +1,59 @@
-// src/recommendation/entities/recommendation.entity.ts
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
-import { User } from '../../users/models/user.model';
-
-export enum RecommendationType {
-  NUTRITION = 'nutrition',
-  EXERCISE = 'exercise',
-  MEDICAL = 'medical',
-  GENERAL = 'general',
-}
+import { PerfilUsuario } from '../../users/models/user.model';
+import { TipoRecomendacion } from '../../tipo-recomendacion/models/tipo-recomendacion.model';
+import { RecomendacionDato } from '../../recomendacion-dato/models/recomendacion-dato.model';
 
 @Entity('recomendacion')
-export class Recommendation {
+export class Recomendacion {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.recommendations)
-  @JoinColumn({ name: 'usuario_id' })
-  usuario: User;
+  @Column({ type: 'uuid' })
+  usuario_id: string;
 
-  @Column({ type: 'text', name: 'tipo' })
-  tipo: RecommendationType;
+  @Column({ type: 'uuid' })
+  tipo_recomendacion_id: string;
 
-  @Column({ type: 'text', name: 'contenido' })
+  @Column({ type: 'text' })
   contenido: string;
 
-  @Column({ type: 'jsonb', nullable: true, name: 'datos_entrada' })
-  datosEntrada: any;
+  @Column({ type: 'timestamp', default: () => 'now()' })
+  fecha_generacion: Date;
 
-  @Column({
-    type: 'timestamp',
-    name: 'fecha_generacion',
-    default: () => 'CURRENT_TIMESTAMP',
-  })
-  fechaGeneracion: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  vigencia_hasta: Date;
 
-  @Column({ type: 'timestamp', name: 'vigencia_hasta', nullable: true })
-  vigenciaHasta: Date;
-
-  @Column({ type: 'boolean', name: 'activa', default: true })
+  @Column({ type: 'boolean', default: true })
   activa: boolean;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  prioridad: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at: Date;
+
+  @ManyToOne(() => PerfilUsuario, (usuario) => usuario.id)
+  @JoinColumn({ name: 'usuario_id' })
+  usuario: PerfilUsuario;
+
+  @ManyToOne(
+    () => TipoRecomendacion,
+    (tipoRecomendacion) => tipoRecomendacion.id,
+  )
+  @JoinColumn({ name: 'tipo_recomendacion_id' })
+  tipoRecomendacion: TipoRecomendacion;
+
+  @OneToMany(
+    () => RecomendacionDato,
+    (recomendacionDato) => recomendacionDato.recomendacion,
+  )
+  datos: RecomendacionDato[];
 }

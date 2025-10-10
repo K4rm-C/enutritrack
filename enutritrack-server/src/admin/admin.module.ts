@@ -1,21 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AdminService } from './admin.service';
-import { AdminController } from './admin.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Admin } from './models/admin.model';
-import { RedisModule } from '../redis/redis.module';
-import { CouchbaseModule } from '../couchbase/couchbase.module';
-import { HttpModule } from '@nestjs/axios';
+import { PerfilAdminService } from './admin.service';
+import { PerfilAdminController } from './admin.controller';
+import { PerfilAdmin } from './models/admin.model';
+import { CuentasModule } from '../cuentas/cuentas.module';
+import { AuthModule } from '../auth/auth.module'; // Importar AuthModule
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Admin]),
-    HttpModule,
-    RedisModule,
-    CouchbaseModule,
-  ],
-  providers: [AdminService],
-  controllers: [AdminController],
-  exports: [AdminService, TypeOrmModule],
+  imports: [TypeOrmModule.forFeature([PerfilAdmin]), CuentasModule, AuthModule],
+  controllers: [PerfilAdminController],
+  providers: [PerfilAdminService],
+  exports: [PerfilAdminService],
 })
-export class AdminModule {}
+export class PerfilAdminModule {}
