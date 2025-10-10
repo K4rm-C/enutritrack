@@ -23,8 +23,10 @@ services:
     image: couchbase/server:community-7.1.1
     container_name: enutritrack_couchbase
     ports:
-      - '8091-8096:8091-8096'
+      - '8091-8097:8091-8097'
       - '11210:11210'
+      - '11207:11207'
+      - '18091-18097:18091-18097'
     environment:
       - COUCHBASE_ADMINISTRATOR_USERNAME=Alfredo
       - COUCHBASE_ADMINISTRATOR_PASSWORD=alfredo124$$
@@ -35,12 +37,26 @@ services:
       - enutritrack-network
     command: >
       sh -c "
+      echo 'Iniciando Couchbase con inicialización automática...' &&
       /opt/couchbase/entrypoint.sh couchbase-server &
+      CB_PID=$$! &&
       sleep 30 &&
       chmod +x /init-couchbase.sh &&
       /init-couchbase.sh &&
-      wait
+      wait $$CB_PID
       "
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'curl',
+          '-f',
+          'http://localhost:8091/pools/default/buckets/enutritrack',
+        ]
+      interval: 10s
+      timeout: 20s
+      retries: 10
+      start_period: 60s
 
   redis:
     image: redis:7-alpine
