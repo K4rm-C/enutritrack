@@ -1,77 +1,79 @@
+# scripts/wait-for-db.ps1 - Versión CORREGIDA sin emojis
 param(
     [int]$MaxAttempts = 30,
     [int]$DelaySeconds = 10
 )
 
 Write-Host "=== VERIFICANDO SERVICIOS DE BASE DE DATOS ===" -ForegroundColor Green
-Write-Host "Este script verifica que los servicios DENTRO de los contenedores estén listos" -ForegroundColor Yellow
-Write-Host "Tiempo máximo de espera: $($MaxAttempts * $DelaySeconds) segundos`n" -ForegroundColor Gray
+Write-Host "Este script verifica que los servicios DENTRO de los contenedores esten listos" -ForegroundColor Yellow
+Write-Host "Tiempo maximo de espera: $($MaxAttempts * $DelaySeconds) segundos`n" -ForegroundColor Gray
 
-function Test-ContainerService {
-    param($ContainerName, $TestScript)
-    
+function Test-PostgreSQLReady {
     try {
-        $result = docker exec $ContainerName $TestScript 2>$null
-        return $result -eq $true -or $result -like "*accepting*" -or $result -eq "PONG"
+        $result = docker exec enutritrack_postgres pg_isready -U postgres
+        return $result -like "*accepting connections*"
     } catch {
         return $false
     }
 }
 
-# Configuración de pruebas por servicio
-$services = @(
-    @{
-        Name = "PostgreSQL"
-        Container = "enutritrack_postgres"
-        Test = "pg_isready -U postgres"
-        Ready = $false
-    },
-    @{
-        Name = "Redis"
-        Container = "enutritrack_redis" 
-        Test = "redis-cli -a redispassword ping"
-        Ready = $false
-    },
-    @{
-        Name = "Couchbase HTTP"
-        Container = "enutritrack_couchbase"
-        Test = "curl -s http://localhost:8091 > /dev/null && echo true"
-        Ready = $false
-    },
-    @{
-        Name = "Couchbase Bucket"
-        Container = "enutritrack_couchbase"
-        Test = "curl -s -u Alfredo:alfredo124$$ http://localhost:8091/pools/default/buckets/enutritrack-bucket | grep -q healthy && echo true"
-        Ready = $false
+function Test-CouchbaseReady {
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:8091" -UseBasicParsing -TimeoutSec 10
+        return $response.StatusCode -eq 200
+    } catch {
+        return $false
     }
-)
+}
 
-# Bucle principal de verificación
+function Test-RedisReady {
+    try {
+        $result = docker exec enutritrack_redis redis-cli -a redispassword ping
+        return $result -eq "PONG"
+    } catch {
+        return $false
+    }
+}
+
+function Test-CouchbaseBucket {
+    try {
+        $auth = "Alfredo:alfredo124$$"
+        $encodedAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($auth))
+        $headers = @{ Authorization = "Basic $encodedAuth" }
+        
+        $response = Invoke-WebRequest -Uri "http://localhost:8091/pools/default/buckets/enutritrack-bucket" -Headers $headers -UseBasicParsing
+        return $response.StatusCode -eq 200
+    } catch {
+        return $false
+    }
+}
+
+# Bucle principal de verificacion
 $attempt = 1
 $allReady = $false
 
 do {
     Write-Host "Intento $attempt de $MaxAttempts..." -ForegroundColor Yellow
     
-    # Verificar cada servicio
-    foreach ($service in $services) {
-        if (-not $service.Ready) {
-            $service.Ready = Test-ContainerService -ContainerName $service.Container -TestScript $service.Test
-            Write-Host "  $($service.Name): $(if ($service.Ready) { '✓ LISTO' } else { '⏳ ESPERANDO...' })" -ForegroundColor $(if ($service.Ready) { 'Green' } else { 'Yellow' })
-        }
-    }
+    $postgresReady = Test-PostgreSQLReady
+    $couchbaseReady = Test-CouchbaseReady
+    $redisReady = Test-RedisReady
+    $couchbaseBucketReady = Test-CouchbaseBucket
     
-    # Verificar si todos están listos
-    $allReady = ($services | Where-Object { $_.Ready }).Count -eq $services.Count
+    Write-Host "  PostgreSQL:   $(if ($postgresReady) { 'LISTO' } else { 'ESPERANDO...' })" -ForegroundColor $(if ($postgresReady) { 'Green' } else { 'Yellow' })
+    Write-Host "  Couchbase:    $(if ($couchbaseReady) { 'RESPONDE' } else { 'INICIANDO...' })" -ForegroundColor $(if ($couchbaseReady) { 'Green' } else { 'Yellow' })
+    Write-Host "  Redis:        $(if ($redisReady) { 'LISTO' } else { 'ESPERANDO...' })" -ForegroundColor $(if ($redisReady) { 'Green' } else { 'Yellow' })
+    Write-Host "  Bucket CB:    $(if ($couchbaseBucketReady) { 'CREADO' } else { 'CREANDO...' })" -ForegroundColor $(if ($couchbaseBucketReady) { 'Green' } else { 'Yellow' })
     
-    if ($allReady) {
-        Write-Host "`n✅ TODOS LOS SERVICIOS ESTÁN LISTOS!" -ForegroundColor Green
+    if ($postgresReady -and $couchbaseReady -and $redisReady -and $couchbaseBucketReady) {
+        Write-Host "`n TODOS LOS SERVICIOS ESTAN LISTOS!" -ForegroundColor Green
+        $allReady = $true
         break
     }
     
     if ($attempt -ge $MaxAttempts) {
-        Write-Host "`n⚠ TIEMPO DE ESPERA AGOTADO" -ForegroundColor Red
-        Write-Host "Servicios listos: $(($services | Where-Object { $_.Ready }).Count)/$($services.Count)" -ForegroundColor Yellow
+        Write-Host "`n TIEMPO DE ESPERA AGOTADO" -ForegroundColor Red
+        Write-Host "Servicios listos: $(($postgresReady, $couchbaseReady, $redisReady, $couchbaseBucketReady | Where-Object { $_ }).Count)/4" -ForegroundColor Yellow
         break
     }
     
@@ -82,15 +84,37 @@ do {
 
 # Estado final detallado
 Write-Host "`n--- ESTADO DETALLADO ---" -ForegroundColor Cyan
-foreach ($service in $services) {
-    $status = if ($service.Ready) { "✓ LISTO" } else { "✗ NO LISTO" }
-    $color = if ($service.Ready) { "Green" } else { "Red" }
-    Write-Host "  $($service.Name): $status" -ForegroundColor $color
+
+# PostgreSQL
+try {
+    $dbCheck = docker exec enutritrack_postgres psql -U postgres -d enutritrack -t -c "SELECT message FROM database_init ORDER BY id DESC LIMIT 1;" 2>$null
+    Write-Host "  PostgreSQL: $($dbCheck.Trim())" -ForegroundColor Green
+} catch {
+    Write-Host "  PostgreSQL: No se pudo verificar" -ForegroundColor Red
 }
 
-# Código de salida: 0 si todo bien, 1 si hay servicios no listos
+# Couchbase
+if (Test-CouchbaseBucket) {
+    Write-Host "  Couchbase: Bucket 'enutritrack-bucket' creado y accesible" -ForegroundColor Green
+} else {
+    Write-Host "  Couchbase: Problemas con el bucket" -ForegroundColor Red
+}
+
+# Redis
+if (Test-RedisReady) {
+    Write-Host "  Redis: Conectado y respondiendo" -ForegroundColor Green
+} else {
+    Write-Host "  Redis: No responde" -ForegroundColor Red
+}
+
+Write-Host "`n=== INSTRUCCIONES ===" -ForegroundColor White
+Write-Host "1. Para ejecutar el backend: npm run start:dev" -ForegroundColor Gray
+Write-Host "2. Para ver logs: docker-compose logs -f" -ForegroundColor Gray
+Write-Host "3. Para detener: docker-compose down" -ForegroundColor Gray
+
+# Codigo de salida
 if (-not $allReady) {
     exit 1
+} else {
+    exit 0
 }
-
-exit 0

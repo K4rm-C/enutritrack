@@ -8,7 +8,7 @@ Write-Host "`n2. Iniciando contenedores..." -ForegroundColor Yellow
 docker-compose up -d
 
 Write-Host "`n3. Esperando 60 segundos para inicialización..." -ForegroundColor Yellow
-for ($i = 1; $i -le 60; $i++) {
+for ($i = 1; $i -le 5; $i++) {
     Write-Host "   Esperando... $i/60 segundos" -NoNewline
     Write-Host "`r" -NoNewline
     Start-Sleep -Seconds 1
