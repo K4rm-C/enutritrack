@@ -41,7 +41,7 @@ function Test-CouchbaseBucket {
         $encodedAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($auth))
         $headers = @{ Authorization = "Basic $encodedAuth" }
         
-        $response = Invoke-WebRequest -Uri "http://localhost:8091/pools/default/buckets/enutritrack-bucket" -Headers $headers -UseBasicParsing
+        $response = Invoke-WebRequest -Uri "http://localhost:8091/pools/default/buckets/enutritrack" -Headers $headers -UseBasicParsing
         return $response.StatusCode -eq 200
     } catch {
         return $false
