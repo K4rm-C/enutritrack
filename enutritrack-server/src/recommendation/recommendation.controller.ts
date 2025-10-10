@@ -5,124 +5,87 @@ import {
   Body,
   Patch,
   Param,
+  Delete,
   UseGuards,
-  Req,
-  HttpStatus,
-  HttpException,
-  Logger,
 } from '@nestjs/common';
-import express from 'express';
-import { RecommendationService } from './recommendation.service';
-import { RecommendationType } from './models/recommendation.model';
+import { RecomendacionService } from './recommendation.service';
+import { CreateRecomendacionDto } from './dto/create-recommendation.dto';
+import { UpdateRecomendacionDto } from './dto/update-recommendation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-@Controller('recommendations')
-export class RecommendationController {
-  private readonly logger = new Logger(RecommendationController.name);
+@Controller('recomendacion')
+@UseGuards(JwtAuthGuard)
+export class RecomendacionController {
+  constructor(private readonly recomendacionService: RecomendacionService) {}
 
-  constructor(private readonly recommendationService: RecommendationService) {}
-
-  @UseGuards(JwtAuthGuard)
-  @Get('user/:userId')
-  async findByUser(@Req() req: express.Request) {
-    try {
-      const userId = (req as any).user?.userId || (req as any).user?.sub;
-      const authToken =
-        req.cookies?.access_token ||
-        req.headers.authorization?.replace('Bearer ', '');
-      return await this.recommendationService.findByUser(userId);
-    } catch (error) {
-      throw new HttpException(
-        `Error fetching user recommendations: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  @Post()
+  create(@Body() createRecomendacionDto: CreateRecomendacionDto) {
+    return this.recomendacionService.create(createRecomendacionDto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('user/:userId/:type')
-  async findActiveByUserAndType(
-    @Param('type') type: RecommendationType,
-    @Req() req: express.Request,
+  @Post('completa')
+  crearRecomendacionCompleta(
+    @Body()
+    body: {
+      recomendacion: CreateRecomendacionDto;
+      datos: { clave: string; valor: string; tipo_dato?: string }[];
+    },
   ) {
-    try {
-      const userId = (req as any).user?.userId || (req as any).user?.sub;
-      const authToken =
-        req.cookies?.access_token ||
-        req.headers.authorization?.replace('Bearer ', '');
-      const validTypes = ['nutrition', 'exercise', 'medical', 'general'];
-      if (!validTypes.includes(type)) {
-        throw new HttpException(
-          `Invalid recommendation type. Valid types are: ${validTypes.join(', ')}`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      return await this.recommendationService.findActiveByUserAndType(
-        userId,
-        type,
-      );
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Error fetching active recommendations: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return this.recomendacionService.crearRecomendacionCompleta(
+      body.recomendacion,
+      body.datos,
+    );
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Patch(':id/deactivate')
-  async deactivate(@Param('id') id: string, @Req() req: express.Request) {
-    try {
-      const authToken =
-        req.cookies?.access_token ||
-        req.headers.authorization?.replace('Bearer ', '');
-      const result = await this.recommendationService.deactivate(id);
-      return {
-        message: 'Recommendation deactivated successfully',
-        id,
-        data: result,
-      };
-    } catch (error) {
-      throw new HttpException(
-        `Error deactivating recommendation: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  @Get()
+  findAll() {
+    return this.recomendacionService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('stats/:userId')
-  async getUserRecommendationStats(@Req() req: express.Request) {
-    try {
-      const userId = (req as any).user?.userId || (req as any).user?.sub;
-      const authToken =
-        req.cookies?.access_token ||
-        req.headers.authorization?.replace('Bearer ', '');
-      const allRecommendations =
-        await this.recommendationService.findByUser(userId);
-      const stats = {
-        total: allRecommendations.length,
-        byType: {} as Record<string, number>,
-        lastGenerated:
-          allRecommendations.length > 0
-            ? allRecommendations[0].fechaGeneracion
-            : null,
-      };
+  @Get('usuario/:usuarioId')
+  findByUsuarioId(@Param('usuarioId') usuarioId: string) {
+    return this.recomendacionService.findByUsuarioId(usuarioId);
+  }
 
-      // Contar por tipo
-      allRecommendations.forEach((rec) => {
-        stats.byType[rec.tipo] = (stats.byType[rec.tipo] || 0) + 1;
-      });
+  @Get('activas/:usuarioId')
+  findActivasByUsuarioId(@Param('usuarioId') usuarioId: string) {
+    return this.recomendacionService.findActivasByUsuarioId(usuarioId);
+  }
 
-      return stats;
-    } catch (error) {
-      throw new HttpException(
-        `Error fetching recommendation stats: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  @Get('tipo-recomendacion/:tipoRecomendacionId')
+  findByTipoRecomendacionId(
+    @Param('tipoRecomendacionId') tipoRecomendacionId: string,
+  ) {
+    return this.recomendacionService.findByTipoRecomendacionId(
+      tipoRecomendacionId,
+    );
+  }
+
+  @Get('vigentes')
+  findVigentes() {
+    return this.recomendacionService.findVigentes();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.recomendacionService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() updateRecomendacionDto: UpdateRecomendacionDto,
+  ) {
+    return this.recomendacionService.update(id, updateRecomendacionDto);
+  }
+
+  @Patch('desactivar/:id')
+  desactivar(@Param('id') id: string) {
+    return this.recomendacionService.desactivar(id);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.recomendacionService.remove(id);
   }
 }

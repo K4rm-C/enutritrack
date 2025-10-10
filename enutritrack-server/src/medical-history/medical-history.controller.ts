@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { MedicalHistoryService } from './medical-history.service';
 import express from 'express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../couchbase/auth/guards/jwt-auth.guard';
 
 @Controller('medical-history')
 export class MedicalHistoryController {

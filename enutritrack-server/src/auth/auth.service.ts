@@ -1,235 +1,127 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AdminService } from '../admin/admin.service';
-import * as bcrypt from 'bcrypt';
-
-export interface AuthAdmin {
-  id: string;
-  email: string;
-  nombre: string;
-  userType: 'admin';
-}
-
-interface TokenPayload {
-  email: string;
-  sub: string;
-  nombre: string;
-  userType: 'admin';
-  iat: number;
-  type: 'access' | 'refresh';
-}
+import { CuentasService } from '../cuentas/cuentas.service';
+import { RedisService } from '../redis/redis.service';
+import { LoginCuentaDto } from '../cuentas/dto/login-cuenta.dto';
+import { TipoCuentaEnum } from '../shared/enum';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private adminService: AdminService,
+    private cuentasService: CuentasService,
     private jwtService: JwtService,
+    private redisService: RedisService,
   ) {}
 
-  async validateAdmin(
-    email: string,
-    password: string,
-  ): Promise<AuthAdmin | null> {
-    try {
-      console.log(`🔍 Validando admin: ${email}`);
-
-      const admin = await this.adminService.findByEmailWithPassword(email);
-
-      if (!admin) {
-        console.log(`❌ Admin no encontrado: ${email}`);
-        return null;
-      }
-
-      if (!admin.contraseñaHash) {
-        console.log(`❌ ${email} no tiene contraseña hasheada`);
-        return null;
-      }
-
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        admin.contraseñaHash,
+  async login(loginCuentaDto: LoginCuentaDto) {
+    const user = await this.cuentasService.validateUser(loginCuentaDto);
+    if (user.tipo_cuenta !== TipoCuentaEnum.ADMIN) {
+      throw new ForbiddenException(
+        'Solo los administradores pueden acceder al CMS',
       );
-
-      if (!isPasswordValid) {
-        console.log(`❌ Contraseña incorrecta para: ${email}`);
-        return null;
-      }
-
-      console.log(`✅ Admin validado exitosamente: ${email}`);
-
-      const { contraseñaHash, ...result } = admin;
-      return {
-        ...result,
-        userType: 'admin',
-      };
-    } catch (error) {
-      console.error('💥 Error en validateAdmin:', error);
-      return null;
     }
-  }
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      tipo_cuenta: user.tipo_cuenta,
+    };
 
-  async login(admin: AuthAdmin) {
-    if (!admin || !admin.email || !admin.id) {
-      console.log('❌ Datos de admin inválidos para login');
-      throw new UnauthorizedException('Datos de admin inválidos');
-    }
+    const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refresh_token = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-    const accessToken = this.generateAccessToken(admin);
-    const refreshToken = this.generateRefreshToken(admin);
+    // Guardar tokens en Redis
+    await this.redisService.set(`access_token:${user.id}`, access_token, 900); // 15 minutos
+    await this.redisService.set(
+      `refresh_token:${user.id}`,
+      refresh_token,
+      604800,
+    ); // 7 días
 
-    console.log(`✅ Tokens generados exitosamente para admin: ${admin.email}`);
+    console.log(`✅ Tokens guardados en Redis para usuario: ${user.email}`);
 
     return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      admin: {
-        id: admin.id,
-        email: admin.email,
-        nombre: admin.nombre,
-        userType: admin.userType,
+      access_token,
+      refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        tipo_cuenta: user.tipo_cuenta,
       },
     };
   }
 
-  private generateAccessToken(admin: AuthAdmin): string {
-    const payload: TokenPayload = {
-      email: admin.email,
-      sub: admin.id,
-      nombre: admin.nombre,
-      userType: 'admin',
-      iat: Math.floor(Date.now() / 1000),
-      type: 'access',
-    };
-
-    return this.jwtService.sign(payload, { expiresIn: '15m' }); // 15 minutos
-  }
-
-  private generateRefreshToken(admin: AuthAdmin): string {
-    const payload: TokenPayload = {
-      email: admin.email,
-      sub: admin.id,
-      nombre: admin.nombre,
-      userType: 'admin',
-      iat: Math.floor(Date.now() / 1000),
-      type: 'refresh',
-    };
-
-    return this.jwtService.sign(payload, { expiresIn: '7d' }); // 7 días
-  }
-
-  async refreshTokens(refreshToken: string) {
+  async refreshToken(oldRefreshToken: string) {
     try {
-      const payload = this.jwtService.verify(refreshToken) as TokenPayload;
+      const payload = this.jwtService.verify(oldRefreshToken);
+      const userId = payload.sub;
 
-      // Verificar que es un refresh token
-      if (payload.type !== 'refresh') {
-        throw new UnauthorizedException('Token inválido para refresh');
+      // Verificar que el refresh token esté en Redis
+      const storedRefreshToken = await this.redisService.get(
+        `refresh_token:${userId}`,
+      );
+      if (storedRefreshToken !== oldRefreshToken) {
+        throw new UnauthorizedException('Refresh token inválido');
       }
 
-      // Verificar que el token es de un admin
-      if (payload.userType !== 'admin') {
-        throw new UnauthorizedException('Token no es de administrador');
-      }
-
-      const admin = await this.adminService.findById(payload.sub);
-
-      if (!admin) {
-        throw new UnauthorizedException('Admin no encontrado');
-      }
-
-      console.log(`✅ Refresh token válido para admin: ${admin.email}`);
-
-      const authAdmin: AuthAdmin = {
-        id: admin.id,
-        email: admin.email,
-        nombre: admin.nombre,
-        userType: 'admin',
-      };
-
-      const newAccessToken = this.generateAccessToken(authAdmin);
-      const newRefreshToken = this.generateRefreshToken(authAdmin);
-
-      return {
-        access_token: newAccessToken,
-        refresh_token: newRefreshToken,
-        admin: {
-          id: authAdmin.id,
-          email: authAdmin.email,
-          nombre: authAdmin.nombre,
-          userType: authAdmin.userType,
-        },
-      };
-    } catch (error) {
-      console.error('💥 Error en refreshTokens:', error);
-      throw new UnauthorizedException('Refresh token inválido');
-    }
-  }
-
-  async validateToken(token: string) {
-    try {
-      const payload = this.jwtService.verify(token) as TokenPayload;
-
-      // Solo permitir tokens de acceso para operaciones normales
-      if (payload.type !== 'access') {
-        throw new UnauthorizedException('Tipo de token inválido');
-      }
-
-      return {
-        adminId: payload.sub,
+      // Generar nuevos tokens
+      const newPayload = {
         email: payload.email,
-        nombre: payload.nombre,
-        userType: payload.userType,
+        sub: payload.sub,
+        tipo_cuenta: payload.tipo_cuenta,
       };
-    } catch (error) {
-      throw new UnauthorizedException('Token inválido');
-    }
-  }
+      const access_token = this.jwtService.sign(newPayload, {
+        expiresIn: '15m',
+      });
+      const refresh_token = this.jwtService.sign(newPayload, {
+        expiresIn: '7d',
+      });
 
-  async getAdminFromToken(token: string): Promise<AuthAdmin> {
-    try {
-      const payload = this.jwtService.verify(token) as TokenPayload;
+      // Actualizar en Redis
+      await this.redisService.set(`access_token:${userId}`, access_token, 900);
+      await this.redisService.set(
+        `refresh_token:${userId}`,
+        refresh_token,
+        604800,
+      );
 
-      // Solo permite tokens de acceso
-      if (payload.type !== 'access') {
-        throw new UnauthorizedException('Token no es de acceso');
-      }
+      console.log(`✅ Tokens actualizados en Redis para usuario ID: ${userId}`);
 
-      // Solo permite tokens de admin
-      if (payload.userType !== 'admin') {
-        throw new UnauthorizedException('Token no es de administrador');
-      }
-
-      const admin = await this.adminService.findById(payload.sub);
-
-      if (!admin) {
-        throw new UnauthorizedException('Admin no encontrado');
-      }
-
-      console.log(`✅ Admin obtenido del token: ${admin.email}`);
-      const { contraseñaHash, ...result } = admin;
       return {
-        ...result,
-        userType: 'admin',
+        access_token,
+        refresh_token,
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      console.error('💥 Error en getAdminFromToken:', error);
-      throw new UnauthorizedException('Token inválido');
+      throw new UnauthorizedException('Refresh token inválido o expirado');
     }
   }
 
-  // Método para validar contraseña (ya que eliminamos validatePassword de AdminService)
-  async validatePassword(
-    plainPassword: string,
-    hashedPassword: string,
-  ): Promise<boolean> {
-    try {
-      return await bcrypt.compare(plainPassword, hashedPassword);
-    } catch (error) {
-      console.error('Error comparing passwords:', error);
-      return false;
-    }
+  async logout(userId: string) {
+    await this.redisService.del(`access_token:${userId}`);
+    await this.redisService.del(`refresh_token:${userId}`);
+
+    console.log(`✅ Tokens eliminados de Redis para usuario ID: ${userId}`);
+
+    return { message: 'Logout exitoso' };
+  }
+
+  async validateToken(userId: string, token: string): Promise<boolean> {
+    const storedToken = await this.redisService.get(`access_token:${userId}`);
+    return storedToken === token;
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.cuentasService.findOne(userId);
+    const { contraseña_hash, ...result } = user;
+    return result;
+  }
+
+  // Validar que el usuario es admin
+  async validateAdmin(userId: string): Promise<boolean> {
+    const user = await this.cuentasService.findOne(userId);
+    return user.tipo_cuenta === TipoCuentaEnum.ADMIN;
   }
 }

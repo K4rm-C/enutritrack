@@ -1,35 +1,34 @@
-// src/recommendation/dto/create-recommendation.dto.ts
 import {
-  IsEnum,
   IsUUID,
-  IsObject,
+  IsString,
+  IsDate,
   IsOptional,
-  IsDateString,
+  IsBoolean,
 } from 'class-validator';
-import { RecommendationType } from '../models/recommendation.model';
 
-export class CreateRecommendationDto {
+export class CreateRecomendacionDto {
   @IsUUID()
-  usuarioId: string;
+  usuario_id: string;
 
-  @IsEnum(RecommendationType)
-  tipo: RecommendationType;
-
-  @IsObject()
-  @IsOptional()
-  datosEntrada?: any;
-}
-export class GeminiRequestDto {
   @IsUUID()
-  usuarioId: string;
+  tipo_recomendacion_id: string;
 
-  @IsEnum(RecommendationType)
-  tipo: RecommendationType;
+  @IsString()
+  contenido: string;
 
-  @IsObject()
-  datosUsuario: any;
-
-  @IsObject()
+  @IsDate()
   @IsOptional()
-  datosEspecificos?: any;
+  fecha_generacion?: Date;
+
+  @IsDate()
+  @IsOptional()
+  vigencia_hasta?: Date;
+
+  @IsBoolean()
+  @IsOptional()
+  activa?: boolean;
+
+  @IsString()
+  @IsOptional()
+  prioridad?: string;
 }

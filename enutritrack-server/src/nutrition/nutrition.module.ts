@@ -1,22 +1,17 @@
-// src/nutrition/nutrition.module.ts
 import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
-import { NutritionService } from './nutrition.service';
-import { NutritionController } from './nutrition.controller';
-import { CacheModule } from '@nestjs/cache-manager';
-import { CouchbaseModule } from '../couchbase/couchbase.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { FoodRecord } from './models/nutrition.model';
+import { RegistroComidaService } from './nutrition.service';
+import { RegistroComidaController } from './nutrition.controller';
+import { RegistroComida } from './models/nutrition.model';
+import { RegistroComidaItemsModule } from '../registro-comida-item/registro-comida-item.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([FoodRecord]),
-    CacheModule.register(),
-    HttpModule,
-    CouchbaseModule,
+    TypeOrmModule.forFeature([RegistroComida]),
+    RegistroComidaItemsModule,
   ],
-  controllers: [NutritionController],
-  providers: [NutritionService],
-  exports: [NutritionService],
+  controllers: [RegistroComidaController],
+  providers: [RegistroComidaService],
+  exports: [RegistroComidaService],
 })
-export class NutritionModule {}
+export class RegistroComidaModule {}

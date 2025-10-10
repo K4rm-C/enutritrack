@@ -6,11 +6,11 @@ import { PhysicalActivityController } from './activity.controller';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CouchbaseModule } from '../couchbase/couchbase.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PhysicalActivity } from './models/activity.model';
+import { ActividadFisica } from './models/activity.model';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PhysicalActivity]),
+    TypeOrmModule.forFeature([ActividadFisica]),
     CacheModule.register(),
     HttpModule,
     CouchbaseModule,

@@ -1,5 +1,4 @@
-// src/nutrition/dto/update-food-record.dto.ts
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateAdminDto } from './create-admin.dto';
+import { CreatePerfilAdminDto } from './create-admin.dto';
 
-export class UpdateAdminDto extends PartialType(CreateAdminDto) {}
+export class UpdatePerfilAdminDto extends PartialType(CreatePerfilAdminDto) {}

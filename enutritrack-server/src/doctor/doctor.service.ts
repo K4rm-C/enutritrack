@@ -1,155 +1,255 @@
 import {
-  ConflictException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
+  ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Doctor } from './models/doctor.model';
-import * as bcrypt from 'bcrypt';
-import { CreateDoctorDto } from './dto/create-doctor.dto';
-import { AdminService } from '../admin/admin.service';
+import { PerfilDoctor } from './models/doctor.model';
+import { CreatePerfilDoctorDto } from './dto/create-doctor.dto';
+import { UpdatePerfilDoctorDto } from './dto/update-doctor.dto';
+import { CuentasService } from '../cuentas/cuentas.service';
+import { PerfilAdminService } from '../admin/admin.service';
+import { TipoCuentaEnum } from '../shared/enum';
 
 @Injectable()
-export class DoctorService {
+export class PerfilDoctorService {
   constructor(
-    @InjectRepository(Doctor)
-    private doctorRepository: Repository<Doctor>,
-    private adminService: AdminService,
+    @InjectRepository(PerfilDoctor)
+    private readonly perfilDoctorRepository: Repository<PerfilDoctor>,
+    private readonly cuentasService: CuentasService,
+    private readonly perfilAdminService: PerfilAdminService,
   ) {}
 
-  async create(createDoctorDto: CreateDoctorDto): Promise<Doctor> {
-    const existingUser = await this.findByEmail(createDoctorDto.email);
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+  async create(
+    createPerfilDoctorDto: CreatePerfilDoctorDto,
+  ): Promise<PerfilDoctor> {
+    const { cuenta_id, admin_id, ...perfilData } = createPerfilDoctorDto;
+
+    // Verificar que la cuenta existe
+    const cuenta = await this.cuentasService.findOne(cuenta_id);
+
+    // Verificar que la cuenta es de tipo doctor
+    if (cuenta.tipo_cuenta !== TipoCuentaEnum.DOCTOR) {
+      throw new BadRequestException('La cuenta debe ser de tipo doctor');
     }
 
-    // Verificar que el admin existe
-    if (createDoctorDto.adminId) {
-      const existingAdmin = await this.adminService.findById(
-        createDoctorDto.adminId,
-      );
-      if (!existingAdmin) {
-        throw new NotFoundException('Admin not found');
-      }
-    }
-
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(
-      createDoctorDto.contraseña,
-      saltRounds,
-    );
-
-    const doctor = this.doctorRepository.create({
-      nombre: createDoctorDto.nombre,
-      email: createDoctorDto.email,
-      contraseñaHash: hashedPassword,
-      admin: { id: createDoctorDto.adminId }, // Esto crea una referencia al Admin
+    // Verificar que no existe ya un perfil para esta cuenta
+    const existingPerfil = await this.perfilDoctorRepository.findOne({
+      where: { cuenta_id },
     });
 
-    const savedDoctor = await this.doctorRepository.save(doctor);
-
-    // Asegurarnos de que savedDoctor es un objeto Doctor, no un array
-    if (Array.isArray(savedDoctor)) {
-      throw new InternalServerErrorException(
-        'Unexpected array response from save operation',
+    if (existingPerfil) {
+      throw new ConflictException(
+        'Ya existe un perfil de doctor para esta cuenta',
       );
     }
 
-    console.log('Doctor guardado en base de datos:', savedDoctor.id);
-    return savedDoctor;
+    // Si se proporciona admin_id, verificar que el admin existe
+    if (admin_id) {
+      await this.perfilAdminService.findOne(admin_id);
+    }
+
+    const perfilDoctor = this.perfilDoctorRepository.create({
+      ...perfilData,
+      cuenta_id,
+      admin_id,
+    });
+
+    return await this.perfilDoctorRepository.save(perfilDoctor);
   }
 
-  async findByEmailWithPassword(email: string): Promise<Doctor | null> {
-    try {
-      const doctor = await this.doctorRepository.findOne({
-        where: { email },
-        select: ['id', 'nombre', 'email', 'contraseñaHash', 'admin'],
+  async findAll(): Promise<PerfilDoctor[]> {
+    return await this.perfilDoctorRepository.find({
+      relations: ['cuenta', 'admin', 'pacientes'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findOne(id: string): Promise<PerfilDoctor> {
+    const perfilDoctor = await this.perfilDoctorRepository.findOne({
+      where: { id },
+      relations: ['cuenta', 'admin', 'pacientes'],
+    });
+
+    if (!perfilDoctor) {
+      throw new NotFoundException('Perfil de doctor no encontrado');
+    }
+
+    return perfilDoctor;
+  }
+
+  async findByCuentaId(cuentaId: string): Promise<PerfilDoctor> {
+    const perfilDoctor = await this.perfilDoctorRepository.findOne({
+      where: { cuenta_id: cuentaId },
+      relations: ['cuenta', 'admin', 'pacientes'],
+    });
+
+    if (!perfilDoctor) {
+      throw new NotFoundException(
+        'Perfil de doctor no encontrado para esta cuenta',
+      );
+    }
+
+    return perfilDoctor;
+  }
+
+  async findByEmail(email: string): Promise<PerfilDoctor> {
+    const perfilDoctor = await this.perfilDoctorRepository
+      .createQueryBuilder('perfilDoctor')
+      .leftJoinAndSelect('perfilDoctor.cuenta', 'cuenta')
+      .leftJoinAndSelect('perfilDoctor.admin', 'admin')
+      .leftJoinAndSelect('perfilDoctor.pacientes', 'pacientes')
+      .where('cuenta.email = :email', { email })
+      .getOne();
+
+    if (!perfilDoctor) {
+      throw new NotFoundException(
+        'Perfil de doctor no encontrado para este email',
+      );
+    }
+
+    return perfilDoctor;
+  }
+
+  async findByCedula(cedula: string): Promise<PerfilDoctor> {
+    const perfilDoctor = await this.perfilDoctorRepository.findOne({
+      where: { cedula_profesional: cedula },
+      relations: ['cuenta', 'admin', 'pacientes'],
+    });
+
+    if (!perfilDoctor) {
+      throw new NotFoundException(
+        'Perfil de doctor no encontrado para esta cédula',
+      );
+    }
+
+    return perfilDoctor;
+  }
+
+  async update(
+    id: string,
+    updatePerfilDoctorDto: UpdatePerfilDoctorDto,
+  ): Promise<PerfilDoctor> {
+    const perfilDoctor = await this.findOne(id);
+
+    // Si se está actualizando la cédula, verificar que no esté duplicada
+    if (
+      updatePerfilDoctorDto.cedula_profesional &&
+      updatePerfilDoctorDto.cedula_profesional !==
+        perfilDoctor.cedula_profesional
+    ) {
+      const existingWithCedula = await this.perfilDoctorRepository.findOne({
+        where: { cedula_profesional: updatePerfilDoctorDto.cedula_profesional },
       });
-
-      if (!doctor || !doctor.contraseñaHash) {
-        return null;
-      }
-
-      return doctor;
-    } catch (error) {
-      console.error(`Error fetching doctor by email with password:`, error);
-      return null;
-    }
-  }
-
-  async findByEmail(email: string): Promise<Doctor | undefined> {
-    const doctor = await this.doctorRepository.findOne({
-      where: { email },
-    });
-    return doctor ?? undefined;
-  }
-
-  async findById(id: string): Promise<Doctor | undefined> {
-    const doctor = await this.doctorRepository.findOne({
-      where: { id },
-    });
-    return doctor ?? undefined;
-  }
-
-  async findAll(): Promise<Doctor[]> {
-    return await this.doctorRepository.find();
-  }
-
-  async update(id: string, updateData: Partial<Doctor>): Promise<Doctor> {
-    const existingDoctor = await this.doctorRepository.findOne({
-      where: { id },
-    });
-    if (!existingDoctor) {
-      throw new NotFoundException('Doctor not found');
-    }
-
-    if (updateData.email && updateData.email !== existingDoctor.email) {
-      const doctorWithEmail = await this.findByEmail(updateData.email);
-      if (doctorWithEmail && doctorWithEmail.id !== id) {
-        throw new ConflictException('Doctor with this email already exists');
+      if (existingWithCedula) {
+        throw new ConflictException(
+          'Ya existe un doctor con esta cédula profesional',
+        );
       }
     }
 
-    await this.doctorRepository.update(id, updateData);
-    const updatedDoctor = await this.doctorRepository.findOne({
-      where: { id },
+    Object.assign(perfilDoctor, updatePerfilDoctorDto);
+
+    return await this.perfilDoctorRepository.save(perfilDoctor);
+  }
+
+  async remove(id: string): Promise<void> {
+    const perfilDoctor = await this.findOne(id);
+    await this.perfilDoctorRepository.remove(perfilDoctor);
+  }
+
+  async getDoctorStats(): Promise<{
+    totalDoctores: number;
+    doctoresActivos: number;
+    especialidades: string[];
+    totalPacientes: number;
+  }> {
+    const totalDoctores = await this.perfilDoctorRepository.count();
+
+    const doctoresActivos = await this.perfilDoctorRepository
+      .createQueryBuilder('perfilDoctor')
+      .leftJoin('perfilDoctor.cuenta', 'cuenta')
+      .where('cuenta.activa = :activa', { activa: true })
+      .getCount();
+
+    const especialidades = await this.perfilDoctorRepository
+      .createQueryBuilder('perfilDoctor')
+      .select('DISTINCT perfilDoctor.especialidad', 'especialidad')
+      .where('perfilDoctor.especialidad IS NOT NULL')
+      .getRawMany();
+
+    // Contar el total de pacientes asignados a doctores
+    const totalPacientes = await this.perfilDoctorRepository
+      .createQueryBuilder('perfilDoctor')
+      .leftJoin('perfilDoctor.pacientes', 'pacientes')
+      .select('COUNT(DISTINCT pacientes.id)', 'count')
+      .getRawOne();
+
+    return {
+      totalDoctores,
+      doctoresActivos,
+      especialidades: especialidades.map((e) => e.especialidad).filter(Boolean),
+      totalPacientes: parseInt(totalPacientes.count) || 0,
+    };
+  }
+
+  async searchDoctores(query: string): Promise<PerfilDoctor[]> {
+    return await this.perfilDoctorRepository
+      .createQueryBuilder('perfilDoctor')
+      .leftJoinAndSelect('perfilDoctor.cuenta', 'cuenta')
+      .leftJoinAndSelect('perfilDoctor.admin', 'admin')
+      .leftJoinAndSelect('perfilDoctor.pacientes', 'pacientes')
+      .where('perfilDoctor.nombre ILIKE :query', { query: `%${query}%` })
+      .orWhere('perfilDoctor.especialidad ILIKE :query', {
+        query: `%${query}%`,
+      })
+      .orWhere('perfilDoctor.cedula_profesional ILIKE :query', {
+        query: `%${query}%`,
+      })
+      .orWhere('cuenta.email ILIKE :query', { query: `%${query}%` })
+      .getMany();
+  }
+
+  async getDoctoresPorEspecialidad(
+    especialidad: string,
+  ): Promise<PerfilDoctor[]> {
+    return await this.perfilDoctorRepository.find({
+      where: { especialidad },
+      relations: ['cuenta', 'admin', 'pacientes'],
+    });
+  }
+
+  async asignarPaciente(
+    doctorId: string,
+    usuarioId: string,
+  ): Promise<PerfilDoctor> {
+    // Esta función asumiría que tenemos una relación entre Doctor y Usuario (Paciente)
+    // En nuestro modelo, el PerfilUsuario tiene un doctor_id, por lo que para asignar un paciente
+    // deberíamos actualizar el doctor_id en el PerfilUsuario.
+    // Pero para mantener la consistencia, haremos que esta función actualice el PerfilUsuario.
+    // Sin embargo, en el servicio de PerfilDoctor, no tenemos acceso directo a PerfilUsuario.
+    // Por lo tanto, podríamos hacerlo en el controlador de PerfilUsuario o crear un método aquí que llame al servicio de PerfilUsuario.
+
+    // Por ahora, dejaremos este método como un placeholder y manejaremos la asignación en el controlador de PerfilUsuario.
+    // O podríamos inyectar el PerfilUsuarioService aquí, pero para no crear una dependencia circular, lo haremos en el controlador.
+
+    throw new Error(
+      'Método no implementado. La asignación de pacientes se maneja en el controlador de PerfilUsuario.',
+    );
+  }
+
+  async getPacientes(doctorId: string): Promise<PerfilDoctor> {
+    const doctor = await this.perfilDoctorRepository.findOne({
+      where: { id: doctorId },
+      relations: ['pacientes', 'pacientes.cuenta'],
     });
 
-    if (!updatedDoctor) {
-      throw new InternalServerErrorException('Doctor not found after update');
+    if (!doctor) {
+      throw new NotFoundException('Doctor no encontrado');
     }
 
-    return updatedDoctor;
-  }
-
-  async remove(id: string): Promise<{ affected: number }> {
-    const result = await this.doctorRepository.delete(id);
-
-    if (result.affected === 0) {
-      throw new NotFoundException('Doctor not found');
-    }
-
-    return { affected: result.affected ?? 0 };
-  }
-
-  async validatePassword(
-    plainPassword: string,
-    hashedPassword: string,
-  ): Promise<boolean> {
-    try {
-      return await bcrypt.compare(plainPassword, hashedPassword);
-    } catch (error) {
-      console.error('Error comparing passwords:', error);
-      return false;
-    }
-  }
-
-  // Método para obtener doctores por adminId
-  async findByAdminId(adminId: string): Promise<Doctor[]> {
-    return await this.doctorRepository.find({
-      where: { admin: { id: adminId } },
-    });
+    return doctor;
   }
 }

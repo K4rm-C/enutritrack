@@ -1,35 +1,38 @@
-// src/doctor/models/doctor.model.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Cuenta } from '../../cuentas/models/cuenta.model';
 
-@Entity('admins')
-export class Admin {
+@Entity('perfil_admin')
+export class PerfilAdmin {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ type: 'uuid' })
+  cuenta_id: string;
 
   @Column({ type: 'varchar', length: 100 })
   nombre: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  departamento: string;
 
-  @Column({ type: 'varchar', length: 255, name: 'contraseña_hash' })
-  contraseñaHash: string;
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono: string;
 
-  @Column({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    name: 'created_at',
-  })
-  createdAt: Date;
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at: Date;
 
-  @Column({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
-    name: 'updated_at',
-  })
-  updatedAt: Date;
+  @UpdateDateColumn({ type: 'timestamp' })
+  updated_at: Date;
 
-  @OneToMany(() => Admin, (d) => d.admins)
-  admins: Admin[];
+  @OneToOne(() => Cuenta)
+  @JoinColumn({ name: 'cuenta_id' })
+  cuenta: Cuenta;
 }

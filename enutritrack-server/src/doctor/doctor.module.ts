@@ -1,23 +1,21 @@
 import { Module } from '@nestjs/common';
-import { DoctorService } from './doctor.service';
-import { DoctorController } from './doctor.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Doctor } from './models/doctor.model';
-import { RedisModule } from '../redis/redis.module';
-import { CouchbaseModule } from '../couchbase/couchbase.module';
-import { AdminModule } from 'src/admin/admin.module';
-import { HttpModule } from '@nestjs/axios';
+import { PerfilDoctorService } from './doctor.service';
+import { PerfilDoctorController } from './doctor.controller';
+import { PerfilDoctor } from './models/doctor.model';
+import { CuentasModule } from '../cuentas/cuentas.module';
+import { PerfilAdminModule } from '../admin/admin.module';
+import { AuthModule } from '../auth/auth.module'; // Importar AuthModule
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Doctor]),
-    HttpModule,
-    RedisModule,
-    CouchbaseModule,
-    AdminModule,
+    TypeOrmModule.forFeature([PerfilDoctor]),
+    CuentasModule,
+    PerfilAdminModule,
+    AuthModule, // Para que AdminAuthGuard pueda usar AuthService
   ],
-  providers: [DoctorService],
-  controllers: [DoctorController],
-  exports: [DoctorService, TypeOrmModule],
+  controllers: [PerfilDoctorController],
+  providers: [PerfilDoctorService],
+  exports: [PerfilDoctorService],
 })
-export class DoctorModule {}
+export class PerfilDoctorModule {}

@@ -6,7 +6,7 @@ export const RedisProvider: Provider = {
   useFactory: () => {
     const client = redis.createClient({
       url: `redis://localhost:6379`,
-      password: process.env.REDIS_PASSWORD,
+      password: 'redispassword',
     });
 
     client.on('error', (err) => console.error('Redis Client Error', err));

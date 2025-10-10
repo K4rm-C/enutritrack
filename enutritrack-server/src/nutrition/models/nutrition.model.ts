@@ -1,50 +1,51 @@
-// src/nutrition/entities/food-record.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { User } from '../../users/models/user.model';
-
-export enum MealType {
-  BREAKFAST = 'desayuno',
-  LUNCH = 'almuerzo',
-  DINNER = 'cena',
-  SNACK = 'merienda',
-}
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
+import { PerfilUsuario } from '../../users/models/user.model';
+import { TipoComidaEnum } from '../../shared/enum';
+import { RegistroComidaItem } from '../../registro-comida-item/models/registro-comida-item.model';
 
 @Entity('registro_comida')
-export class FoodRecord {
+export class RegistroComida {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.foodRecords)
-  usuario: User;
+  @Column({ type: 'uuid' })
+  usuario_id: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', default: () => 'now()' })
   fecha: Date;
 
-  @Column({ type: 'enum', enum: MealType })
-  tipo_comida: MealType;
+  @Column({
+    type: 'enum',
+    enum: TipoComidaEnum,
+    enumName: 'tipo_comida_enum',
+  })
+  tipo_comida: TipoComidaEnum;
 
-  @Column({ type: 'text' })
-  descripcion: string;
+  @Column({ type: 'text', nullable: true })
+  notas: string;
 
-  @Column({ type: 'decimal', precision: 8, scale: 2 })
-  calorias: number;
-
-  @Column({ type: 'decimal', precision: 8, scale: 2, name: 'proteinas_g' })
-  proteinas: number;
-
-  @Column({ type: 'decimal', precision: 8, scale: 2, name: 'carbohidratos_g' })
-  carbohidratos: number;
-
-  @Column({ type: 'decimal', precision: 8, scale: 2, name: 'grasas_g' })
-  grasas: number;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 
-  @Column({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
-  })
+  @UpdateDateColumn({ type: 'timestamp' })
   updated_at: Date;
+
+  @ManyToOne(() => PerfilUsuario, (usuario) => usuario.id)
+  @JoinColumn({ name: 'usuario_id' })
+  usuario: PerfilUsuario;
+
+  @OneToMany(
+    () => RegistroComidaItem,
+    (registroComidaItem) => registroComidaItem.registroComida,
+  )
+  items: RegistroComidaItem[];
 }

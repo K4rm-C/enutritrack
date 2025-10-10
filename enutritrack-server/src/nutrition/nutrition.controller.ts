@@ -1,4 +1,3 @@
-// src/nutrition/nutrition.controller.ts
 import {
   Controller,
   Get,
@@ -7,106 +6,84 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
   Query,
-  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { NutritionService } from './nutrition.service';
-import express from 'express';
+import { RegistroComidaService } from './nutrition.service';
+import { CreateRegistroComidaDto } from './dto/create-food-record.dto';
+import { UpdateRegistroComidaDto } from './dto/update-food-record.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { TipoComidaEnum } from '../shared/enum';
 
-@Controller('nutrition')
-export class NutritionController {
-  constructor(private readonly nutritionService: NutritionService) {}
+@Controller('registro-comida')
+@UseGuards(JwtAuthGuard)
+export class RegistroComidaController {
+  constructor(private readonly registroComidaService: RegistroComidaService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Req() req: express.Request, @Body() createFoodRecordDto: any) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
-
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-    const dtoWithUserId = {
-      ...createFoodRecordDto,
-      usuarioId: userId,
-    };
-
-    return this.nutritionService.create(dtoWithUserId);
+  create(@Body() createRegistroComidaDto: CreateRegistroComidaDto) {
+    return this.registroComidaService.create(createRegistroComidaDto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('user/:userId')
-  async findAllByUser(@Req() req: express.Request) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
-    if (!authToken) {
-      throw new Error('Authentication token not found');
-    }
-
-    return this.nutritionService.findAllByUser(userId);
+  @Get()
+  findAll() {
+    return this.registroComidaService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('daily-summary/:userId')
-  async getDailySummary(
-    @Req() req: express.Request,
-    @Query('date') date: string,
+  @Get('usuario/:usuarioId')
+  findByUsuarioId(@Param('usuarioId') usuarioId: string) {
+    return this.registroComidaService.findByUsuarioId(usuarioId);
+  }
+
+  @Get('tipo-comida/:usuarioId/:tipoComida')
+  findByTipoComida(
+    @Param('usuarioId') usuarioId: string,
+    @Param('tipoComida') tipoComida: TipoComidaEnum,
   ) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-    const targetDate = date ? new Date(date) : new Date();
-    return this.nutritionService.getDailySummary(userId, targetDate);
+    return this.registroComidaService.findByTipoComida(usuarioId, tipoComida);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Get('rango/:usuarioId')
+  findByRangoFechas(
+    @Param('usuarioId') usuarioId: string,
+    @Query('fechaInicio') fechaInicio: string,
+    @Query('fechaFin') fechaFin: string,
+  ) {
+    return this.registroComidaService.findByRangoFechas(
+      usuarioId,
+      new Date(fechaInicio),
+      new Date(fechaFin),
+    );
+  }
+
+  @Get('resumen/:usuarioId')
+  calcularResumenNutricional(
+    @Param('usuarioId') usuarioId: string,
+    @Query('fechaInicio') fechaInicio: string,
+    @Query('fechaFin') fechaFin: string,
+  ) {
+    return this.registroComidaService.calcularResumenNutricional(
+      usuarioId,
+      new Date(fechaInicio),
+      new Date(fechaFin),
+    );
+  }
+
   @Get(':id')
-  async findOne(@Req() req: express.Request, @Param('id') id: string) {
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
-    if (!authToken) {
-      throw new Error('Authentication token not found');
-    }
-
-    return this.nutritionService.findOne(id);
+  findOne(@Param('id') id: string) {
+    return this.registroComidaService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  async update(
-    @Req() req: express.Request,
+  update(
     @Param('id') id: string,
-    @Body() updateFoodRecordDto: any,
+    @Body() updateRegistroComidaDto: UpdateRegistroComidaDto,
   ) {
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
-    if (!authToken) {
-      throw new Error('Authentication token not found');
-    }
-
-    return this.nutritionService.update(id, updateFoodRecordDto);
+    return this.registroComidaService.update(id, updateRegistroComidaDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async remove(@Req() req: express.Request, @Param('id') id: string) {
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
-    if (!authToken) {
-      throw new Error('Authentication token not found');
-    }
-
-    return this.nutritionService.remove(id);
+  remove(@Param('id') id: string) {
+    return this.registroComidaService.remove(id);
   }
 }
