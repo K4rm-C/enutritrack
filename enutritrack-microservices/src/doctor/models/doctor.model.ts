@@ -1,36 +1,52 @@
 // src/doctor/models/doctor.model.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+// Modelo que usa las tablas normalizadas del backend
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  OneToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from '../../users/models/user.model';
+import { Cuenta } from '../../shared/models/cuenta.model';
 
-@Entity('doctors')
+// Modelo para el perfil del doctor
+@Entity('perfil_doctor')
 export class Doctor {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'uuid' })
+  cuenta_id: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  admin_id: string;
+
   @Column({ type: 'varchar', length: 100 })
   nombre: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  especialidad: string;
 
-  @Column({ type: 'varchar', length: 255, name: 'contraseña_hash' })
-  contraseñaHash: string;
+  @Column({ type: 'varchar', length: 50, nullable: true, unique: true })
+  cedula_profesional: string;
 
-  @Column({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    name: 'created_at',
-  })
-  createdAt: Date;
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono: string;
 
-  @Column({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
-    name: 'updated_at',
-  })
-  updatedAt: Date;
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updated_at: Date;
+
+  @OneToOne(() => Cuenta)
+  @JoinColumn({ name: 'cuenta_id' })
+  cuenta: Cuenta;
 
   @OneToMany(() => User, (user) => user.doctor)
-  patients: User[];
+  pacientes: User[];
 }

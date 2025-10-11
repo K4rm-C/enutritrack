@@ -40,14 +40,14 @@ export class AuthService {
         return null;
       }
 
-      if (!admin.contraseñaHash) {
-        console.log(`❌ ${email} no tiene contraseña hasheada`);
+      if (!admin.passwordHash) {
+        console.log(`❌ ${email} no tiene password hasheado`);
         return null;
       }
 
       const isPasswordValid = await bcrypt.compare(
         password,
-        admin.contraseñaHash,
+        admin.passwordHash,
       );
 
       if (!isPasswordValid) {
@@ -57,7 +57,7 @@ export class AuthService {
 
       console.log(`✅ Admin validado exitosamente: ${email}`);
 
-      const { contraseñaHash, ...result } = admin;
+      const { passwordHash, ...result } = admin;
       return {
         ...result,
         userType: 'admin',
@@ -206,7 +206,7 @@ export class AuthService {
       }
 
       console.log(`✅ Admin obtenido del token: ${admin.email}`);
-      const { contraseñaHash, ...result } = admin;
+      const { passwordHash, ...result } = admin;
       return {
         ...result,
         userType: 'admin',

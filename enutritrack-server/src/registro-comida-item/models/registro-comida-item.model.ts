@@ -23,6 +23,23 @@ export class RegistroComidaItem {
   @Column({ type: 'numeric', precision: 8, scale: 2 })
   cantidad_gramos: number;
 
+  // Campos calculados - Snapshot de valores nutricionales al momento del registro
+  // Esto previene cambios historicos si se actualizan los datos del alimento
+  @Column({ type: 'numeric', precision: 8, scale: 2 })
+  calorias: number;
+
+  @Column({ type: 'numeric', precision: 8, scale: 2 })
+  proteinas_g: number;
+
+  @Column({ type: 'numeric', precision: 8, scale: 2 })
+  carbohidratos_g: number;
+
+  @Column({ type: 'numeric', precision: 8, scale: 2 })
+  grasas_g: number;
+
+  @Column({ type: 'numeric', precision: 8, scale: 2, nullable: true })
+  fibra_g: number;
+
   @Column({ type: 'text', nullable: true })
   notas: string;
 

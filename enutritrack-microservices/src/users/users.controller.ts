@@ -29,15 +29,21 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findById(id);
+  @Get('doctor/:doctorId')
+  findByDoctorId(@Param('doctorId') doctorId: string) {
+    return this.userService.getPatientsByDoctorId(doctorId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('email/:email')
   findByEmail(@Param('email') email: string) {
     return this.userService.findByEmail(email);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.userService.findById(id);
   }
 
   @UseGuards(JwtAuthGuard)

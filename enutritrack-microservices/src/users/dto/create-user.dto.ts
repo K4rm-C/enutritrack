@@ -17,13 +17,13 @@ export class CreateUserDto {
   email: string;
 
   @IsString()
-  contraseña: string;
+  password: string;
 
   @IsDateString()
   fecha_nacimiento: string;
 
   @IsEnum(Gender)
-  género: Gender;
+  genero: Gender;
 
   @IsNumber()
   @Type(() => Number)

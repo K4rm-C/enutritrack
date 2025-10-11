@@ -25,6 +25,15 @@ export function AuthProvider({ children }) {
   const login = async (credentials) => {
     try {
       const res = await loginRequest(credentials);
+      
+      // Guardar token en cookie del navegador
+      if (res.data.access_token) {
+        Cookies.set("access_token", res.data.access_token, { expires: 1/96 }); // 15 min
+      }
+      if (res.data.refresh_token) {
+        Cookies.set("refresh_token", res.data.refresh_token, { expires: 7 }); // 7 dias
+      }
+      
       setUser(res.data.user);
       setIsAuthenticated(true);
       return res.data;
@@ -38,9 +47,10 @@ export function AuthProvider({ children }) {
     try {
       await logoutRequest();
     } catch (error) {
-      console.log("Error al cerrar sesión en el servidor:", error);
+      console.log("Error al cerrar sesion en el servidor:", error);
     } finally {
       Cookies.remove("access_token");
+      Cookies.remove("refresh_token");
       setIsAuthenticated(false);
       setUser(null);
     }
@@ -48,7 +58,12 @@ export function AuthProvider({ children }) {
 
   const validateToken = async () => {
     try {
-      const res = await validateTokenRequest();
+      const token = Cookies.get("access_token");
+      if (!token) {
+        throw new Error("No token found");
+      }
+      
+      const res = await validateTokenRequest({ token });
       if (res.data.valid) {
         setUser(res.data.user);
         setIsAuthenticated(true);
@@ -57,6 +72,27 @@ export function AuthProvider({ children }) {
     } catch (error) {
       setUser(null);
       setIsAuthenticated(false);
+      Cookies.remove("access_token");
+      Cookies.remove("refresh_token");
+      throw error;
+    }
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      if (!user || !user.id) {
+        throw new Error("Usuario no autenticado");
+      }
+      
+      // Actualizar el perfil del usuario en el estado local
+      setUser((prevUser) => ({
+        ...prevUser,
+        ...profileData,
+      }));
+      
+      return { success: true, message: "Perfil actualizado correctamente" };
+    } catch (error) {
+      console.error("Error updating profile:", error);
       throw error;
     }
   };
@@ -65,8 +101,8 @@ export function AuthProvider({ children }) {
     const checkAuth = async () => {
       try {
         await validateToken();
-      } catch (error) {
-        console.log("No hay token válido");
+      } catch {
+        console.log("No hay token valido");
       } finally {
         setIsLoading(false);
       }
@@ -84,6 +120,7 @@ export function AuthProvider({ children }) {
         login,
         logout,
         validateToken,
+        updateProfile,
       }}
     >
       {children}

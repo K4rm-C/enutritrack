@@ -40,107 +40,174 @@
 - **Couchbase**: Documentos JSON y perfiles de usuarios
 - **Redis**: Caché, sesiones y colas de mensajes
 
-## 🚀 Comenzando
+## 🚀 Guía de Inicio Rápido
 
 ### Prerrequisitos
 
-- **Node.js** 18+ 
-- **NestJs**
-- 1. Instalar Node.js (si aún no lo tienes)
+- **Node.js** 18+ ([Descargar](https://nodejs.org/))
+- **Docker Desktop** ([Descargar](https://www.docker.com/products/docker-desktop))
+- **Git**
 
 Descarga la última versión LTS desde la página oficial:
 👉 https://nodejs.org/
 
 Verifica la instalación:
-
+Verifica las instalaciones:
+```bash
 node -v
 npm -v
-🔹 2. Instalar el CLI de NestJS
-
-  El CLI facilita la creación de proyectos y módulos:
-  npm install -g @nestjs/cli
-
-
-  Verifica:
+docker --version
+docker-compose --version
+```
+ Verifica:
   nest --version
+### Paso a Paso - Primera Configuración
 
 - **Docker** y **Docker Compose** - deberia dejar abierto DOCKER
 - **npm (para la instalacion de dependencias)**
 - **VSCODE**
 
-### Instalación
 
-1. **Clonar el repositorio**
+#### 1️⃣ Clonar el Repositorio
+
 ```bash
 git clone https://github.com/AlfredoPerez73/enutritrack.git
+cd enutritrack
 ```
 
-3. **Instalar dependencias**
+#### 2️⃣ Instalar Dependencias
+
+```powershell
+# Frontend
+cd enutritrack-client
+npm install
+
+# Backend
+cd ../enutritrack-server
+npm install
+
+# Microservicios
+cd ../enutritrack-microservices
+npm install
+
+# Volver a la raíz
+cd ..
+```
+
+#### 3️⃣ Levantar Bases de Datos con Docker
+
+```powershell
+cd enutritrack-server
+docker-compose up -d
+```
+
+Espera 30-60 segundos para que los servicios se inicialicen completamente.
+
+#### 4️⃣ Configurar Couchbase
+
+1. Abre `http://localhost:8091`
+2. Configura el cluster:
+   - Username: `Alfredo`
+   - Password: `alfredo124` (sin caracteres especiales)
+3. Crea el bucket:
+   - Name: `enutritrack`
+   - Bucket Type: Couchbase
+4. En Query Workbench, ejecuta:
+   ```sql
+   CREATE PRIMARY INDEX ON `enutritrack`;
+   ```
+
+#### 5️⃣ Inicializar Base de Datos PostgreSQL
+
+**Opción A: Con pgAdmin**
+1. Conecta a PostgreSQL (`localhost:5433`, user: `postgres`, password: `1234`)
+2. Abre y ejecuta `enutritrack-server/scripts/init-db.sql`
+
+**Opción B: Con psql (si está en PATH)**
 ```bash
-# Instalar para cada directorio:
-En la direccion: cd enutrireack-client, EJECUTAR ESTE COMANDO: npm install
-En la direccion: cd enutrireack-server, EJECUTAR ESTE COMANDO: npm install
-En la direccion: cd enutrireack-microservices, EJECUTAR ESTE COMANDO: npm install
+psql -U postgres -d enutritrack -p 5433 -f scripts/init-db.sql
 ```
 
-4. **Directorios del proyecto**
-```bash
-EN LA CONSOLA DE VSCODE O EL CMD IR A ESTOS DIRECTORIOS DENTRO DEL PROYECTO
-PRIMERA CONSOLA: cd enutritrack-client (FRONTEND)
-SEGUNDA CONSOLA: cd enutritrack-server (BACKEND)
-TERCERA CONSOLA: cd enutritrack-microservices (MICROSERVICIOS) MAIN
-CUARTA CONSOLA: cd enutritrack-microservices/src/auth
-QUINTA CONSOLA: cd enutritrack-microservices/src/users
-SEXTA CONSOLA: cd enutritrack-microservices/src/nutrition
-SEPTIMA CONSOLA: cd enutritrack-microservices/src/activity
-OCTAVA CONSOLA cd enutritrack-microservices/src/recommendation
-NOVENA CONSOLA cd enutritrack-microservices/src/medical-history
-DECIMA CONSOLA: cd enutritrack-microservices/src/doctor
+Esto crea:
+- Todas las tablas del sistema
+- El primer superusuario con credenciales:
+  - Email: `admin@enutritrack.com`
+  - Password: `admin123`
+
+#### 6️⃣ Aplicar Stored Procedures para Dashboard
+
+```powershell
+cd scripts
+.\apply-stored-procedures.ps1
 ```
 
-3. **Instalar dependencias**
-```bash
-# Instalar para cada directorio:
-cd enutrireack-client && npm install
-cd enutrireack-server && npm install
-cd enutrireack-microservices && npm install
+O manualmente con pgAdmin ejecutando `scripts/stored-procedures.sql`
+
+#### 7️⃣ Iniciar Servicios
+
+Abre **10 terminales** y ejecuta en cada una:
+
+```powershell
+# Terminal 1 - Backend
+cd enutritrack-server
+npm run start:dev
+
+# Terminal 2 - Gateway de Microservicios
+cd enutritrack-microservices
+npm run dev:gateway
+
+# Terminal 3 - Microservicio de Auth
+cd enutritrack-microservices
+npm run dev:auth
+
+# Terminal 4 - Microservicio de Usuarios
+cd enutritrack-microservices
+npm run dev:user
+
+# Terminal 5 - Microservicio de Doctores
+cd enutritrack-microservices
+npm run dev:doctor
+
+# Terminal 6 - Microservicio de Nutrición
+cd enutritrack-microservices
+npm run dev:nutrition
+
+# Terminal 7 - Microservicio de Actividad
+cd enutritrack-microservices
+npm run dev:activity
+
+# Terminal 8 - Microservicio de Recomendaciones
+cd enutritrack-microservices
+npm run dev:recommendation
+
+# Terminal 9 - Microservicio de Historial Médico
+cd enutritrack-microservices
+npm run dev:medical
+
+# Terminal 10 - Frontend
+cd enutritrack-client
+npm run dev
 ```
 
-2. **Iniciar contenedores Docker**
-```bash
-EN LA DIRECCION DEL BACKEND enutrireack-server EJECUTAR ESTE COMANDO: docker-compose up -d
-sirve para levantar los servicios definidos en mi archivo docker-compose.yml QUE ES EN EL DIRECTORIO PRINCIPAL DE enutritrack-server.
-  🔎 Detalles:
-      docker-compose → busca el archivo docker-compose.yml en el directorio actual.
-      up → crea y arranca los contenedores especificados (POSTGRES, REDIS Y COUCHBASE).
-      -d → los ejecuta en detached mode, es decir, no muestra los logs en la terminal.
+#### 8️⃣ Acceder a las Aplicaciones
 
--- LUEGO DIRIGIRSE AL PUERTO DE COUCHBASE: http://localhost:8091, y crear un usuario: alfredo y contraseña: alfredo124$$ DESPUES DEBE CREAR UN BUCKET: enutritrack. PARA CREARLO DEBE DIRIGIRSE A Buckets     presionar ADD BUCKET COLOCA EL NOMBRE YA MENCIONADO enutritrack, en el Bucket Type eliga Couchbase, PRESIONE Add Bucket, Y LISTO
--- EN POSTGRES LUEGO DE HABERLO INSTALADO DEBE CREAR UN USUARIO: postgres y CONTRASEÑA: 1234 LUEGO UNA NUEVA CONEXION EN EL PUERTO 5433, POR ULTIMO CREAR LA BASE DE DATOS: enutritrack (LAS TABLAS SE GENERAN SOLAS) YA QUE SE UTILIZA ORM: Un ORM (Mapeo Objeto-Relacional) crea las tablas de una base de datos automáticamente porque mapea los objetos del código a las tablas de la base de datos
--- HAY QUE TENER EN CUENTA QUE COMO EL ADMIN DE LA BASE DE DATOS ES QUIEN LE DA EL ALTA AL MEDICO/NUTRICIONISTA/ESPECIALISTA SE DEBE HACER UNA PETICION POST DESDE EL MICROSERVCIO DEL DOCTOR http://localhost:3007/doctors/
--- CUERPO DEL JSON PARA HACER LA PETICION
-{
-  "nombre": "doctor1",
-  "email": "doctor1@example.com",
-  "contraseña": "DoctorNU01"
-}
--- SE ACLARA QUE SE SABE QUE EL MICROSERVICIO DEBE RECIBIR XML.
--- ES IMPRENSINDIBLE QUE PARA LEVANTAR EL PROYECTO CREE UN USUARIO Y CONTRASEÑA EN COUCHBASE Y POSTGRES, PARA GESTIONAR LAS BASES DE DATOS DE POSTGRES PUEDE USAR DBeaver https://dbeaver.io/download/
-```
+**Dashboard de Superusuario (Backend)**
+- URL: `http://localhost:4000/auth/login`
+- Email: `admin@enutritrack.com`
+- Password: `admin123`
+- Funcionalidades:
+  - 📊 Gestión de pacientes (ver detalles completos, asignar doctor, activar/desactivar)
+  - 👨‍⚕️ Gestión de doctores (crear nuevos, ver pacientes asignados)
+  - 🔐 Gestión de administradores
+  - 📈 Estadísticas del sistema en tiempo real
+  - ⚡ Acceso directo a BD mediante stored procedures
 
-5. **Iniciar los microservicios**
-```bash
-# En terminales separadas
-PARA EL BACKEND: npm run start:dev Y MICROSERVICIOS (MAIN): npm run dev:gateway
-  -- MICROSERVICIO DE USUARIOS: npm run dev:user
-  -- MICROSERVICIO DE HISTORIAL MEDICO: npm run dev:medical
-  -- MICROSERVICIO DE NUTRICION: npm run dev:nutrition
-  -- MICROSERVICIO DE AUNTENTICACION: npm run dev:auth
-  -- MICROSERVICIO DE ACTIVIDAD: npm run dev:activity
-  -- MICROSERVICIO DE RECOMENDACIONES: npm run dev:recommendation
-  -- MICROSERVICIO DE DOCTOR: npm run dev:doctor
-PARA EL FRONTEND: npm run dev
-```
+**Aplicación de Doctores (Frontend)**
+- URL: `http://localhost:5174`
+- Credenciales: Crear doctor desde el dashboard de superusuario primero
+
+**Documentación API**
+- Swagger: `http://localhost:4000/api/docs`
 
 ## 📁 Estructura del Proyecto
 
@@ -200,22 +267,84 @@ enutritrack/enutritrack-server/src/
 | MICROSERVICIOS DOCTORES | 3007 | Microservicio para los doctores |
 | FRONTEND | 5174 | Gestión de usuarios por el doctor |
 
-### Problemas comunes
+## 🔧 Troubleshooting
 
-1. **Error de conexión a Couchbase**
-   ```bash
-   docker-compose restart couchbase
-   ```
+### Problemas Comunes y Soluciones
 
-2. **Error de conexión a Redis**
-   ```bash
-   docker-compose restart redis
-   ```
+#### Error de conexión a Couchbase
+```bash
+# Reinicia el contenedor
+docker-compose restart couchbase
 
-2. **Error de conexión a postgres**
-   ```bash
-   docker-compose restart postgres
+# Verifica que las credenciales sean correctas:
+# Username: Alfredo (con mayúscula inicial)
+# Password: alfredo124 (sin caracteres especiales)
+```
+
+#### Error de conexión a PostgreSQL
+```bash
+# Reinicia el contenedor
+docker-compose restart postgres
+
+# Verifica que el puerto 5433 esté disponible
+# Credenciales: postgres / 1234
+```
+
+#### Error de conexión a Redis
+```bash
+docker-compose restart redis
+```
+
+#### El backend no arranca - Error con stored procedures
+Asegúrate de haber ejecutado:
+```powershell
+cd enutritrack-server/scripts
+.\apply-stored-procedures.ps1
+```
+
+#### No puedo acceder al dashboard de superusuario
+1. Verifica que el backend esté corriendo en `http://localhost:4000`
+2. Verifica que el superusuario exista en la base de datos:
+   ```sql
+   SELECT * FROM cuentas WHERE email = 'admin@enutritrack.com';
    ```
+3. Si no existe, ejecuta `scripts/init-db.sql` o `scripts/create-admin.ps1`
+
+#### Error 401 en el frontend
+Borra las cookies y vuelve a hacer login. El token JWT puede haber expirado.
+
+### Crear Superusuario Adicional
+
+Si necesitas crear otro administrador manualmente:
+
+```powershell
+cd enutritrack-server/scripts
+.\create-admin.ps1
+```
+
+O ejecuta directamente en PostgreSQL:
+```sql
+-- 1. Crear cuenta
+INSERT INTO cuentas (email, password_hash, tipo_cuenta, activa)
+VALUES ('nuevoadmin@example.com', crypt('password123', gen_salt('bf')), 'admin', TRUE)
+RETURNING id;
+
+-- 2. Crear perfil de admin (usa el id de arriba)
+INSERT INTO perfil_admin (cuenta_id, nombre)
+VALUES ('uuid-de-cuenta-aqui', 'Nombre del Admin');
+```
+
+### Verificar Estado de Servicios
+
+```powershell
+# Ver contenedores Docker activos
+docker ps
+
+# Ver logs de un contenedor específico
+docker logs enutritrack_postgres
+docker logs enutritrack_couchbase
+docker logs enutritrack_redis
+```
    
 ## 🏆 Equipo
 

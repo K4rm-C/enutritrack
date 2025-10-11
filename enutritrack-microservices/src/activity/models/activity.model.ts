@@ -1,5 +1,5 @@
 // src/physical-activity/entities/physical-activity.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../../users/models/user.model';
 
 @Entity('actividad_fisica')
@@ -7,7 +7,11 @@ export class PhysicalActivity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.nivelActividad)
+  @Column({ type: 'uuid' })
+  usuario_id: string;
+
+  @ManyToOne(() => User, (user) => user.physicalActivities)
+  @JoinColumn({ name: 'usuario_id' })
   usuario: User;
 
   @Column({ type: 'varchar', length: 100 })
