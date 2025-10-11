@@ -11,7 +11,7 @@ export class CouchbaseService implements OnModuleInit, OnModuleDestroy {
     try {
       this.cluster = await couchbase.connect('couchbase://localhost', {
         username: 'Alfredo',
-        password: 'alfredo124$$',
+        password: 'alfredo124',
       });
 
       this.bucket = this.cluster.bucket('enutritrack');

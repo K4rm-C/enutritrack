@@ -39,7 +39,7 @@ Write-Host "Redis:         localhost:6379" -ForegroundColor Cyan
 
 Write-Host "`nCredenciales Couchbase:" -ForegroundColor White
 Write-Host "  Usuario: Alfredo" -ForegroundColor Gray
-Write-Host "  Password: alfredo124$$" -ForegroundColor Gray
+Write-Host "  Password: alfredo124" -ForegroundColor Gray
 
 Write-Host "`nPara ver logs en tiempo real: docker-compose logs -f" -ForegroundColor Gray
 Write-Host "Para detener: docker-compose down" -ForegroundColor Gray
