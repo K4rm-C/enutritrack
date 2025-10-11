@@ -4,7 +4,7 @@ Write-Host "=== INICIALIZACION MANUAL DE COUCHBASE ===" -ForegroundColor Green
 
 $CouchbaseUrl = "http://localhost:8091"
 $Username = "Alfredo"
-$Password = "alfredo124$$"
+$Password = "alfredo124"
 $BucketName = "enutritrack"
 
 # Función para esperar a que Couchbase esté listo
