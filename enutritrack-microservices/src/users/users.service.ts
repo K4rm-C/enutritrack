@@ -13,6 +13,7 @@ import { User } from './models/user.model';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Doctor } from '../doctor/models/doctor.model';
+import { Cuenta } from '../shared/models/cuenta.model';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
@@ -22,36 +23,34 @@ export class UserService {
     private userRepository: Repository<User>,
     @InjectRepository(Doctor)
     private doctorRepository: Repository<Doctor>,
+    @InjectRepository(Cuenta)
+    private cuentaRepository: Repository<Cuenta>,
     @Inject(CACHE_MANAGER) private cacheManager: cacheManager_1.Cache,
   ) {}
 
   // src/users/users.service.ts
-  async findByEmailWithPassword(email: string): Promise<User | null> {
+  async findByEmailWithPassword(email: string): Promise<any | null> {
     try {
       const user = await this.userRepository.findOne({
-        where: { email },
-        select: [
-          'id',
-          'nombre',
-          'email',
-          'contraseñaHash',
-          'fechaNacimiento',
-          'genero',
-          'altura',
-          'pesoActual',
-          'objetivoPeso',
-          'nivelActividad',
-          'doctorId',
-          'createdAt',
-          'updatedAt',
-        ],
+        where: { cuenta: { email } },
+        relations: ['cuenta', 'doctor'],
       });
 
-      if (!user || !user.contraseñaHash) {
+      if (!user || !user.cuenta || !user.cuenta.password_hash) {
         return null;
       }
 
-      return user;
+      return {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.cuenta.email,
+        passwordHash: user.cuenta.password_hash,
+        fechaNacimiento: user.fecha_nacimiento,
+        genero: user.genero,
+        altura: user.altura,
+        cuenta_id: user.cuenta_id,
+        doctor_id: user.doctor_id,
+      };
     } catch (error) {
       console.error(`Error fetching user by email with password:`, error);
       return null;
@@ -59,8 +58,12 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const existingUser = await this.findByEmail(createUserDto.email);
-    if (existingUser) {
+    // Verificar si ya existe una cuenta con este email
+    const existingCuenta = await this.cuentaRepository.findOne({
+      where: { email: createUserDto.email },
+    });
+
+    if (existingCuenta) {
       throw new ConflictException('User with this email already exists');
     }
 
@@ -76,33 +79,43 @@ export class UserService {
 
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(
-      createUserDto.contraseña,
+      createUserDto.password,
       saltRounds,
     );
-    console.log('Contraseña hasheada en microservicio');
+    console.log('Password hasheado en microservicio');
 
-    const user = this.userRepository.create({
-      nombre: createUserDto.nombre,
+    // 1. Crear cuenta primero
+    const cuenta = this.cuentaRepository.create({
       email: createUserDto.email,
-      contraseñaHash: hashedPassword,
-      fechaNacimiento: new Date(createUserDto.fecha_nacimiento),
-      genero: createUserDto.género,
+      password_hash: hashedPassword,
+      tipo_cuenta: 'usuario',
+      activa: true,
+    });
+    const savedCuenta = await this.cuentaRepository.save(cuenta);
+    console.log('Cuenta creada:', savedCuenta.id);
+
+    // 2. Crear perfil de usuario
+    const user = this.userRepository.create({
+      cuenta_id: savedCuenta.id,
+      nombre: createUserDto.nombre,
+      fecha_nacimiento: new Date(createUserDto.fecha_nacimiento),
+      genero: createUserDto.genero,
       altura: createUserDto.altura,
-      pesoActual: createUserDto.peso_actual,
-      objetivoPeso: createUserDto.objetivo_peso,
-      nivelActividad: createUserDto.nivel_actividad,
-      doctorId: createUserDto.doctorId, // Asignar el doctor al usuario
+      telefono: undefined,
+      doctor_id:
+        createUserDto.doctorId && createUserDto.doctorId.trim() !== ''
+          ? createUserDto.doctorId
+          : undefined,
     });
 
     const savedUser = await this.userRepository.save(user);
-    console.log('Usuario guardado en base de datos:', savedUser.id);
+    console.log('Perfil de usuario guardado en base de datos:', savedUser.id);
 
     try {
       const userForCache = { ...savedUser };
-      delete (userForCache as any).contraseñaHash;
       await this.cacheManager.set(`user:${savedUser.id}`, userForCache, 3600);
       await this.cacheManager.set(
-        `email:${savedUser.email}`,
+        `email:${createUserDto.email}`,
         savedUser.id,
         3600,
       );
@@ -110,25 +123,38 @@ export class UserService {
 
       await this.cacheManager.del('users:all');
 
-      // Si hay un doctor asignado, también actualizar el cache del doctor
-      if (savedUser.doctorId) {
-        await this.cacheManager.del(`doctor:${savedUser.doctorId}:patients`);
+      // Si hay un doctor asignado, tambien actualizar el cache del doctor
+      if (savedUser.doctor_id) {
+        await this.cacheManager.del(`doctor:${savedUser.doctor_id}:patients`);
       }
     } catch (error) {
       console.warn('Error saving to cache:', error);
     }
 
-    return savedUser;
+    // Cargar relaciones para devolver objeto completo
+    const userWithRelations = await this.userRepository.findOne({
+      where: { id: savedUser.id },
+      relations: ['cuenta', 'doctor'],
+    });
+
+    if (!userWithRelations) {
+      throw new InternalServerErrorException('User not found after creation');
+    }
+
+    return userWithRelations;
   }
 
-  // Método auxiliar para asignar un doctor a un usuario existente
+  // Metodo auxiliar para asignar un doctor a un usuario existente
   async assignDoctor(userId: string, doctorId: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['cuenta', 'doctor'],
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    user.doctorId = doctorId;
+    user.doctor_id = doctorId;
     const updatedUser = await this.userRepository.save(user);
 
     // Actualizar cache
@@ -160,14 +186,14 @@ export class UserService {
     }
 
     const patients = await this.userRepository.find({
-      where: { doctorId },
-      relations: ['doctor'], // Incluir la relación con el doctor si es necesario
+      where: { doctor_id: doctorId },
+      relations: ['cuenta', 'doctor'],
     });
 
     try {
       const patientsForCache = patients.map((user) => {
         const userCopy = { ...user };
-        delete (userCopy as any).contraseñaHash;
+        delete (userCopy as any).passwordHash;
         return userCopy;
       });
       await this.cacheManager.set(
@@ -193,21 +219,23 @@ export class UserService {
         );
         if (cachedUser) {
           console.log('Usuario encontrado en cache');
-          return cachedUser as User;
+          return cachedUser;
         }
       }
     } catch (error) {
       console.warn('Error accessing cache:', error);
     }
 
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({
+      where: { cuenta: { email } },
+      relations: ['cuenta', 'doctor'],
+    });
 
     if (user) {
       try {
         const userForCache = { ...user };
-        delete (userForCache as any).contraseñaHash;
         await this.cacheManager.set(`user:${user.id}`, userForCache, 3600);
-        await this.cacheManager.set(`email:${user.email}`, user.id, 3600);
+        await this.cacheManager.set(`email:${email}`, user.id, 3600);
       } catch (error) {
         console.warn('Error saving to cache:', error);
       }
@@ -221,19 +249,36 @@ export class UserService {
       const cachedUser = await this.cacheManager.get<User>(`user:${id}`);
       if (cachedUser) {
         console.log('Usuario encontrado en cache');
-        return cachedUser as User;
+        return cachedUser;
       }
     } catch (error) {
       console.warn('Error accessing cache:', error);
     }
 
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['cuenta', 'doctor', 'historialPeso', 'objetivos'],
+      order: {
+        historialPeso: {
+          fecha_registro: 'DESC',
+        },
+        objetivos: {
+          fecha_establecido: 'DESC',
+        },
+      },
+    });
+
     if (user) {
       try {
         const userForCache = { ...user };
-        delete (userForCache as any).contraseñaHash;
         await this.cacheManager.set(`user:${user.id}`, userForCache, 3600);
-        await this.cacheManager.set(`email:${user.email}`, user.id, 3600);
+        if (user.cuenta) {
+          await this.cacheManager.set(
+            `email:${user.cuenta.email}`,
+            user.id,
+            3600,
+          );
+        }
       } catch (error) {
         console.warn('Error saving to cache:', error);
       }
@@ -253,12 +298,14 @@ export class UserService {
       console.warn('Error accessing cache:', error);
     }
 
-    const users = await this.userRepository.find();
+    const users = await this.userRepository.find({
+      relations: ['cuenta', 'doctor'],
+    });
 
     try {
       const usersForCache = users.map((user) => {
         const userCopy = { ...user };
-        delete (userCopy as any).contraseñaHash;
+        delete (userCopy as any).passwordHash;
         return userCopy;
       });
       await this.cacheManager.set('users:all', usersForCache, 1800); // 30 min
@@ -270,49 +317,61 @@ export class UserService {
   }
 
   async update(id: string, updateData: UpdateUserDto): Promise<User> {
-    const existingUser = await this.userRepository.findOne({ where: { id } });
+    const existingUser = await this.userRepository.findOne({
+      where: { id },
+      relations: ['cuenta', 'doctor'],
+    });
     if (!existingUser) {
       throw new NotFoundException('User not found');
     }
 
-    if (updateData.email && updateData.email !== existingUser.email) {
+    // Actualizar email en cuenta si se proporciona
+    if (
+      updateData.email &&
+      existingUser.cuenta &&
+      updateData.email !== existingUser.cuenta.email
+    ) {
       const userWithEmail = await this.findByEmail(updateData.email);
       if (userWithEmail && userWithEmail.id !== id) {
         throw new ConflictException('User with this email already exists');
       }
+
+      // Actualizar email en tabla cuentas
+      await this.cuentaRepository.update(existingUser.cuenta_id, {
+        email: updateData.email,
+      });
     }
 
-    // Transformar los datos del DTO al formato de la entidad
+    // Actualizar password en cuenta si se proporciona
+    if (updateData.password && existingUser.cuenta) {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(updateData.password, saltRounds);
+      await this.cuentaRepository.update(existingUser.cuenta_id, {
+        password_hash: hashedPassword,
+      });
+    }
+
+    // Transformar los datos del DTO al formato de la entidad perfil_usuario
     const updateDataForEntity: Partial<User> = {};
 
     if (updateData.nombre) updateDataForEntity.nombre = updateData.nombre;
-    if (updateData.email) updateDataForEntity.email = updateData.email;
     if (updateData.fecha_nacimiento)
-      updateDataForEntity.fechaNacimiento = new Date(
+      updateDataForEntity.fecha_nacimiento = new Date(
         updateData.fecha_nacimiento,
       );
-    if (updateData.género) updateDataForEntity.genero = updateData.género;
+    if (updateData.genero) updateDataForEntity.genero = updateData.genero;
     if (updateData.altura) updateDataForEntity.altura = updateData.altura;
-    if (updateData.peso_actual)
-      updateDataForEntity.pesoActual = updateData.peso_actual;
-    if (updateData.objetivo_peso)
-      updateDataForEntity.objetivoPeso = updateData.objetivo_peso;
-    if (updateData.nivel_actividad)
-      updateDataForEntity.nivelActividad = updateData.nivel_actividad;
     if (updateData.doctorId !== undefined)
-      updateDataForEntity.doctorId = updateData.doctorId;
-
-    // Si se proporciona una nueva contraseña, hashearla
-    if (updateData.contraseña) {
-      const saltRounds = 10;
-      updateDataForEntity.contraseñaHash = await bcrypt.hash(
-        updateData.contraseña,
-        saltRounds,
-      );
-    }
+      updateDataForEntity.doctor_id =
+        updateData.doctorId && updateData.doctorId.trim() !== ''
+          ? updateData.doctorId
+          : undefined;
 
     await this.userRepository.update(id, updateDataForEntity);
-    const updatedUser = await this.userRepository.findOne({ where: { id } });
+    const updatedUser = await this.userRepository.findOne({
+      where: { id },
+      relations: ['cuenta', 'doctor'],
+    });
 
     if (!updatedUser) {
       throw new InternalServerErrorException('User not found after update');
@@ -320,19 +379,21 @@ export class UserService {
 
     try {
       await this.cacheManager.del(`user:${id}`);
-      await this.cacheManager.del(`email:${existingUser.email}`);
+      await this.cacheManager.del(`email:${existingUser.cuenta?.email}`);
       await this.cacheManager.del('users:all');
 
-      if (updateData.email && updateData.email !== existingUser.email) {
+      if (updateData.email && updateData.email !== existingUser.cuenta?.email) {
         await this.cacheManager.del(`email:${updateData.email}`);
       }
 
       // Limpiar cache de pacientes si se cambió el doctor
       if (
-        existingUser.doctorId &&
-        existingUser.doctorId !== updateData.doctorId
+        existingUser.doctor_id &&
+        existingUser.doctor_id !== updateData.doctorId
       ) {
-        await this.cacheManager.del(`doctor:${existingUser.doctorId}:patients`);
+        await this.cacheManager.del(
+          `doctor:${existingUser.doctor_id}:patients`,
+        );
       }
       if (updateData.doctorId) {
         await this.cacheManager.del(`doctor:${updateData.doctorId}:patients`);
@@ -358,11 +419,11 @@ export class UserService {
     try {
       await this.cacheManager.del(`user:${id}`);
       if (existingUser) {
-        await this.cacheManager.del(`email:${existingUser.email}`);
+        await this.cacheManager.del(`email:${existingUser.cuenta?.email}`);
         // Limpiar cache de pacientes del doctor si el usuario tenía uno asignado
-        if (existingUser.doctorId) {
+        if (existingUser.doctor_id) {
           await this.cacheManager.del(
-            `doctor:${existingUser.doctorId}:patients`,
+            `doctor:${existingUser.doctor_id}:patients`,
           );
         }
       }

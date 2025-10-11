@@ -115,7 +115,7 @@ export class AuthService {
 
   async getProfile(userId: string) {
     const user = await this.cuentasService.findOne(userId);
-    const { contraseña_hash, ...result } = user;
+    const { password_hash, ...result } = user;
     return result;
   }
 

@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -19,20 +20,22 @@ export class CuentasService {
   ) {}
 
   async create(createCuentaDto: CreateCuentaDto): Promise<Cuenta> {
-    const { email, tipo_cuenta, activa = true } = createCuentaDto;
+    const { email, tipo_cuenta, activa = true, password } = createCuentaDto;
 
     const existingCuenta = await this.cuentaRepository.findOne({
       where: { email },
     });
     if (existingCuenta) {
-      throw new ConflictException('El email ya está registrado');
+      throw new ConflictException('El email ya esta registrado');
     }
 
-    const contraseña_hash = await hash('password123', 10);
+    // Usar la contraseña proporcionada o usar default
+    const passwordToHash = password || 'password123';
+    const password_hash = await hash(passwordToHash, 10);
 
     const cuenta = this.cuentaRepository.create({
       email,
-      contraseña_hash,
+      password_hash,
       tipo_cuenta,
       activa,
     });
@@ -73,21 +76,29 @@ export class CuentasService {
 
   async validateUser(loginCuentaDto: LoginCuentaDto): Promise<Cuenta> {
     const { email, password } = loginCuentaDto;
-    const cuenta = await this.findByEmail(email);
+    
+    try {
+      const cuenta = await this.findByEmail(email);
+      
+      const isValidPassword = await compare(password, cuenta.password_hash);
+      if (!isValidPassword) {
+        throw new UnauthorizedException('Credenciales invalidas');
+      }
 
-    const isValidPassword = await compare(password, cuenta.contraseña_hash);
-    if (!isValidPassword) {
-      throw new NotFoundException('Credenciales inválidas');
+      if (!cuenta.activa) {
+        throw new UnauthorizedException('Cuenta inactiva');
+      }
+
+      // Actualizar ultimo acceso
+      cuenta.ultimo_acceso = new Date();
+      await this.cuentaRepository.save(cuenta);
+
+      return cuenta;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new UnauthorizedException('Credenciales invalidas');
+      }
+      throw error;
     }
-
-    if (!cuenta.activa) {
-      throw new NotFoundException('Cuenta inactiva');
-    }
-
-    // Actualizar último acceso
-    cuenta.ultimo_acceso = new Date();
-    await this.cuentaRepository.save(cuenta);
-
-    return cuenta;
   }
 }

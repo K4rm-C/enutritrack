@@ -3,6 +3,7 @@ import { createContext, useContext, useState } from "react";
 import {
   createUsersRequest,
   getUsersRequest,
+  getUsersByDoctorIdRequest,
   getUserByEmailRequest,
   getUserByIdRequest,
   updateUsersRequest,
@@ -26,6 +27,15 @@ export function UsersProvider({ children }) {
   const getUsers = async () => {
     try {
       const res = await getUsersRequest();
+      return res.data;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getUsersByDoctorId = async (doctorId) => {
+    try {
+      const res = await getUsersByDoctorIdRequest(doctorId);
       return res.data;
     } catch (error) {
       console.log(error);
@@ -98,6 +108,7 @@ export function UsersProvider({ children }) {
         updateUser,
         deleteUser,
         getUsers,
+        getUsersByDoctorId,
       }}
     >
       {children}

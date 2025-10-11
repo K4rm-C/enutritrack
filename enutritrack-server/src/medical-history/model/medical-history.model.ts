@@ -1,31 +1,14 @@
-// src/medical-history/entities/medical-history.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { User } from '../../users/models/user.model';
+// src/medical-history/entities/medical-history.model.ts
+// NOTA: Medical History se almacena en Couchbase (NoSQL), no en PostgreSQL
+// Las tablas 'alergias', 'condiciones_medicas' y 'medicamentos' en PostgreSQL
+// almacenan datos detallados, mientras que este servicio almacena un resumen rapido.
 
-@Entity('historial_medico')
-export class MedicalHistory {
-  @PrimaryGeneratedColumn('uuid')
+export interface MedicalHistory {
   id: string;
-
-  @ManyToOne(() => User, (user) => user.medicalHistories)
-  usuario: User;
-
-  @Column({ type: 'jsonb', nullable: true })
-  condiciones: string[];
-
-  @Column({ type: 'jsonb', nullable: true })
-  alergias: string[];
-
-  @Column({ type: 'jsonb', nullable: true })
-  medicamentos: string[];
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
-
-  @Column({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
-  })
-  updated_at: Date;
+  usuarioId: string;
+  condiciones?: string[];
+  alergias?: string[];
+  medicamentos?: string[];
+  created_at: string;
+  updated_at: string;
 }

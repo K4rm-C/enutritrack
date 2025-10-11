@@ -59,7 +59,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const { createUser, updateUser, getUsers, deleteUser } = useUsers();
+  const { createUser, updateUser, getUsers, getUsersByDoctorId, deleteUser } = useUsers();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -194,24 +194,30 @@ const UsersListDashboard = ({ darkMode = false }) => {
 
   useEffect(() => {
     const loadUsers = async () => {
+      if (!user?.id) {
+        console.log('No hay usuario logueado');
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const usersData = await getUsers();
-        console.log(usersData);
-        const doctorUsers = Array.isArray(usersData)
-          ? usersData.filter((u) => u.doctorId === user.userId)
-          : [];
-        setUsers(doctorUsers);
+        console.log('Cargando pacientes del doctor:', user.id);
+        
+        // Usar el endpoint optimizado para obtener solo los pacientes de este doctor
+        const usersData = await getUsersByDoctorId(user.id);
+        console.log('Pacientes recibidos del doctor:', usersData);
+        
+        setUsers(Array.isArray(usersData) ? usersData : []);
       } catch (error) {
-        console.error("Error cargando usuarios:", error);
-        toast.error("Error al cargar los usuarios");
+        console.error("Error cargando pacientes del doctor:", error);
+        toast.error("Error al cargar los pacientes");
         setUsers([]);
       } finally {
         setIsLoading(false);
       }
     };
     loadUsers();
-  }, [user?.userId]);
+  }, [user?.id]);
 
   // Filtrar y ordenar usuarios
   const filteredUsers = users.filter((user) => {

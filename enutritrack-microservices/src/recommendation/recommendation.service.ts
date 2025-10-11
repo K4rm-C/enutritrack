@@ -131,15 +131,27 @@ export class RecommendationService {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
+
+    // Obtener peso actual del ultimo registro en historial_peso
+    const pesoActual =
+      user.historialPeso && user.historialPeso.length > 0
+        ? user.historialPeso[0].peso
+        : null;
+
+    // Obtener objetivo y nivel de actividad del objetivo mas reciente vigente
+    const objetivoVigente = user.objetivos?.find((obj) => obj.vigente === true);
+    const objetivoPeso = objetivoVigente?.peso_objetivo || null;
+    const nivelActividad = objetivoVigente?.nivel_actividad || null;
+
     return {
       user: {
         nombre: user.nombre,
-        edad: this.calculateAge(user.fechaNacimiento),
+        edad: this.calculateAge(user.fecha_nacimiento),
         genero: user.genero,
         altura: user.altura,
-        pesoActual: user.pesoActual,
-        objetivoPeso: user.objetivoPeso,
-        nivelActividad: user.nivelActividad,
+        pesoActual: pesoActual,
+        objetivoPeso: objetivoPeso,
+        nivelActividad: nivelActividad,
       },
     };
   }

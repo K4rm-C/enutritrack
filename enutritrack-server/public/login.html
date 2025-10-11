@@ -108,14 +108,12 @@
     <div class="login-container">
       <div class="logo">
         <h1>Enuti<span>Track</span></h1>
-        <p>Sistema de Gestión Nutricional</p>
+        <p>Sistema de Gestion Nutricional</p>
       </div>
 
-      {{#if error}}
-      <div class="error">{{error}}</div>
-      {{/if}}
+      <div id="errorMessage" class="error" style="display: none;"></div>
 
-      <form method="POST" action="/auth/login">
+      <form id="loginForm">
         <div class="form-group">
           <label for="email">Email:</label>
           <input type="email" id="email" name="email" required />
@@ -126,7 +124,7 @@
           <input type="password" id="password" name="password" required />
         </div>
 
-        <button type="submit" class="btn">Iniciar Sesión</button>
+        <button type="submit" class="btn">Iniciar Sesion</button>
       </form>
 
       <div class="footer">
@@ -135,23 +133,50 @@
     </div>
 
     <script>
-      // Guardar tokens en localStorage cuando se reciben por cookies
-      document.addEventListener('DOMContentLoaded', function () {
-        const cookies = document.cookie.split(';');
-        let accessToken = '';
-        let refreshToken = '';
-
-        cookies.forEach((cookie) => {
-          const [name, value] = cookie.trim().split('=');
-          if (name === 'access_token') accessToken = value;
-          if (name === 'refresh_token') refreshToken = value;
-        });
-
-        if (accessToken) {
-          localStorage.setItem('access_token', accessToken);
-        }
-        if (refreshToken) {
-          localStorage.setItem('refresh_token', refreshToken);
+      document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const errorDiv = document.getElementById('errorMessage');
+        errorDiv.style.display = 'none';
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        try {
+          const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            // Guardar tokens en localStorage
+            if (data.access_token) {
+              localStorage.setItem('access_token', data.access_token);
+            }
+            if (data.refresh_token) {
+              localStorage.setItem('refresh_token', data.refresh_token);
+            }
+            
+            // Guardar tambien en cookies
+            document.cookie = `access_token=${data.access_token}; path=/; max-age=900`; // 15 min
+            document.cookie = `refresh_token=${data.refresh_token}; path=/; max-age=604800`; // 7 dias
+            
+            // Redirigir al dashboard del superadmin
+            window.location.href = '/auth/dashboard';
+          } else {
+            // Mostrar error
+            errorDiv.textContent = data.message || 'Credenciales invalidas';
+            errorDiv.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          errorDiv.textContent = 'Error al conectar con el servidor';
+          errorDiv.style.display = 'block';
         }
       });
     </script>

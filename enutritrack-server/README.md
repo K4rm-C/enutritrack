@@ -23,13 +23,146 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+EnutriTrack Backend Server - Sistema de gestión nutricional con dashboard de superusuario que accede directamente a la base de datos mediante stored procedures.
+
+## ✅ Checklist de Setup Inicial
+
+Para nuevos desarrolladores que clonan el repositorio:
+
+- [ ] Instalar Node.js 18+ y Docker Desktop
+- [ ] Clonar repositorio y ejecutar `npm install`
+- [ ] Iniciar Docker: `docker-compose up -d`
+- [ ] Configurar Couchbase en `http://localhost:8091` (Usuario: `Alfredo`, Password: `alfredo124`)
+- [ ] Ejecutar `scripts/init-db.sql` en PostgreSQL para crear tablas y superusuario
+- [ ] Ejecutar `scripts/apply-stored-procedures.ps1` para habilitar el dashboard
+- [ ] Iniciar backend: `npm run start:dev`
+- [ ] Acceder al dashboard: `http://localhost:4000/auth/login` (admin@enutritrack.com / admin123)
+
+Ver instrucciones detalladas abajo ⬇️
 
 ## Project setup
 
 ```bash
 $ npm install
 ```
+
+## Initial Setup - Configuración Completa
+
+### 1. Levantar Servicios de Base de Datos
+
+```powershell
+# Inicia PostgreSQL, Couchbase y Redis con Docker Compose
+docker-compose up -d
+```
+
+Espera unos 30-60 segundos para que los servicios estén completamente iniciados.
+
+### 2. Inicializar la Base de Datos
+
+El archivo `scripts/init-db.sql` contiene la estructura inicial de la base de datos y crea el primer superusuario.
+
+**Opción A: Ejecución manual con pgAdmin**
+1. Abre pgAdmin y conecta a `localhost:5433`
+2. Abre y ejecuta `scripts/init-db.sql` en la base de datos `enutritrack`
+
+**Opción B: Usando psql**
+```bash
+psql -U postgres -d enutritrack -p 5433 -f scripts/init-db.sql
+```
+
+### 3. Configurar Couchbase Manualmente
+
+Abre `http://localhost:8091` y configura:
+- Username: `Alfredo`
+- Password: `alfredo124`
+- Bucket: `enutritrack`
+- Crear Primary Index en Query Workbench:
+  ```sql
+  CREATE PRIMARY INDEX ON `enutritrack`;
+  ```
+
+### 4. Crear Superusuario (Si no usaste init-db.sql)
+
+Si prefieres crear el admin vía API en lugar de SQL directo:
+
+```powershell
+cd scripts
+.\create-admin.ps1
+```
+
+**Credenciales por defecto del superusuario:**
+- Email: `admin@enutritrack.com`
+- Password: `admin123`
+
+### 5. Aplicar Stored Procedures para el Dashboard
+
+El dashboard de superusuario utiliza **stored procedures** para acceso directo a la base de datos (sin pasar por microservicios). Estos deben aplicarse después de inicializar la base de datos.
+
+### Opción 1: Script Automático (PowerShell)
+
+```powershell
+cd scripts
+.\apply-stored-procedures.ps1
+```
+
+### Opción 2: Manual con psql
+
+```bash
+psql -U postgres -d enutritrack -p 5433 -f scripts/stored-procedures.sql
+```
+
+### Opción 3: Desde pgAdmin
+
+1. Abre pgAdmin y conecta a la base de datos `enutritrack`
+2. Abre el archivo `scripts/stored-procedures.sql`
+3. Ejecuta el script completo
+
+### Stored Procedures Incluidos
+
+**Dashboard & Estadísticas:**
+- `sp_get_dashboard_stats()` - Estadísticas generales del sistema
+- `sp_get_patients_by_gender()` - Distribución de pacientes por género
+- `sp_get_recent_registrations()` - Últimos registros de pacientes y doctores
+
+**Gestión de Pacientes:**
+- `sp_get_all_patients()` - Listado completo de pacientes
+- `sp_get_patient_details(patient_id)` - Detalles completos de un paciente
+- `sp_update_patient_doctor(patient_id, doctor_id)` - Asignar/cambiar doctor
+- `sp_toggle_patient_status(patient_id)` - Activar/desactivar cuenta de paciente
+
+**Gestión de Doctores:**
+- `sp_get_all_doctors()` - Listado completo de doctores con estadísticas
+- `sp_get_doctor_patients(doctor_id)` - Pacientes de un doctor específico
+- `sp_create_doctor(...)` - Crear nuevo doctor
+
+**Gestión de Administradores:**
+- `sp_get_all_admins()` - Listado de administradores
+- `sp_get_admin_details(email)` - Detalles de un administrador
+
+### 6. Iniciar el Backend
+
+```bash
+# watch mode (recomendado para desarrollo)
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
+```
+
+### 7. Acceder al Dashboard de Superusuario
+
+Una vez que el backend esté corriendo:
+
+1. **URL de Login**: `http://localhost:4000/auth/login`
+2. **Credenciales**: Usa las del superusuario creado
+3. **Dashboard**: Después del login, te redirige automáticamente a `http://localhost:4000/auth/dashboard`
+
+**Funcionalidades del Dashboard:**
+- 📊 **Dashboard**: Estadísticas generales y registros recientes
+- 👥 **Pacientes**: Gestión completa de pacientes (ver detalles, asignar doctor, activar/desactivar)
+- 👨‍⚕️ **Doctores**: Gestión de doctores (crear nuevos, ver pacientes asignados)
+- 🔐 **Administradores**: Ver información de administradores del sistema
+- 📚 **Documentación API**: Enlace directo a Swagger (`/api/docs`)
 
 ## Compile and run the project
 

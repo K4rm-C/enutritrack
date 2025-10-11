@@ -3,9 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RegistroComidaItemsService } from './registro-comida-item.service';
 import { RegistroComidaItemsController } from './registro-comida-item.controller';
 import { RegistroComidaItem } from './models/registro-comida-item.model';
+import { Alimento } from '../alimento/models/alimento.model';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RegistroComidaItem])],
+  imports: [TypeOrmModule.forFeature([RegistroComidaItem, Alimento])],
   controllers: [RegistroComidaItemsController],
   providers: [RegistroComidaItemsService],
   exports: [RegistroComidaItemsService],

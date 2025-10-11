@@ -1,10 +1,9 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - EnutriTrack CMS</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Superusuario | EnutriTrack</title>
     <style>
       * {
         margin: 0;
@@ -13,347 +12,1358 @@
       }
 
       body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #f5f6fa;
-      }
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
 
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
       .sidebar {
+            width: 260px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            padding: 2rem 0;
         position: fixed;
-        left: 0;
-        top: 0;
         height: 100vh;
-        width: 250px;
-        background: #2c3e50;
-        color: white;
-        padding: 1rem 0;
-      }
+            overflow-y: auto;
+        }
 
-      .logo {
-        text-align: center;
-        padding: 1rem;
-        border-bottom: 1px solid #34495e;
-        margin-bottom: 1rem;
-      }
+        .sidebar-header {
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
 
-      .logo h2 {
-        color: #3498db;
-      }
+        .sidebar-header h2 {
+            color: #667eea;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
 
-      .nav-links {
+        .sidebar-header p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .nav-menu {
         list-style: none;
-      }
+            padding: 1rem 0;
+        }
 
-      .nav-links li {
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
         padding: 0.75rem 1.5rem;
-        border-left: 3px solid transparent;
+            color: #4b5563;
+            text-decoration: none;
         transition: all 0.3s;
-      }
+            cursor: pointer;
+        }
 
-      .nav-links li:hover {
-        background: #34495e;
-        border-left-color: #3498db;
-      }
+        .nav-link:hover {
+            background: #f3f4f6;
+            color: #667eea;
+        }
 
-      .nav-links a {
-        color: #bdc3c7;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-right: 4px solid #764ba2;
+        }
 
-      .nav-links a.active {
-        color: #3498db;
-      }
+        .nav-link svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.75rem;
+        }
 
+        /* Main Content */
       .main-content {
-        margin-left: 250px;
-        padding: 1rem;
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
       }
 
-      .header {
+        .content-header {
         background: white;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-bottom: 1rem;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
         display: flex;
-        justify-content: between;
+            justify-content: space-between;
         align-items: center;
       }
 
-      .user-info {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-      }
+        .content-header h1 {
+            color: #1f2937;
+            font-size: 1.875rem;
+        }
 
-      .logout-btn {
-        background: #e74c3c;
-        color: white;
+        .btn {
+            padding: 0.625rem 1.25rem;
         border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
+            border-radius: 8px;
+            font-weight: 500;
         cursor: pointer;
-      }
+            transition: all 0.3s;
+            font-size: 0.875rem;
+        }
 
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.875rem;
+            font-size: 0.8125rem;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        /* Stats Cards */
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
         margin-bottom: 2rem;
       }
 
       .stat-card {
         background: white;
         padding: 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        text-align: center;
-      }
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
 
-      .stat-card h3 {
-        color: #7f8c8d;
-        font-size: 0.9rem;
-        margin-bottom: 0.5rem;
-      }
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
 
-      .stat-number {
+        .stat-card-title {
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .stat-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-card-value {
         font-size: 2rem;
-        font-weight: bold;
-        color: #2c3e50;
-      }
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
 
-      .stat-card.primary {
-        border-left: 4px solid #3498db;
-      }
-      .stat-card.success {
-        border-left: 4px solid #27ae60;
-      }
-      .stat-card.warning {
-        border-left: 4px solid #f39c12;
-      }
-      .stat-card.danger {
-        border-left: 4px solid #e74c3c;
-      }
+        .stat-card-change {
+            font-size: 0.875rem;
+            color: #10b981;
+        }
 
-      .charts-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-bottom: 2rem;
-      }
+        /* Table */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
 
-      .chart-container {
+        .table-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.625rem 2.5rem 0.625rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+
+        .search-box svg {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: #9ca3af;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f9fafb;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            color: #4b5563;
+            font-size: 0.875rem;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
         background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
         padding: 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      }
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-      .recent-activity {
-        background: white;
+        .modal-header h3 {
+            font-size: 1.25rem;
+            color: #1f2937;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #9ca3af;
+        }
+
+        .modal-body {
         padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid #d1d5db;
         border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      }
+            font-size: 0.875rem;
+        }
 
-      .activity-list {
-        list-style: none;
-      }
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
 
-      .activity-list li {
-        padding: 0.75rem;
-        border-bottom: 1px solid #ecf0f1;
-        display: flex;
-        align-items: center;
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
       }
 
-      .activity-list li:last-child {
-        border-bottom: none;
-      }
+        .detail-item {
+            padding: 0.75rem;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
 
-      .activity-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #3498db;
-        color: white;
+        .detail-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+            font-size: 0.875rem;
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            opacity: 0.5;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .action-buttons {
         display: flex;
-        align-items: center;
-        justify-content: center;
+            gap: 0.5rem;
       }
     </style>
   </head>
   <body>
-    <div class="sidebar">
-      <div class="logo">
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
         <h2>EnutriTrack</h2>
-        <p>Panel de Control</p>
+                <p>Panel de Administración</p>
       </div>
-
-      <ul class="nav-links">
-        <li><a href="/dashboard" class="active">📊 Dashboard</a></li>
-        <li><a href="/perfil-usuario/vista">👥 Pacientes</a></li>
-        <li><a href="/perfil-doctor/vista">👨‍⚕️ Doctores</a></li>
-        <li><a href="/perfil-admin/vista">⚙️ Administradores</a></li>
-        <li><a href="/alimentos/vista">🍎 Alimentos</a></li>
-        <li><a href="/health">❤️ Health Check</a></li>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link active" data-view="dashboard">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-view="patients">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        Pacientes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-view="doctors">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        Doctores
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-view="admins">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Administradores
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/api/docs" target="_blank">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Documentación API
+                    </a>
+                </li>
       </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1 id="page-title">Dashboard</h1>
+                <button class="btn logout-btn" onclick="logout()">Cerrar Sesión</button>
     </div>
 
-    <div class="main-content">
-      <div class="header">
-        <h1>Dashboard</h1>
-        <div class="user-info">
-          <span>Bienvenido, Admin</span>
-          <form action="/auth/logout" method="POST" style="display: inline">
-            <button type="submit" class="logout-btn">Cerrar Sesión</button>
-          </form>
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title">Total Administradores</span>
+                            <div class="stat-card-icon" style="background: #dbeafe; color: #1e40af;">
+                                <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                                </svg>
         </div>
+                        </div>
+                        <div class="stat-card-value" id="stat-admins">0</div>
+                        <div class="stat-card-change">Activos en el sistema</div>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card primary">
-          <h3>Total Pacientes</h3>
-          <div class="stat-number" id="totalPacientes">0</div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title">Total Doctores</span>
+                            <div class="stat-card-icon" style="background: #dcfce7; color: #166534;">
+                                <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                                </svg>
         </div>
-        <div class="stat-card success">
-          <h3>Doctores Activos</h3>
-          <div class="stat-number" id="totalDoctores">0</div>
         </div>
-        <div class="stat-card warning">
-          <h3>Registros Hoy</h3>
-          <div class="stat-number" id="registrosHoy">0</div>
+                        <div class="stat-card-value" id="stat-doctors">0</div>
+                        <div class="stat-card-change" id="stat-doctors-growth">+0 esta semana</div>
         </div>
-        <div class="stat-card danger">
-          <h3>Alertas</h3>
-          <div class="stat-number" id="totalAlertas">0</div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title">Total Pacientes</span>
+                            <div class="stat-card-icon" style="background: #fef3c7; color: #92400e;">
+                                <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                                </svg>
         </div>
+                        </div>
+                        <div class="stat-card-value" id="stat-patients">0</div>
+                        <div class="stat-card-change" id="stat-patients-growth">+0 esta semana</div>
       </div>
 
-      <div class="charts-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title">Pacientes Activos</span>
+                            <div class="stat-card-icon" style="background: #f3e8ff; color: #6b21a8;">
+                                <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                </svg>
+        </div>
+                        </div>
+                        <div class="stat-card-value" id="stat-active-patients">0</div>
+                        <div class="stat-card-change">Con cuentas activas</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Registros Recientes</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Fecha de Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-registrations">
+                            <tr>
+                                <td colspan="4" class="loading">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Patients View -->
+            <div id="patients-view" class="view">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="search-box">
+                            <input type="text" id="patient-search" placeholder="Buscar paciente...">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Género</th>
+                                <th>Edad</th>
+                                <th>Doctor Asignado</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patients-table">
+                            <tr>
+                                <td colspan="7" class="loading">Cargando pacientes...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Doctors View -->
+            <div id="doctors-view" class="view">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="search-box">
+                            <input type="text" id="doctor-search" placeholder="Buscar doctor...">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <button class="btn btn-primary" onclick="showCreateDoctorModal()">
+                            <span>+ Nuevo Doctor</span>
+                        </button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Especialidad</th>
+                                <th>Cédula</th>
+                                <th>Pacientes</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doctors-table">
+                            <tr>
+                                <td colspan="7" class="loading">Cargando doctores...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admins View -->
+            <div id="admins-view" class="view">
         <div class="chart-container">
-          <h3>Pacientes por Género</h3>
-          <canvas id="genderChart"></canvas>
-        </div>
-        <div class="chart-container">
-          <h3>Actividad por Mes</h3>
-          <canvas id="activityChart"></canvas>
+                    <h3 style="margin-bottom: 1.5rem;">Mi Perfil de Administrador</h3>
+                    <div id="current-admin-info" class="detail-grid">
+                        <div class="loading">Cargando información...</div>
         </div>
       </div>
 
-      <div class="recent-activity">
-        <h3>Actividad Reciente</h3>
-        <ul class="activity-list" id="recentActivity">
-          <!-- La actividad se cargará con JavaScript -->
-        </ul>
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Otros Administradores</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Doctores Creados</th>
+                                <th>Estado</th>
+                                <th>Fecha de Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admins-table">
+                            <tr>
+                                <td colspan="5" class="loading">Cargando administradores...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Patient Details Modal -->
+    <div id="patient-details-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detalles del Paciente</h3>
+                <button class="modal-close" onclick="closeModal('patient-details-modal')">&times;</button>
+            </div>
+            <div class="modal-body" id="patient-details-content">
+                <div class="loading">Cargando...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('patient-details-modal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Patient Doctor Modal -->
+    <div id="edit-patient-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Asignar Doctor</h3>
+                <button class="modal-close" onclick="closeModal('edit-patient-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Paciente</label>
+                    <input type="text" class="form-control" id="edit-patient-name" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Doctor Asignado</label>
+                    <select class="form-control" id="edit-patient-doctor">
+                        <option value="">Sin doctor asignado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('edit-patient-modal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="savePatientDoctor()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Doctor Modal -->
+    <div id="create-doctor-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Crear Nuevo Doctor</h3>
+                <button class="modal-close" onclick="closeModal('create-doctor-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Nombre Completo *</label>
+                    <input type="text" class="form-control" id="new-doctor-name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input type="email" class="form-control" id="new-doctor-email" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contraseña *</label>
+                    <input type="password" class="form-control" id="new-doctor-password" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Especialidad</label>
+                    <input type="text" class="form-control" id="new-doctor-specialty">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cédula Profesional</label>
+                    <input type="text" class="form-control" id="new-doctor-cedula">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Teléfono</label>
+                    <input type="tel" class="form-control" id="new-doctor-phone">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('create-doctor-modal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="createDoctor()">Crear Doctor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doctor Patients Modal -->
+    <div id="doctor-patients-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="doctor-patients-title">Pacientes del Doctor</h3>
+                <button class="modal-close" onclick="closeModal('doctor-patients-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Género</th>
+                            <th>Edad</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doctor-patients-table">
+                        <tr>
+                            <td colspan="5" class="loading">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('doctor-patients-modal')">Cerrar</button>
+            </div>
       </div>
     </div>
 
     <script>
-      // Cargar estadísticas del dashboard
-      async function loadDashboardStats() {
-        try {
-          const response = await fetch('/dashboard/stats');
-          const data = await response.json();
+        // State management
+        let currentView = 'dashboard';
+        let currentPatientId = null;
+        let currentDoctorId = null;
+        let allDoctors = [];
+        let allPatients = [];
+        let currentAdminId = null;
 
-          document.getElementById('totalPacientes').textContent =
-            data.resumen.totalUsuarios;
-          document.getElementById('totalDoctores').textContent =
-            data.resumen.totalDoctores;
-          document.getElementById('registrosHoy').textContent =
-            data.crecimiento.nuevosUsuarios;
-          document.getElementById('totalAlertas').textContent =
-            data.resumen.totalUsuarios - data.resumen.usuariosActivos;
-        } catch (error) {
-          console.error('Error cargando estadísticas:', error);
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupNavigation();
+            loadDashboard();
+        });
+
+        // Navigation
+        function setupNavigation() {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    if (link.getAttribute('href')) return; // Skip API docs link
+                    
+                    e.preventDefault();
+                    const view = link.dataset.view;
+                    if (view) {
+                        switchView(view);
+                        
+                        // Update active state
+                        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // Search functionality
+            document.getElementById('patient-search')?.addEventListener('input', (e) => {
+                filterPatients(e.target.value);
+            });
+
+            document.getElementById('doctor-search')?.addEventListener('input', (e) => {
+                filterDoctors(e.target.value);
+            });
         }
-      }
 
-      // Gráfica de género
-      const genderCtx = document.getElementById('genderChart').getContext('2d');
-      const genderChart = new Chart(genderCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Masculino', 'Femenino', 'Otro'],
-          datasets: [
-            {
-              data: [45, 52, 3],
-              backgroundColor: ['#3498db', '#e74c3c', '#f39c12'],
-            },
-          ],
-        },
-      });
+        function switchView(view) {
+            currentView = view;
+            
+            // Hide all views
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            
+            // Show selected view
+            document.getElementById(`${view}-view`).classList.add('active');
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'patients': 'Gestión de Pacientes',
+                'doctors': 'Gestión de Doctores',
+                'admins': 'Administradores'
+            };
+            document.getElementById('page-title').textContent = titles[view] || 'Dashboard';
+            
+            // Load data for view
+            if (view === 'patients') loadPatients();
+            if (view === 'doctors') loadDoctors();
+            if (view === 'admins') loadAdmins();
+        }
 
-      // Gráfica de actividad
-      const activityCtx = document
-        .getElementById('activityChart')
-        .getContext('2d');
-      const activityChart = new Chart(activityCtx, {
-        type: 'line',
-        data: {
-          labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-          datasets: [
-            {
-              label: 'Registros de Comida',
-              data: [65, 59, 80, 81, 56, 72],
-              borderColor: '#3498db',
-              tension: 0.1,
-            },
-            {
-              label: 'Actividad Física',
-              data: [28, 48, 40, 45, 36, 60],
-              borderColor: '#e74c3c',
-              tension: 0.1,
-            },
-          ],
-        },
-      });
+        // API calls with authentication
+        async function apiCall(endpoint, options = {}) {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/auth/login';
+                return;
+            }
 
-      // Cargar actividad reciente
-      async function loadRecentActivity() {
-        try {
-          const response = await fetch('/dashboard/registros-recientes');
-          const data = await response.json();
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
 
-          const activityList = document.getElementById('recentActivity');
-          activityList.innerHTML = '';
+            try {
+                const response = await fetch(endpoint, { ...defaultOptions, ...options });
+                
+                if (response.status === 401) {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    window.location.href = '/auth/login';
+                    return null;
+                }
 
-          // Combinar y ordenar actividades recientes
-          const activities = [
-            ...data.ultimosUsuarios.map((u) => ({
-              type: 'user',
-              text: `Nuevo paciente: ${u.nombre}`,
-              time: 'Hace 2 horas',
-            })),
-            ...data.ultimosDoctores.map((d) => ({
-              type: 'doctor',
-              text: `Nuevo doctor: ${d.nombre}`,
-              time: 'Hace 4 horas',
-            })),
-          ].slice(0, 5);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error en la solicitud');
+                }
 
-          activities.forEach((activity) => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                        <div class="activity-icon">${activity.type === 'user' ? '👤' : '👨‍⚕️'}</div>
-                        <div>
-                            <div>${activity.text}</div>
-                            <small>${activity.time}</small>
+                return await response.json();
+        } catch (error) {
+                console.error('API Error:', error);
+                alert(error.message || 'Error al conectar con el servidor');
+                throw error;
+            }
+        }
+
+        // Dashboard
+        async function loadDashboard() {
+            try {
+                const stats = await apiCall('/dashboard/stats');
+                const registrations = await apiCall('/dashboard/registros-recientes');
+
+                // Update stats
+                document.getElementById('stat-admins').textContent = stats.resumen.totalAdmins;
+                document.getElementById('stat-doctors').textContent = stats.resumen.totalDoctores;
+                document.getElementById('stat-patients').textContent = stats.resumen.totalUsuarios;
+                document.getElementById('stat-active-patients').textContent = stats.resumen.usuariosActivos;
+                document.getElementById('stat-doctors-growth').textContent = `+${stats.crecimiento.nuevosDoctores} esta semana`;
+                document.getElementById('stat-patients-growth').textContent = `+${stats.crecimiento.nuevosUsuarios} esta semana`;
+
+                // Update recent registrations
+                const tbody = document.getElementById('recent-registrations');
+                if (!registrations.ultimosUsuarios.length && !registrations.ultimosDoctores.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No hay registros recientes</td></tr>';
+                    return;
+                }
+
+                const allRegistrations = [
+                    ...registrations.ultimosUsuarios.map(u => ({ ...u, tipo: 'Paciente' })),
+                    ...registrations.ultimosDoctores.map(d => ({ ...d, tipo: 'Doctor' }))
+                ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 10);
+
+                tbody.innerHTML = allRegistrations.map(reg => `
+                    <tr>
+                        <td><span class="badge ${reg.tipo === 'Paciente' ? 'badge-info' : 'badge-success'}">${reg.tipo}</span></td>
+                        <td>${reg.nombre}</td>
+                        <td>${reg.email}</td>
+                        <td>${new Date(reg.created_at).toLocaleDateString('es-MX')}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // Patients
+        async function loadPatients() {
+            try {
+                const patients = await apiCall('/dashboard/patients');
+                allPatients = patients;
+                renderPatients(patients);
+            } catch (error) {
+                document.getElementById('patients-table').innerHTML = 
+                    '<tr><td colspan="7" class="empty-state">Error al cargar pacientes</td></tr>';
+            }
+        }
+
+        function renderPatients(patients) {
+            const tbody = document.getElementById('patients-table');
+            
+            if (!patients || patients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay pacientes registrados</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = patients.map(patient => `
+                <tr>
+                    <td>${patient.nombre}</td>
+                    <td>${patient.email}</td>
+                    <td>${getGenderLabel(patient.genero)}</td>
+                    <td>${patient.edad} años</td>
+                    <td>${patient.doctor_nombre || 'Sin asignar'}</td>
+                    <td><span class="badge ${patient.cuenta_activa ? 'badge-success' : 'badge-danger'}">${patient.cuenta_activa ? 'Activo' : 'Inactivo'}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-primary" onclick="showPatientDetails('${patient.id}')">Ver</button>
+                            <button class="btn btn-sm btn-secondary" onclick="editPatientDoctor('${patient.id}', '${patient.nombre}', '${patient.doctor_id || ''}')">Doctor</button>
+                            <button class="btn btn-sm ${patient.cuenta_activa ? 'btn-danger' : 'btn-primary'}" onclick="togglePatientStatus('${patient.id}', '${patient.nombre}', ${patient.cuenta_activa})">${patient.cuenta_activa ? 'Desactivar' : 'Activar'}</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterPatients(search) {
+            const filtered = allPatients.filter(p => 
+                p.nombre.toLowerCase().includes(search.toLowerCase()) ||
+                p.email.toLowerCase().includes(search.toLowerCase())
+            );
+            renderPatients(filtered);
+        }
+
+        async function showPatientDetails(patientId) {
+            try {
+                openModal('patient-details-modal');
+                document.getElementById('patient-details-content').innerHTML = '<div class="loading">Cargando...</div>';
+                
+                const patient = await apiCall(`/dashboard/patients/${patientId}`);
+                
+                document.getElementById('patient-details-content').innerHTML = `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Nombre</div>
+                            <div class="detail-value">${patient.nombre}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value">${patient.email}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Género</div>
+                            <div class="detail-value">${getGenderLabel(patient.genero)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Edad</div>
+                            <div class="detail-value">${patient.edad} años</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Altura</div>
+                            <div class="detail-value">${patient.altura} cm</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Peso Actual</div>
+                            <div class="detail-value">${patient.peso_actual ? patient.peso_actual + ' kg' : 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Peso Objetivo</div>
+                            <div class="detail-value">${patient.peso_objetivo ? patient.peso_objetivo + ' kg' : 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Nivel de Actividad</div>
+                            <div class="detail-value">${patient.nivel_actividad || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Doctor Asignado</div>
+                            <div class="detail-value">${patient.doctor_nombre || 'Sin asignar'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Teléfono</div>
+                            <div class="detail-value">${patient.telefono || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Registros de Comida</div>
+                            <div class="detail-value">${patient.total_registros_comida || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Actividades Físicas</div>
+                            <div class="detail-value">${patient.total_actividades_fisicas || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Recomendaciones</div>
+                            <div class="detail-value">${patient.total_recomendaciones || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Estado de Cuenta</div>
+                            <div class="detail-value"><span class="badge ${patient.cuenta_activa ? 'badge-success' : 'badge-danger'}">${patient.cuenta_activa ? 'Activa' : 'Inactiva'}</span></div>
+                        </div>
+                    </div>
+                    ${patient.alergias && patient.alergias.length > 0 ? `
+                        <div style="margin-top: 1.5rem;">
+                            <h4 style="margin-bottom: 0.5rem;">Alergias</h4>
+                            <p>${patient.alergias.join(', ')}</p>
+                        </div>
+                    ` : ''}
+                    ${patient.condiciones_medicas && patient.condiciones_medicas.length > 0 ? `
+                        <div style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: 0.5rem;">Condiciones Médicas</h4>
+                            <p>${patient.condiciones_medicas.join(', ')}</p>
+                        </div>
+                    ` : ''}
+                    ${patient.medicamentos && patient.medicamentos.length > 0 ? `
+                        <div style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: 0.5rem;">Medicamentos</h4>
+                            <p>${patient.medicamentos.join(', ')}</p>
+                        </div>
+                    ` : ''}
+                `;
+            } catch (error) {
+                document.getElementById('patient-details-content').innerHTML = 
+                    '<div class="empty-state">Error al cargar los detalles del paciente</div>';
+            }
+        }
+
+        async function editPatientDoctor(patientId, patientName, currentDoctorId) {
+            currentPatientId = patientId;
+            
+            // Load doctors if not already loaded
+            if (allDoctors.length === 0) {
+                allDoctors = await apiCall('/dashboard/doctors');
+            }
+            
+            // Populate form
+            document.getElementById('edit-patient-name').value = patientName;
+            const select = document.getElementById('edit-patient-doctor');
+            select.innerHTML = '<option value="">Sin doctor asignado</option>' + 
+                allDoctors.map(doctor => 
+                    `<option value="${doctor.id}" ${doctor.id === currentDoctorId ? 'selected' : ''}>${doctor.nombre} - ${doctor.especialidad || 'Sin especialidad'}</option>`
+                ).join('');
+            
+            openModal('edit-patient-modal');
+        }
+
+        async function savePatientDoctor() {
+            try {
+                const doctorId = document.getElementById('edit-patient-doctor').value;
+                
+                await apiCall(`/dashboard/patients/${currentPatientId}/doctor`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ doctorId: doctorId || null })
+                });
+                
+                alert('Doctor actualizado exitosamente');
+                closeModal('edit-patient-modal');
+                loadPatients();
+            } catch (error) {
+                alert('Error al actualizar el doctor');
+            }
+        }
+
+        async function togglePatientStatus(patientId, patientName, isActive) {
+            const action = isActive ? 'desactivar' : 'activar';
+            const actionPast = isActive ? 'desactivado' : 'activado';
+            
+            if (!confirm(`¿Estás seguro de ${action} la cuenta del paciente ${patientName}?`)) {
+                return;
+            }
+            
+            try {
+                await apiCall(`/dashboard/patients/${patientId}/toggle-status`, {
+                    method: 'PATCH'
+                });
+                
+                alert(`Paciente ${actionPast} exitosamente`);
+                loadPatients();
+            } catch (error) {
+                alert(`Error al ${action} el paciente`);
+            }
+        }
+
+        // Doctors
+        async function loadDoctors() {
+            try {
+                const doctors = await apiCall('/dashboard/doctors');
+                allDoctors = doctors;
+                renderDoctors(doctors);
+            } catch (error) {
+                document.getElementById('doctors-table').innerHTML = 
+                    '<tr><td colspan="7" class="empty-state">Error al cargar doctores</td></tr>';
+            }
+        }
+
+        function renderDoctors(doctors) {
+            const tbody = document.getElementById('doctors-table');
+            
+            if (!doctors || doctors.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay doctores registrados</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = doctors.map(doctor => `
+                <tr>
+                    <td>${doctor.nombre}</td>
+                    <td>${doctor.email}</td>
+                    <td>${doctor.especialidad || 'N/A'}</td>
+                    <td>${doctor.cedula_profesional || 'N/A'}</td>
+                    <td>${doctor.total_pacientes} (${doctor.pacientes_activos} activos)</td>
+                    <td><span class="badge ${doctor.cuenta_activa ? 'badge-success' : 'badge-danger'}">${doctor.cuenta_activa ? 'Activo' : 'Inactivo'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="showDoctorPatients('${doctor.id}', '${doctor.nombre}')">Ver Pacientes</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterDoctors(search) {
+            const filtered = allDoctors.filter(d => 
+                d.nombre.toLowerCase().includes(search.toLowerCase()) ||
+                d.email.toLowerCase().includes(search.toLowerCase()) ||
+                (d.especialidad && d.especialidad.toLowerCase().includes(search.toLowerCase()))
+            );
+            renderDoctors(filtered);
+        }
+
+        function showCreateDoctorModal() {
+            // Clear form
+            document.getElementById('new-doctor-name').value = '';
+            document.getElementById('new-doctor-email').value = '';
+            document.getElementById('new-doctor-password').value = '';
+            document.getElementById('new-doctor-specialty').value = '';
+            document.getElementById('new-doctor-cedula').value = '';
+            document.getElementById('new-doctor-phone').value = '';
+            
+            openModal('create-doctor-modal');
+        }
+
+        async function createDoctor() {
+            const nombre = document.getElementById('new-doctor-name').value.trim();
+            const email = document.getElementById('new-doctor-email').value.trim();
+            const password = document.getElementById('new-doctor-password').value;
+            const especialidad = document.getElementById('new-doctor-specialty').value.trim();
+            const cedula_profesional = document.getElementById('new-doctor-cedula').value.trim();
+            const telefono = document.getElementById('new-doctor-phone').value.trim();
+
+            if (!nombre || !email || !password) {
+                alert('Por favor completa los campos requeridos (Nombre, Email, Contraseña)');
+                return;
+            }
+
+            try {
+                // Get current admin ID from token
+                const token = localStorage.getItem('access_token');
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const admin_id = payload.sub;
+
+                await apiCall('/dashboard/doctors', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        nombre,
+                        email,
+                        password,
+                        especialidad: especialidad || null,
+                        cedula_profesional: cedula_profesional || null,
+                        telefono: telefono || null,
+                        admin_id
+                    })
+                });
+                
+                alert('Doctor creado exitosamente');
+                closeModal('create-doctor-modal');
+                loadDoctors();
+            } catch (error) {
+                console.error('Error completo:', error);
+                alert('Error al crear el doctor: ' + (error.message || 'Error desconocido'));
+            }
+        }
+
+        async function showDoctorPatients(doctorId, doctorName) {
+            try {
+                openModal('doctor-patients-modal');
+                document.getElementById('doctor-patients-title').textContent = `Pacientes de ${doctorName}`;
+                document.getElementById('doctor-patients-table').innerHTML = '<tr><td colspan="5" class="loading">Cargando...</td></tr>';
+                
+                const patients = await apiCall(`/dashboard/doctors/${doctorId}/patients`);
+                
+                if (!patients || patients.length === 0) {
+                    document.getElementById('doctor-patients-table').innerHTML = 
+                        '<tr><td colspan="5" class="empty-state">Este doctor no tiene pacientes asignados</td></tr>';
+                    return;
+                }
+
+                document.getElementById('doctor-patients-table').innerHTML = patients.map(patient => `
+                    <tr>
+                        <td>${patient.nombre}</td>
+                        <td>${patient.email}</td>
+                        <td>${getGenderLabel(patient.genero)}</td>
+                        <td>${patient.edad} años</td>
+                        <td><span class="badge ${patient.cuenta_activa ? 'badge-success' : 'badge-danger'}">${patient.cuenta_activa ? 'Activo' : 'Inactivo'}</span></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                document.getElementById('doctor-patients-table').innerHTML = 
+                    '<tr><td colspan="5" class="empty-state">Error al cargar pacientes</td></tr>';
+            }
+        }
+
+        // Admins
+        async function loadAdmins() {
+            try {
+                const [admins, currentAdmin] = await Promise.all([
+                    apiCall('/dashboard/admins'),
+                    getCurrentAdmin()
+                ]);
+
+                // Show current admin info
+                const currentAdminDiv = document.getElementById('current-admin-info');
+                if (currentAdmin) {
+                    currentAdminDiv.innerHTML = `
+                        <div class="detail-item">
+                            <div class="detail-label">Nombre</div>
+                            <div class="detail-value">${currentAdmin.nombre}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value">${currentAdmin.email}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Doctores Creados</div>
+                            <div class="detail-value">${currentAdmin.total_doctores_creados} (${currentAdmin.doctores_activos} activos)</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Fecha de Registro</div>
+                            <div class="detail-value">${new Date(currentAdmin.created_at).toLocaleDateString('es-MX')}</div>
                         </div>
                     `;
-            activityList.appendChild(li);
-          });
-        } catch (error) {
-          console.error('Error cargando actividad:', error);
-        }
-      }
+                } else {
+                    currentAdminDiv.innerHTML = '<div class="empty-state">No se pudo cargar la información</div>';
+                }
 
-      // Inicializar dashboard
-      loadDashboardStats();
-      loadRecentActivity();
+                // Show other admins
+                const tbody = document.getElementById('admins-table');
+                const otherAdmins = admins.filter(a => a.email !== (currentAdmin?.email));
+                
+                if (otherAdmins.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No hay otros administradores registrados</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = otherAdmins.map(admin => `
+                    <tr>
+                        <td>${admin.nombre}</td>
+                        <td>${admin.email}</td>
+                        <td>${admin.total_doctores_creados}</td>
+                        <td><span class="badge ${admin.cuenta_activa ? 'badge-success' : 'badge-danger'}">${admin.cuenta_activa ? 'Activo' : 'Inactivo'}</span></td>
+                        <td>${new Date(admin.created_at).toLocaleDateString('es-MX')}</td>
+                    </tr>
+                `).join('');
+        } catch (error) {
+                document.getElementById('admins-table').innerHTML = 
+                    '<tr><td colspan="5" class="empty-state">Error al cargar administradores</td></tr>';
+            }
+        }
+
+        async function getCurrentAdmin() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const email = payload.email;
+                
+                return await apiCall(`/dashboard/admins/me/${encodeURIComponent(email)}`);
+            } catch (error) {
+                console.error('Error getting current admin:', error);
+                return null;
+            }
+        }
+
+        // Utility functions
+        function getGenderLabel(gender) {
+            const labels = { 'M': 'Masculino', 'F': 'Femenino', 'O': 'Otro' };
+            return labels[gender] || gender;
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function logout() {
+            if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                document.cookie = 'refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                window.location.href = '/auth/login';
+            }
+        }
     </script>
   </body>
 </html>

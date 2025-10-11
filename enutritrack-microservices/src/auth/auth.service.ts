@@ -71,16 +71,13 @@ export class AuthService {
         return null;
       }
 
-      if (!user.contraseñaHash) {
-        console.log(`❌ ${email} no tiene contraseña hasheada`);
+      if (!user.passwordHash) {
+        console.log(`❌ ${email} no tiene password hasheado`);
         return null;
       }
 
       // Validar contraseña usando bcrypt directamente
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        user.contraseñaHash,
-      );
+      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
       if (!isPasswordValid) {
         console.log(`❌ Contraseña incorrecta para: ${email}`);
@@ -91,7 +88,7 @@ export class AuthService {
         `✅ ${actualUserType === 'user' ? 'Usuario' : 'Doctor'} validado exitosamente: ${email}`,
       );
 
-      const { contraseñaHash, ...result } = user;
+      const { passwordHash, ...result } = user;
       return {
         ...result,
         userType: actualUserType,
@@ -155,7 +152,7 @@ export class AuthService {
 
   async refreshTokens(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify(refreshToken) as TokenPayload;
+      const payload = this.jwtService.verify(refreshToken);
 
       // Verificar que es un refresh token
       if (payload.type !== 'refresh') {
@@ -167,23 +164,23 @@ export class AuthService {
       // Buscar usuario según el tipo
       if (payload.userType === 'user') {
         const userData = await this.userService.findById(payload.sub);
-        if (!userData) {
+        if (!userData || !userData.cuenta) {
           throw new UnauthorizedException('Usuario no encontrado');
         }
         user = {
           id: userData.id,
-          email: userData.email,
+          email: userData.cuenta.email,
           nombre: userData.nombre,
           userType: 'user',
         };
       } else {
         const doctorData = await this.doctorService.findById(payload.sub);
-        if (!doctorData) {
+        if (!doctorData || !doctorData.cuenta) {
           throw new UnauthorizedException('Doctor no encontrado');
         }
         user = {
           id: doctorData.id,
-          email: doctorData.email,
+          email: doctorData.cuenta.email,
           nombre: doctorData.nombre,
           userType: 'doctor',
         };
@@ -214,7 +211,7 @@ export class AuthService {
 
   async validateToken(token: string) {
     try {
-      const payload = this.jwtService.verify(token) as TokenPayload;
+      const payload = this.jwtService.verify(token);
 
       // Solo permitir tokens de acceso para operaciones normales
       if (payload.type !== 'access') {
@@ -234,7 +231,7 @@ export class AuthService {
 
   async getUserFromToken(token: string): Promise<AuthUser> {
     try {
-      const payload = this.jwtService.verify(token) as TokenPayload;
+      const payload = this.jwtService.verify(token);
 
       // Solo permite tokens de acceso
       if (payload.type !== 'access') {
@@ -248,16 +245,23 @@ export class AuthService {
         user = await this.doctorService.findById(payload.sub);
       }
 
-      if (!user) {
+      if (!user || !user.cuenta) {
         throw new UnauthorizedException(
           `${payload.userType === 'user' ? 'Usuario' : 'Doctor'} no encontrado`,
         );
       }
 
       console.log(
-        `✅ ${payload.userType === 'user' ? 'Usuario' : 'Doctor'} obtenido del token: ${user.email}`,
+        `✅ ${payload.userType === 'user' ? 'Usuario' : 'Doctor'} obtenido del token: ${user.cuenta.email}`,
       );
-      const { contraseñaHash, ...result } = user;
+      
+      // Eliminar datos sensibles antes de devolver
+      const result = { ...user };
+      if (result.cuenta) {
+        const { password_hash, ...cuentaSinPassword } = result.cuenta;
+        result.cuenta = cuentaSinPassword;
+      }
+      
       return {
         ...result,
         userType: payload.userType,

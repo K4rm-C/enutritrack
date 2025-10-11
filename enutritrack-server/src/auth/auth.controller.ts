@@ -22,6 +22,11 @@ export class AuthController {
     res.sendFile(join(__dirname, '../../public/login.html'));
   }
 
+  @Get('dashboard')
+  dashboardPage(@Res() res: Response) {
+    res.sendFile(join(__dirname, '../../views/dashboard.html'));
+  }
+
   @Post('login')
   async login(@Body() loginCuentaDto: LoginCuentaDto) {
     return this.authService.login(loginCuentaDto);

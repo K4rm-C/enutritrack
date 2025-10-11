@@ -101,7 +101,7 @@ export class XmlInterceptor implements NestInterceptor {
 
     // Remover campos sensibles
     const sensitiveFields = [
-      'contraseñaHash',
+      'passwordHash',
       'contraseña',
       'password',
       'passwordHash',
