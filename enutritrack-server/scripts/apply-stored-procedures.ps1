@@ -19,17 +19,33 @@ Write-Host "Port: $DB_PORT" -ForegroundColor Gray
 Write-Host "Database: $DB_NAME" -ForegroundColor Gray
 Write-Host ''
 
-# Verificar si PostgreSQL esta en el PATH
-$psqlPath = Get-Command psql -ErrorAction SilentlyContinue
+# Buscar psql en rutas comunes
+Write-Host 'Buscando PostgreSQL en rutas comunes...' -ForegroundColor Yellow
+
+$possiblePaths = @(
+    "C:\Program Files\PostgreSQL\18\bin\psql.exe",
+    "C:\Program Files\PostgreSQL\15\bin\psql.exe",
+    "C:\Program Files\PostgreSQL\14\bin\psql.exe",
+    "C:\Program Files\PostgreSQL\13\bin\psql.exe",
+    "C:\Program Files\PostgreSQL\12\bin\psql.exe"
+)
+
+$psqlPath = $null
+foreach ($path in $possiblePaths) {
+    if (Test-Path $path) {
+        $psqlPath = $path
+        Write-Host "PostgreSQL encontrado en: $path" -ForegroundColor Green
+        break
+    }
+}
 
 if (-not $psqlPath) {
-    Write-Host 'ERROR: psql no esta en el PATH' -ForegroundColor Red
+    Write-Host 'ERROR: No se pudo encontrar PostgreSQL en las rutas comunes.' -ForegroundColor Red
     Write-Host ''
-    Write-Host 'Por favor, agrega PostgreSQL al PATH o ejecuta manualmente:' -ForegroundColor Yellow
+    Write-Host 'Por favor, asegurate de que PostgreSQL esté instalado o proporciona la ruta manualmente.' -ForegroundColor Yellow
     Write-Host ''
-    Write-Host "  psql -U $DB_USER -d $DB_NAME -p $DB_PORT -f stored-procedures.sql" -ForegroundColor Cyan
-    Write-Host ''
-    Write-Host "O desde pgAdmin, abre stored-procedures.sql y ejecutalo en la base de datos $DB_NAME" -ForegroundColor Cyan
+    Write-Host 'O puedes ejecutar manualmente desde pgAdmin:' -ForegroundColor Cyan
+    Write-Host "  Abre pgAdmin, conectate a la base de datos $DB_NAME y ejecuta el archivo stored-procedures.sql" -ForegroundColor Gray
     Write-Host ''
     exit 1
 }
@@ -40,13 +56,23 @@ try {
     
     Write-Host 'Aplicando stored procedures...' -ForegroundColor Yellow
     
-    $result = & psql -U $DB_USER -h $DB_HOST -p $DB_PORT -d $DB_NAME -f 'stored-procedures.sql' 2>&1
+    # Construir el argumento para psql
+    $arguments = @(
+        "-U", $DB_USER,
+        "-h", $DB_HOST,
+        "-p", $DB_PORT,
+        "-d", $DB_NAME,
+        "-f", "scripts\stored-procedures.sql"
+    )
     
-    if ($LASTEXITCODE -eq 0) {
+    # Ejecutar psql con la ruta completa
+    $process = Start-Process -FilePath $psqlPath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+
+    if ($process.ExitCode -eq 0) {
         Write-Host ''
         Write-Host 'Stored procedures aplicados exitosamente!' -ForegroundColor Green
         Write-Host ''
-        Write-Host 'Procedimientos creados:' -ForegroundColor Cyan
+        Write-Host 'Procedimientos principales creados:' -ForegroundColor Cyan
         Write-Host '  - sp_get_all_patients()' -ForegroundColor Gray
         Write-Host '  - sp_get_patient_details(patient_id)' -ForegroundColor Gray
         Write-Host '  - sp_update_patient_doctor(patient_id, doctor_id)' -ForegroundColor Gray
@@ -59,11 +85,18 @@ try {
         Write-Host '  - sp_get_dashboard_stats()' -ForegroundColor Gray
         Write-Host '  - sp_get_patients_by_gender()' -ForegroundColor Gray
         Write-Host '  - sp_get_recent_registrations()' -ForegroundColor Gray
+        Write-Host '  - obtener_historial_medico_completo()' -ForegroundColor Gray
+        Write-Host '  - analisis_progreso_peso()' -ForegroundColor Gray
+        Write-Host '  - reporte_consumo_mensual()' -ForegroundColor Gray
+        Write-Host '  - dashboard_estadisticas_generales()' -ForegroundColor Gray
+        Write-Host '  - buscar_usuarios_por_patron_medico()' -ForegroundColor Gray
+        Write-Host '  - buscar_usuarios_por_perfil()' -ForegroundColor Gray
+        Write-Host '  - buscar_staff_por_patron()' -ForegroundColor Gray
         Write-Host ''
     } else {
         Write-Host ''
-        Write-Host 'ERROR al aplicar stored procedures:' -ForegroundColor Red
-        Write-Host $result -ForegroundColor Red
+        Write-Host 'ERROR al aplicar stored procedures.' -ForegroundColor Red
+        Write-Host 'Exit Code: ' + $process.ExitCode -ForegroundColor Red
         Write-Host ''
         exit 1
     }
