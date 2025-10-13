@@ -424,6 +424,207 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION obtener_historial_medico_completo(
+    p_usuario_id UUID
+)
+RETURNS TABLE(
+    usuario_nombre VARCHAR,
+    usuario_email VARCHAR,
+    condiciones JSONB,
+    alergias JSONB,
+    medicamentos JSONB,
+    fecha_actualizacion TIMESTAMP
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT u.nombre AS usuario_nombre, u.email AS usuario_email, hm.condiciones, hm.alergias, hm.medicamentos, hm.updated_at AS fecha_actualizacion
+    FROM historial_medico hm
+    JOIN users u ON hm."usuarioId" = u.id
+    WHERE hm."usuarioId" = p_usuario_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION analisis_progreso_peso(
+    p_usuario_id UUID
+)
+RETURNS TABLE(
+    peso_actual NUMERIC,
+    objetivo_peso NUMERIC,
+    diferencia_peso NUMERIC,
+    recomendaciones_activas BIGINT,
+    ultima_recomendacion TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT u.peso_actual, u.objetivo_peso, (u.peso_actual - u.objetivo_peso) AS diferencia_peso, COUNT(r.id) AS recomendaciones_activas, MAX(r.contenido) AS ultima_recomendacion
+    FROM users u
+    LEFT JOIN recomendacion r ON u.id = r.usuario_id AND r.activa = true
+    WHERE u.id = p_usuario_id
+    GROUP BY u.id, u.peso_actual, u.objetivo_peso;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION reporte_consumo_mensual(
+    p_usuario_id UUID,
+    p_mes INTEGER,
+    p_ano INTEGER
+)
+RETURNS TABLE(
+    tipo_comida registro_comida_tipo_comida_enum,
+    total_comidas BIGINT,
+    promedio_calorias NUMERIC,
+    total_proteinas NUMERIC,
+    total_carbohidratos NUMERIC,
+    total_grasas NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT rc.tipo_comida, COUNT(rc.id) AS total_comidas, AVG(rc.calorias) AS promedio_calorias, SUM(rc.proteinas_g) AS total_proteinas, SUM(rc.carbohidratos_g) AS total_carbohidratos, SUM(rc.grasas_g) AS total_grasas
+    FROM registro_comida rc
+    WHERE rc."usuarioId" = p_usuario_id
+        AND EXTRACT(MONTH FROM rc.fecha) = p_mes
+        AND EXTRACT(YEAR FROM rc.fecha) = p_ano
+    GROUP BY rc.tipo_comida
+    ORDER BY total_comidas DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION dashboard_estadisticas_generales(
+    p_fecha_inicio DATE,
+    p_fecha_fin DATE
+)
+RETURNS TABLE(
+    total_usuarios BIGINT,
+    total_doctores BIGINT,
+    total_comidas_registradas BIGINT,
+    total_actividades_registradas BIGINT,
+    promedio_calorias_diarias NUMERIC,
+    usuario_mas_activo VARCHAR,
+    comida_mas_comun registro_comida_tipo_comida_enum
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        (SELECT COUNT(*) FROM users) AS total_usuarios,
+        (SELECT COUNT(*) FROM doctors) AS total_doctores,
+        COUNT(rc.id) AS total_comidas_registradas,
+        COUNT(af.id) AS total_actividades_registradas,
+        AVG(rc.calorias) AS promedio_calorias_diarias,
+        (SELECT u.nombre FROM users u 
+         JOIN actividad_fisica af ON u.id = af."usuarioId" 
+         WHERE DATE(af.fecha) BETWEEN p_fecha_inicio AND p_fecha_fin
+         GROUP BY u.id, u.nombre 
+         ORDER BY COUNT(af.id) DESC 
+         LIMIT 1) AS usuario_mas_activo,
+        (SELECT rc2.tipo_comida FROM registro_comida rc2
+         WHERE DATE(rc2.fecha) BETWEEN p_fecha_inicio AND p_fecha_fin
+         GROUP BY rc2.tipo_comida
+         ORDER BY COUNT(*) DESC
+         LIMIT 1) AS comida_mas_comun
+    FROM registro_comida rc
+    CROSS JOIN actividad_fisica af
+    WHERE DATE(rc.fecha) BETWEEN p_fecha_inicio AND p_fecha_fin
+        AND DATE(af.fecha) BETWEEN p_fecha_inicio AND p_fecha_fin
+    LIMIT 1;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION buscar_usuarios_por_patron_medico(
+    p_patron_medico TEXT
+)
+RETURNS TABLE(
+    usuario_id UUID,
+    usuario_nombre VARCHAR,
+    usuario_email VARCHAR,
+    condiciones JSONB,
+    alergias JSONB,
+    medicamentos JSONB,
+    doctor_asignado VARCHAR,
+    ultima_actualizacion TIMESTAMP
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT u.id AS usuario_id, u.nombre AS usuario_nombre, u.email AS usuario_email, hm.condiciones, hm.alergias, hm.medicamentos, d.nombre AS doctor_asignado, hm.updated_at AS ultima_actualizacion
+    FROM users u
+    JOIN historial_medico hm ON u.id = hm."usuarioId"
+    LEFT JOIN doctors d ON u.doctor_id = d.id
+    WHERE hm.condiciones::TEXT ILIKE '%' || p_patron_medico || '%'
+        OR hm.alergias::TEXT ILIKE '%' || p_patron_medico || '%'
+        OR hm.medicamentos::TEXT ILIKE '%' || p_patron_medico || '%'
+    ORDER BY hm.updated_at DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION buscar_usuarios_por_perfil(
+    p_patron_nombre TEXT DEFAULT NULL,
+    p_nivel_actividad users_nivel_actividad_enum DEFAULT NULL,
+    p_genero users_genero_enum DEFAULT NULL
+)
+RETURNS TABLE(
+    usuario_id UUID,
+    nombre VARCHAR,
+    email VARCHAR,
+    fecha_nacimiento DATE,
+    genero users_genero_enum,
+    nivel_actividad users_nivel_actividad_enum,
+    peso_actual NUMERIC,
+    objetivo_peso NUMERIC,
+    doctor_asignado VARCHAR,
+    total_comidas_registradas BIGINT,
+    total_actividades_registradas BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT u.id AS usuario_id, u.nombre, u.email, u.fecha_nacimiento, u.genero, u.nivel_actividad, u.peso_actual, u.objetivo_peso, d.nombre AS doctor_asignado,
+        COUNT(rc.id) AS total_comidas_registradas,
+        COUNT(af.id) AS total_actividades_registradas
+    FROM users u
+    LEFT JOIN doctors d ON u.doctor_id = d.id
+    LEFT JOIN registro_comida rc ON u.id = rc."usuarioId"
+    LEFT JOIN actividad_fisica af ON u.id = af."usuarioId"
+    WHERE (p_patron_nombre IS NULL OR u.nombre ILIKE '%' || p_patron_nombre || '%')
+        AND (p_nivel_actividad IS NULL OR u.nivel_actividad = p_nivel_actividad)
+        AND (p_genero IS NULL OR u.genero = p_genero)
+    GROUP BY u.id, u.nombre, u.email, u.fecha_nacimiento, u.genero, u.nivel_actividad, 
+             u.peso_actual, u.objetivo_peso, d.nombre
+    ORDER BY u.nombre;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION buscar_staff_por_patron(
+    p_patron_nombre TEXT
+)
+RETURNS TABLE(
+    tipo_staff TEXT,
+    staff_id UUID,
+    nombre VARCHAR,
+    email VARCHAR,
+    fecha_creacion TIMESTAMP,
+    total_usuarios_asignados BIGINT,
+    doctor_admin VARCHAR
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 'ADMIN' AS tipo_staff, a.id AS staff_id, a.nombre, a.email, a.created_at AS fecha_creacion, COUNT(d.id) AS total_usuarios_asignados, NULL AS doctor_admin
+    FROM admins a
+    LEFT JOIN doctors d ON a.id = d.admin_id
+    WHERE a.nombre ILIKE '%' || p_patron_nombre || '%'
+        OR a.email ILIKE '%' || p_patron_nombre || '%'
+    GROUP BY a.id, a.nombre, a.email, a.created_at
+    
+    UNION ALL 
+    SELECT 'DOCTOR' AS tipo_staff, d.id AS staff_id, d.nombre, d.email, d.created_at AS fecha_creacion, COUNT(u.id) AS total_usuarios_asignados, a.nombre AS doctor_admin
+    FROM doctors d
+    LEFT JOIN users u ON d.id = u.doctor_id
+    LEFT JOIN admins a ON d.admin_id = a.id
+    WHERE d.nombre ILIKE '%' || p_patron_nombre || '%'
+        OR d.email ILIKE '%' || p_patron_nombre || '%'
+    GROUP BY d.id, d.nombre, d.email, d.created_at, a.nombre,
+    ORDER BY tipo_staff, total_usuarios_asignados DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+
 -- ========================================
 -- COMENTARIOS Y DOCUMENTACION
 -- ========================================
