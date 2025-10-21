@@ -62,7 +62,7 @@ export class PerfilDoctorService {
 
   async findAll(): Promise<PerfilDoctor[]> {
     return await this.perfilDoctorRepository.find({
-      relations: ['cuenta', 'admin', 'pacientes'],
+      relations: ['cuenta', 'admin', 'pacientes', 'especialidad'],
       order: { created_at: 'DESC' },
     });
   }
@@ -70,7 +70,7 @@ export class PerfilDoctorService {
   async findOne(id: string): Promise<PerfilDoctor> {
     const perfilDoctor = await this.perfilDoctorRepository.findOne({
       where: { id },
-      relations: ['cuenta', 'admin', 'pacientes'],
+      relations: ['cuenta', 'admin', 'pacientes', 'especialidad'],
     });
 
     if (!perfilDoctor) {
@@ -83,7 +83,7 @@ export class PerfilDoctorService {
   async findByCuentaId(cuentaId: string): Promise<PerfilDoctor> {
     const perfilDoctor = await this.perfilDoctorRepository.findOne({
       where: { cuenta_id: cuentaId },
-      relations: ['cuenta', 'admin', 'pacientes'],
+      relations: ['cuenta', 'admin', 'pacientes', 'especialidad'],
     });
 
     if (!perfilDoctor) {
@@ -116,7 +116,7 @@ export class PerfilDoctorService {
   async findByCedula(cedula: string): Promise<PerfilDoctor> {
     const perfilDoctor = await this.perfilDoctorRepository.findOne({
       where: { cedula_profesional: cedula },
-      relations: ['cuenta', 'admin', 'pacientes'],
+      relations: ['cuenta', 'admin', 'pacientes', 'especialidad'],
     });
 
     if (!perfilDoctor) {
@@ -176,8 +176,9 @@ export class PerfilDoctorService {
 
     const especialidades = await this.perfilDoctorRepository
       .createQueryBuilder('perfilDoctor')
-      .select('DISTINCT perfilDoctor.especialidad', 'especialidad')
-      .where('perfilDoctor.especialidad IS NOT NULL')
+      .leftJoin('perfilDoctor.especialidad', 'especialidad')
+      .select('DISTINCT especialidad.nombre', 'especialidad')
+      .where('perfilDoctor.especialidad_id IS NOT NULL')
       .getRawMany();
 
     // Contar el total de pacientes asignados a doctores
@@ -201,8 +202,9 @@ export class PerfilDoctorService {
       .leftJoinAndSelect('perfilDoctor.cuenta', 'cuenta')
       .leftJoinAndSelect('perfilDoctor.admin', 'admin')
       .leftJoinAndSelect('perfilDoctor.pacientes', 'pacientes')
+      .leftJoinAndSelect('perfilDoctor.especialidad', 'especialidad')
       .where('perfilDoctor.nombre ILIKE :query', { query: `%${query}%` })
-      .orWhere('perfilDoctor.especialidad ILIKE :query', {
+      .orWhere('especialidad.nombre ILIKE :query', {
         query: `%${query}%`,
       })
       .orWhere('perfilDoctor.cedula_profesional ILIKE :query', {
@@ -213,11 +215,11 @@ export class PerfilDoctorService {
   }
 
   async getDoctoresPorEspecialidad(
-    especialidad: string,
+    especialidadId: string,
   ): Promise<PerfilDoctor[]> {
     return await this.perfilDoctorRepository.find({
-      where: { especialidad },
-      relations: ['cuenta', 'admin', 'pacientes'],
+      where: { especialidad_id: especialidadId },
+      relations: ['cuenta', 'admin', 'pacientes', 'especialidad'],
     });
   }
 

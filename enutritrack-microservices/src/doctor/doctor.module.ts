@@ -4,12 +4,13 @@ import { DoctorController } from './doctor.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Doctor } from './models/doctor.model';
 import { Cuenta } from '../shared/models/cuenta.model';
+import { Especialidad } from '../shared/models/especialidad.model';
 import { RedisModule } from '../redis/redis.module';
 import { CouchbaseModule } from '../couchbase/couchbase.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Doctor, Cuenta]),
+    TypeOrmModule.forFeature([Doctor, Cuenta, Especialidad]),
     RedisModule,
     CouchbaseModule,
   ],

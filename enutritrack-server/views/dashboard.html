@@ -3539,76 +3539,8 @@
         }
       }
 
-      // Patients
-      async function loadPatients() {
-        try {
-          const patients = await apiCall('/dashboard/patients');
-          allPatients = patients;
-          renderPatients(patients);
-        } catch (error) {
-          document.getElementById('patients-table').innerHTML =
-            '<tr><td colspan="6" class="empty-state">Error al cargar pacientes</td></tr>';
-        }
-      }
-
-      function renderPatients(patients) {
-        const tbody = document.getElementById('patients-table');
-
-        if (!patients || patients.length === 0) {
-          tbody.innerHTML =
-            '<tr><td colspan="6" class="empty-state">No hay pacientes registrados</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = patients
-          .map(
-            (patient) => `
-                <tr>
-                    <td>
-                        <div class="patient-card">
-                            <div class="patient-avatar">${getInitials(patient.nombre)}</div>
-                            <div class="patient-info">
-                                <h4>${patient.nombre}</h4>
-                                <p>${patient.email}</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td>${getGenderLabel(patient.genero)}</td>
-                    <td>${patient.edad} años</td>
-                    <td>
-                        <div style="font-weight: 600; color: #1f2937;">${patient.peso_actual || 'N/A'} kg</div>
-                        <div style="font-size: 0.75rem; color: #6b7280;">Objetivo: ${patient.peso_objetivo || 'N/A'} kg</div>
-                    </td>
-                    <td>
-                        <span class="badge ${patient.cuenta_activa ? 'badge-success' : 'badge-danger'}">
-                            ${patient.cuenta_activa ? 'Activo' : 'Inactivo'}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-primary btn-sm" onclick="showPatientDetails('${patient.id}')">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                </svg>
-                                Ver
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `,
-          )
-          .join('');
-      }
-
-      function filterPatients(search) {
-        const filtered = allPatients.filter(
-          (p) =>
-            p.nombre.toLowerCase().includes(search.toLowerCase()) ||
-            p.email.toLowerCase().includes(search.toLowerCase()),
-        );
-        renderPatients(filtered);
-      }
+      // Patients - La gestión de pacientes se hace a través del iframe
+      // Las funciones de pacientes están en patients-crud.html
 
       // Patient Details Modal
       async function showPatientDetails(patientId) {

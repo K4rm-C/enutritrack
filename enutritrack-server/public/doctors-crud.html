@@ -450,6 +450,7 @@
                   type="text"
                   class="form-control"
                   id="doctor-nombre"
+                  name="doctor-nombre"
                   required
                 />
               </div>
@@ -459,6 +460,7 @@
                   type="text"
                   class="form-control"
                   id="doctor-cedula"
+                  name="doctor-cedula"
                   required
                 />
               </div>
@@ -466,16 +468,13 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Especialidad *</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="doctor-especialidad"
-                  required
-                />
+                <select class="form-control" id="doctor-especialidad-id" name="doctor-especialidad-id" required>
+                  <option value="">Seleccionar...</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Teléfono</label>
-                <input type="tel" class="form-control" id="doctor-telefono" />
+                <input type="tel" class="form-control" id="doctor-telefono" name="doctor-telefono" />
               </div>
             </div>
             <div class="form-group">
@@ -499,6 +498,7 @@
                     type="email"
                     class="form-control"
                     id="doctor-email"
+                    name="doctor-email"
                     required
                   />
                 </div>
@@ -508,6 +508,7 @@
                     type="password"
                     class="form-control"
                     id="doctor-password"
+                    name="doctor-password"
                     required
                   />
                 </div>
@@ -532,11 +533,15 @@
     <script>
       // Variables globales
       let allDoctors = [];
+      let allSpecialties = [];
       let currentDoctorId = null;
+      let currentAdminId = null;
 
       // Inicializar cuando el documento esté listo
-      document.addEventListener('DOMContentLoaded', function () {
+      document.addEventListener('DOMContentLoaded', async function () {
+        await loadCurrentAdmin();
         loadDoctors();
+        loadSpecialties();
         setupEventListeners();
       });
 
@@ -551,10 +556,57 @@
         }
       }
 
+      // Cargar información del admin actual
+      async function loadCurrentAdmin() {
+        try {
+          const token = localStorage.getItem('access_token');
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const email = payload.email;
+
+          const admin = await apiCall(
+            `/dashboard/admins/me/${encodeURIComponent(email)}`,
+          );
+          
+          if (admin && admin.id) {
+            currentAdminId = admin.id;
+            console.log('Admin actual cargado:', admin);
+          } else {
+            throw new Error('No se pudo obtener información del admin');
+          }
+        } catch (error) {
+          console.error('Error loading current admin:', error);
+          alert('Error al obtener información del administrador actual');
+        }
+      }
+
+      // Cargar lista de especialidades
+      async function loadSpecialties() {
+        try {
+          const specialties = await apiCall('/especialidades');
+          allSpecialties = specialties;
+          
+          // Llenar el selector de especialidades
+          const specialtySelect = document.getElementById('doctor-especialidad-id');
+          specialtySelect.innerHTML = '<option value="">Seleccionar...</option>';
+          
+          specialties.forEach(specialty => {
+            const option = document.createElement('option');
+            option.value = specialty.id;
+            option.textContent = specialty.nombre;
+            specialtySelect.appendChild(option);
+          });
+          
+          console.log('Especialidades cargadas:', specialties);
+        } catch (error) {
+          console.error('Error loading specialties:', error);
+        }
+      }
+
       // Cargar lista de doctores
       async function loadDoctors() {
         try {
-          const doctors = await apiCall('/doctors');
+          const doctors = await apiCall('/dashboard/doctors');
+          console.log('Doctors data from stored procedure:', doctors);
           allDoctors = doctors;
           renderDoctors(doctors);
         } catch (error) {
@@ -583,20 +635,20 @@
                             <div class="patient-avatar">${getInitials(doctor.nombre)}</div>
                             <div class="patient-info">
                                 <h4>${doctor.nombre}</h4>
-                                <p>${doctor.especialidad || 'Sin especialidad'}</p>
+                                <p>${getSpecialtyLabel(doctor.especialidad) || 'Sin especialidad'}</p>
                             </div>
                         </div>
                     </td>
-                    <td>${doctor.especialidad || 'N/A'}</td>
-                    <td>${doctor.cuenta ? doctor.cuenta.email : 'N/A'}</td>
+                    <td>${getSpecialtyLabel(doctor.especialidad) || 'N/A'}</td>
+                    <td>${doctor.email || 'N/A'}</td>
                     <td>${doctor.cedula_profesional || 'N/A'}</td>
                     <td>
-                        <div style="font-weight: 600; color: #1f2937;">${doctor.pacientes ? doctor.pacientes.length : 0}</div>
+                        <div style="font-weight: 600; color: #1f2937;">${doctor.total_pacientes ? parseInt(doctor.total_pacientes) : 0}</div>
                         <div style="font-size: 0.75rem; color: #6b7280;">pacientes</div>
                     </td>
                     <td>
-                        <span class="badge ${doctor.cuenta && doctor.cuenta.activa ? 'badge-success' : 'badge-danger'}">
-                            ${doctor.cuenta && doctor.cuenta.activa ? 'Activo' : 'Inactivo'}
+                        <span class="badge ${doctor.cuenta_activa === true || doctor.cuenta_activa === 'true' ? 'badge-success' : 'badge-danger'}">
+                            ${doctor.cuenta_activa === true || doctor.cuenta_activa === 'true' ? 'Activo' : 'Inactivo'}
                         </span>
                     </td>
                     <td>
@@ -626,8 +678,8 @@
         const filtered = allDoctors.filter(
           (doctor) =>
             doctor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (doctor.cuenta &&
-              doctor.cuenta.email
+            (doctor.email &&
+              doctor.email
                 .toLowerCase()
                 .includes(searchTerm.toLowerCase())) ||
             (doctor.especialidad &&
@@ -665,12 +717,13 @@
           document.getElementById('doctor-nombre').value = doctor.nombre;
           document.getElementById('doctor-cedula').value =
             doctor.cedula_profesional || '';
-          document.getElementById('doctor-especialidad').value =
-            doctor.especialidad || '';
+          
+          // Cargar especialidad usando el ID si existe, o el objeto especialidad
+          const specialtyId = doctor.especialidad_id || (doctor.especialidad && doctor.especialidad.id);
+          document.getElementById('doctor-especialidad-id').value = specialtyId || '';
+          
           document.getElementById('doctor-telefono').value =
             doctor.telefono || '';
-          document.getElementById('doctor-informacion').value =
-            doctor.informacion_adicional || '';
 
           // Ocultar campos de cuenta en edición (no se pueden modificar)
           document.getElementById('doctor-account-fields').style.display =
@@ -685,65 +738,106 @@
 
       // Guardar doctor (crear o actualizar)
       async function saveDoctor() {
-        const form = document.getElementById('doctor-form');
-        if (!form.checkValidity()) {
-          form.reportValidity();
+        // Validar campos requeridos manualmente
+        const nombre = document.getElementById('doctor-nombre').value.trim();
+        const cedula = document.getElementById('doctor-cedula').value.trim();
+        const especialidadId = document.getElementById('doctor-especialidad-id').value;
+        
+        if (!nombre) {
+          alert('El nombre del doctor es requerido.');
+          document.getElementById('doctor-nombre').focus();
           return;
+        }
+        
+        if (!cedula) {
+          alert('La cédula profesional es requerida.');
+          document.getElementById('doctor-cedula').focus();
+          return;
+        }
+        
+        // Solo validar email, password y especialidad para creación de nuevo doctor
+        if (!currentDoctorId) {
+          if (!especialidadId) {
+            alert('La especialidad es requerida para nuevos doctores.');
+            document.getElementById('doctor-especialidad-id').focus();
+            return;
+          }
+          const email = document.getElementById('doctor-email').value.trim();
+          const password = document.getElementById('doctor-password').value;
+          
+          if (!email) {
+            alert('El email es requerido.');
+            document.getElementById('doctor-email').focus();
+            return;
+          }
+          
+          if (!password) {
+            alert('La contraseña es requerida.');
+            document.getElementById('doctor-password').focus();
+            return;
+          }
         }
 
         try {
           if (currentDoctorId) {
             // Actualizar doctor existente
+            const telefono = document.getElementById('doctor-telefono').value;
+            // Procesar especialidad_id - si está vacío, usar null explícitamente
+            const finalEspecialidadId = especialidadId && especialidadId.trim() !== '' ? especialidadId : null;
+            
             const doctorData = {
-              nombre: document.getElementById('doctor-nombre').value,
-              cedula_profesional:
-                document.getElementById('doctor-cedula').value,
-              especialidad: document.getElementById('doctor-especialidad')
-                .value,
-              telefono: document.getElementById('doctor-telefono').value,
-              informacion_adicional:
-                document.getElementById('doctor-informacion').value,
+              nombre: nombre,
+              cedula_profesional: cedula,
+              especialidad_id: finalEspecialidadId,
+              telefono: telefono,
             };
 
-            await apiCall(`/doctors/${currentDoctorId}`, {
+            console.log('Actualizando doctor con datos:', doctorData);
+            
+            const updateResult = await apiCall(`/dashboard/doctors/${currentDoctorId}`, {
               method: 'PATCH',
               body: JSON.stringify(doctorData),
             });
-            alert('Doctor actualizado exitosamente');
+            
+            console.log('Resultado de actualización:', updateResult);
+            
+            // Verificar que la actualización fue exitosa obteniendo el doctor actualizado
+            const updatedDoctor = await apiCall(`/dashboard/doctors`, {
+              method: 'GET',
+            });
+            
+            const currentDoctor = updatedDoctor.find(d => d.id === currentDoctorId);
+            console.log('Doctor después de actualización:', currentDoctor);
+            
+            if (currentDoctor && currentDoctor.especialidad !== undefined) {
+              alert('Doctor actualizado exitosamente');
+            } else {
+              console.warn('La especialidad del doctor no se reflejó correctamente en la respuesta');
+              alert('Doctor actualizado, pero verificar que los cambios se reflejen correctamente');
+            }
           } else {
-            // Crear nuevo doctor - necesitamos crear la cuenta primero
+            // Crear nuevo doctor usando el endpoint de dashboard
+            // Validar que el admin ID esté disponible antes de crear un doctor
+            if (!currentAdminId) {
+              alert('Error: No se pudo obtener la información del administrador. Por favor, recarga la página.');
+              return;
+            }
+            
             const email = document.getElementById('doctor-email').value;
             const password = document.getElementById('doctor-password').value;
+            const telefono = document.getElementById('doctor-telefono').value;
 
-            // 1. Primero crear la cuenta
-            const cuentaData = {
+            const doctorData = {
+              nombre: nombre,
               email: email,
               password: password,
-              tipo_cuenta: 'doctor',
+              especialidad_id: especialidadId || null,
+              cedula_profesional: cedula,
+              telefono: telefono,
+              admin_id: getCurrentAdminId(),
             };
 
-            const cuenta = await apiCall('/cuentas', {
-              method: 'POST',
-              body: JSON.stringify(cuentaData),
-            });
-
-            if (!cuenta || !cuenta.id) {
-              throw new Error('No se pudo crear la cuenta del doctor');
-            }
-
-            // 2. Luego crear el perfil del doctor
-            const doctorData = {
-              nombre: document.getElementById('doctor-nombre').value,
-              cedula_profesional:
-                document.getElementById('doctor-cedula').value,
-              especialidad: document.getElementById('doctor-especialidad')
-                .value,
-              telefono: document.getElementById('doctor-telefono').value,
-              cuenta_id: cuenta.id,
-              admin_id: getCurrentAdminId(), // Obtener del admin logueado
-            };
-
-            await apiCall('/doctors', {
+            await apiCall('/dashboard/doctors', {
               method: 'POST',
               body: JSON.stringify(doctorData),
             });
@@ -751,7 +845,11 @@
           }
 
           closeModal('doctor-modal');
-          loadDoctors(); // Recargar la lista
+          
+          // Forzar recarga de doctores después de un breve delay para asegurar que la DB se actualice
+          setTimeout(() => {
+            loadDoctors();
+          }, 500);
         } catch (error) {
           console.error('Error saving doctor:', error);
           alert(
@@ -796,6 +894,22 @@
           .substring(0, 2);
       }
 
+      function getSpecialtyLabel(specialty) {
+        // Si es null o undefined
+        if (!specialty) {
+          return 'No especificado';
+        }
+        // Si ya es un objeto con nombre, extraer el nombre
+        if (typeof specialty === 'object' && specialty !== null) {
+          return specialty.nombre || 'No especificado';
+        }
+        // Si es un string, devolverlo tal como está
+        if (typeof specialty === 'string' && specialty.trim() !== '') {
+          return specialty;
+        }
+        return 'No especificado';
+      }
+
       function openModal(modalId) {
         document.getElementById(modalId).classList.add('active');
       }
@@ -806,10 +920,10 @@
 
       // Función para obtener el ID del admin actual
       function getCurrentAdminId() {
-        // En una implementación real, esto vendría del token JWT
-        // Por ahora, simulamos que obtenemos un UUID válido
-        // En producción, esto debe venir de la sesión del usuario
-        return 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+        if (!currentAdminId) {
+          throw new Error('Admin ID no disponible. Asegúrate de que la página se ha cargado completamente.');
+        }
+        return currentAdminId;
       }
 
       // API Call function

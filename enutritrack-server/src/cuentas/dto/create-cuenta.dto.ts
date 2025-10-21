@@ -5,6 +5,14 @@ export class CreateCuentaDto {
   @IsEmail()
   email: string;
 
+  @IsEmail()
+  @IsOptional()
+  email_1?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email_2?: string;
+
   @IsString()
   @IsOptional()
   password?: string;

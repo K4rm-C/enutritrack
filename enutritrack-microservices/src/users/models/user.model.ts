@@ -16,12 +16,7 @@ import { PhysicalActivity } from '../../activity/models/activity.model';
 import { Recommendation } from '../../recommendation/models/recommendation.model';
 import { Doctor } from '../../doctor/models/doctor.model';
 import { Cuenta } from '../../shared/models/cuenta.model';
-
-export enum Gender {
-  MALE = 'M',
-  FEMALE = 'F',
-  OTHER = 'O',
-}
+import { Genero } from '../../shared/models/genero.model';
 
 export enum ActivityLevel {
   SEDENTARY = 'sedentario',
@@ -47,14 +42,20 @@ export class User {
   @Column({ type: 'date' })
   fecha_nacimiento: Date;
 
-  @Column({ type: 'enum', enum: Gender })
-  genero: Gender;
+  @Column({ type: 'uuid' })
+  genero_id: string;
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
   altura: number;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
   telefono: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono_1: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono_2: string;
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
@@ -74,6 +75,11 @@ export class User {
   })
   @JoinColumn({ name: 'doctor_id' })
   doctor?: Doctor;
+
+  // Relacion con Genero
+  @ManyToOne(() => Genero, (genero) => genero.usuarios)
+  @JoinColumn({ name: 'genero_id' })
+  genero: Genero;
 
   // Relaciones con otras entidades
   @OneToMany(() => FoodRecord, (foodRecord) => foodRecord.usuario)

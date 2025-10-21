@@ -27,7 +27,7 @@ export class Alergia {
   @Column({
     type: 'enum',
     enum: SeveridadEnum,
-    enumName: 'severidad_enum',
+    enumName: 'alergia_severidad_enum',
   })
   severidad: SeveridadEnum;
 

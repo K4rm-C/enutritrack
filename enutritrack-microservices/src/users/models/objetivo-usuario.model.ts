@@ -27,8 +27,6 @@ export class ObjetivoUsuario {
   })
   nivel_actividad: ActivityLevel;
 
-  @Column({ type: 'integer', nullable: true })
-  calorias_objetivo: number;
 
   @Column({ type: 'timestamp', default: () => 'now()' })
   fecha_establecido: Date;

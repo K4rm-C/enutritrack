@@ -16,6 +16,12 @@ export class Cuenta {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'email_1' })
+  email_1: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'email_2' })
+  email_2: string;
+
   @Column({ type: 'varchar', length: 255, name: 'password_hash' })
   password_hash: string;
 

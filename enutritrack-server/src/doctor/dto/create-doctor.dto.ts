@@ -11,9 +11,9 @@ export class CreatePerfilDoctorDto {
   @IsString()
   nombre: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
-  especialidad?: string;
+  especialidad_id?: string;
 
   @IsString()
   @IsOptional()
@@ -22,4 +22,12 @@ export class CreatePerfilDoctorDto {
   @IsString()
   @IsOptional()
   telefono?: string;
+
+  @IsString()
+  @IsOptional()
+  telefono_1?: string;
+
+  @IsString()
+  @IsOptional()
+  telefono_2?: string;
 }

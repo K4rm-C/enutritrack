@@ -24,7 +24,7 @@ export class CondicionMedica {
   @Column({
     type: 'enum',
     enum: SeveridadEnum,
-    enumName: 'severidad_enum',
+    enumName: 'condicion_medica_severidad_enum',
     nullable: true,
   })
   severidad: SeveridadEnum;

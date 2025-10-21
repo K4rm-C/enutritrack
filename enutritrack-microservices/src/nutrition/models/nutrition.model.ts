@@ -1,13 +1,7 @@
 // src/nutrition/entities/food-record.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { User } from '../../users/models/user.model';
-
-export enum MealType {
-  BREAKFAST = 'desayuno',
-  LUNCH = 'almuerzo',
-  DINNER = 'cena',
-  SNACK = 'merienda',
-}
+import { TipoComidaEnum } from '../../shared/enums';
 
 @Entity('registro_comida')
 export class FoodRecord {
@@ -20,8 +14,12 @@ export class FoodRecord {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   fecha: Date;
 
-  @Column({ type: 'enum', enum: MealType })
-  tipo_comida: MealType;
+  @Column({ 
+    type: 'enum', 
+    enum: TipoComidaEnum,
+    enumName: 'registro_comida_tipo_enum'
+  })
+  tipo_comida: TipoComidaEnum;
 
   @Column({ type: 'text' })
   descripcion: string;

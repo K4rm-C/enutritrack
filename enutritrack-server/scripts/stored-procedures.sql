@@ -15,11 +15,15 @@ RETURNS TABLE (
     id UUID,
     nombre VARCHAR,
     email VARCHAR,
+    email_1 VARCHAR,
+    email_2 VARCHAR,
     genero VARCHAR,
     fecha_nacimiento DATE,
     edad INTEGER,
     altura NUMERIC,
     telefono VARCHAR,
+    telefono_1 VARCHAR,
+    telefono_2 VARCHAR,
     doctor_id UUID,
     doctor_nombre VARCHAR,
     cuenta_activa BOOLEAN,
@@ -35,11 +39,15 @@ BEGIN
         pu.id,
         pu.nombre,
         c.email,
-        pu.genero::VARCHAR,
+        c.email_1,
+        c.email_2,
+        g.nombre AS genero,
         pu.fecha_nacimiento,
         EXTRACT(YEAR FROM AGE(CURRENT_DATE, pu.fecha_nacimiento))::INTEGER AS edad,
         pu.altura,
         pu.telefono,
+        pu.telefono_1,
+        pu.telefono_2,
         pu.doctor_id,
         pd.nombre AS doctor_nombre,
         c.activa AS cuenta_activa,
@@ -50,6 +58,7 @@ BEGIN
         (SELECT ou.nivel_actividad::VARCHAR FROM objetivo_usuario ou WHERE ou.usuario_id = pu.id AND ou.vigente = TRUE ORDER BY ou.fecha_establecido DESC LIMIT 1) AS nivel_actividad
     FROM perfil_usuario pu
     INNER JOIN cuentas c ON pu.cuenta_id = c.id
+    LEFT JOIN generos g ON pu.genero_id = g.id
     LEFT JOIN perfil_doctor pd ON pu.doctor_id = pd.id
     ORDER BY pu.created_at DESC;
 END;
@@ -77,7 +86,6 @@ RETURNS TABLE (
     cambio_peso NUMERIC,
     -- Objetivos
     nivel_actividad VARCHAR,
-    calorias_objetivo INTEGER,
     -- Conteos de registros
     total_registros_comida BIGINT,
     total_actividades_fisicas BIGINT,
@@ -112,7 +120,6 @@ BEGIN
         ) AS cambio_peso,
         -- Objetivos
         (SELECT ou.nivel_actividad::VARCHAR FROM objetivo_usuario ou WHERE ou.usuario_id = pu.id AND ou.vigente = TRUE ORDER BY ou.fecha_establecido DESC LIMIT 1) AS nivel_actividad,
-        (SELECT ou.calorias_objetivo FROM objetivo_usuario ou WHERE ou.usuario_id = pu.id AND ou.vigente = TRUE ORDER BY ou.fecha_establecido DESC LIMIT 1) AS calorias_objetivo,
         -- Conteos
         (SELECT COUNT(*)::BIGINT FROM registro_comida rc WHERE rc.usuario_id = pu.id) AS total_registros_comida,
         (SELECT COUNT(*)::BIGINT FROM actividad_fisica af WHERE af.usuario_id = pu.id) AS total_actividades_fisicas,
@@ -134,12 +141,28 @@ CREATE OR REPLACE FUNCTION sp_update_patient_doctor(
     p_doctor_id UUID
 )
 RETURNS BOOLEAN AS $$
+DECLARE
+    v_rows_affected INTEGER;
 BEGIN
+    -- Verificar que el paciente existe
+    IF NOT EXISTS (SELECT 1 FROM perfil_usuario WHERE id = p_patient_id) THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Verificar que el doctor existe (si se proporciona un doctor_id)
+    IF p_doctor_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM perfil_doctor WHERE id = p_doctor_id) THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Actualizar el doctor del paciente
     UPDATE perfil_usuario
     SET doctor_id = p_doctor_id
     WHERE id = p_patient_id;
     
-    RETURN FOUND;
+    GET DIAGNOSTICS v_rows_affected = ROW_COUNT;
+    
+    -- Retornar true si se afectó al menos una fila
+    RETURN v_rows_affected > 0;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -167,6 +190,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Actualizar información de un doctor
+CREATE OR REPLACE FUNCTION sp_update_doctor(
+    p_doctor_id UUID,
+    p_nombre VARCHAR,
+    p_cedula_profesional VARCHAR,
+    p_especialidad_id UUID,
+    p_telefono VARCHAR
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_rows_affected INTEGER;
+BEGIN
+    -- Verificar que el doctor existe
+    IF NOT EXISTS (SELECT 1 FROM perfil_doctor WHERE id = p_doctor_id) THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Verificar que la especialidad existe (si se proporciona una especialidad_id y no es NULL)
+    IF p_especialidad_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM especialidades WHERE id = p_especialidad_id) THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Actualizar todos los campos del doctor
+    UPDATE perfil_doctor
+    SET 
+        nombre = p_nombre,
+        cedula_profesional = p_cedula_profesional,
+        especialidad_id = p_especialidad_id,
+        telefono = p_telefono
+    WHERE id = p_doctor_id;
+    
+    GET DIAGNOSTICS v_rows_affected = ROW_COUNT;
+    
+    -- Retornar true si se afectó al menos una fila
+    RETURN v_rows_affected > 0;
+END;
+$$ LANGUAGE plpgsql;
+
 -- ========================================
 -- PROCEDIMIENTOS PARA DOCTORES
 -- ========================================
@@ -177,9 +238,13 @@ RETURNS TABLE (
     id UUID,
     nombre VARCHAR,
     email VARCHAR,
+    email_1 VARCHAR,
+    email_2 VARCHAR,
     especialidad VARCHAR,
     cedula_profesional VARCHAR,
     telefono VARCHAR,
+    telefono_1 VARCHAR,
+    telefono_2 VARCHAR,
     cuenta_activa BOOLEAN,
     created_at TIMESTAMP,
     total_pacientes BIGINT,
@@ -191,18 +256,23 @@ BEGIN
         pd.id,
         pd.nombre,
         c.email,
-        pd.especialidad,
+        c.email_1,
+        c.email_2,
+        e.nombre AS especialidad,
         pd.cedula_profesional,
         pd.telefono,
+        pd.telefono_1,
+        pd.telefono_2,
         c.activa AS cuenta_activa,
         pd.created_at,
         COUNT(pu.id) AS total_pacientes,
         COUNT(pu.id) FILTER (WHERE cu.activa = TRUE) AS pacientes_activos
     FROM perfil_doctor pd
     INNER JOIN cuentas c ON pd.cuenta_id = c.id
+    LEFT JOIN especialidades e ON pd.especialidad_id = e.id
     LEFT JOIN perfil_usuario pu ON pd.id = pu.doctor_id
     LEFT JOIN cuentas cu ON pu.cuenta_id = cu.id
-    GROUP BY pd.id, pd.nombre, c.email, pd.especialidad, pd.cedula_profesional, pd.telefono, c.activa, pd.created_at
+    GROUP BY pd.id, pd.nombre, c.email, c.email_1, c.email_2, e.nombre, pd.cedula_profesional, pd.telefono, pd.telefono_1, pd.telefono_2, c.activa, pd.created_at
     ORDER BY pd.created_at DESC;
 END;
 $$ LANGUAGE plpgsql;
@@ -213,9 +283,13 @@ RETURNS TABLE (
     id UUID,
     nombre VARCHAR,
     email VARCHAR,
+    email_1 VARCHAR,
+    email_2 VARCHAR,
     genero VARCHAR,
     edad INTEGER,
     telefono VARCHAR,
+    telefono_1 VARCHAR,
+    telefono_2 VARCHAR,
     cuenta_activa BOOLEAN,
     ultima_actividad TIMESTAMP
 ) AS $$
@@ -225,9 +299,13 @@ BEGIN
         pu.id,
         pu.nombre,
         c.email,
-        pu.genero::VARCHAR,
+        c.email_1,
+        c.email_2,
+        g.nombre AS genero,
         EXTRACT(YEAR FROM AGE(CURRENT_DATE, pu.fecha_nacimiento))::INTEGER AS edad,
         pu.telefono,
+        pu.telefono_1,
+        pu.telefono_2,
         c.activa AS cuenta_activa,
         GREATEST(
             (SELECT MAX(rc.fecha) FROM registro_comida rc WHERE rc.usuario_id = pu.id),
@@ -235,34 +313,35 @@ BEGIN
         ) AS ultima_actividad
     FROM perfil_usuario pu
     INNER JOIN cuentas c ON pu.cuenta_id = c.id
+    LEFT JOIN generos g ON pu.genero_id = g.id
     WHERE pu.doctor_id = p_doctor_id
     ORDER BY pu.nombre;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Eliminar función anterior si existe (para cambiar nombre del parámetro)
+DROP FUNCTION IF EXISTS sp_create_doctor(VARCHAR, VARCHAR, VARCHAR, UUID, VARCHAR, VARCHAR, VARCHAR, VARCHAR, UUID);
 
 -- Crear nuevo doctor
 CREATE OR REPLACE FUNCTION sp_create_doctor(
     p_nombre VARCHAR,
     p_email VARCHAR,
     p_password VARCHAR,
-    p_especialidad VARCHAR,
+    p_especialidad_id UUID,
     p_cedula_profesional VARCHAR,
     p_telefono VARCHAR,
-    p_admin_cuenta_id UUID
+    p_telefono_1 VARCHAR,
+    p_telefono_2 VARCHAR,
+    p_admin_id UUID
 )
 RETURNS UUID AS $$
 DECLARE
     v_cuenta_id UUID;
     v_doctor_id UUID;
-    v_admin_id UUID;
 BEGIN
-    -- Obtener perfil_admin.id desde la cuenta_id del admin
-    SELECT id INTO v_admin_id
-    FROM perfil_admin
-    WHERE cuenta_id = p_admin_cuenta_id;
-    
-    IF v_admin_id IS NULL THEN
-        RAISE EXCEPTION 'Perfil de administrador no encontrado para cuenta_id: %', p_admin_cuenta_id;
+    -- Verificar que el admin existe
+    IF NOT EXISTS (SELECT 1 FROM perfil_admin WHERE id = p_admin_id) THEN
+        RAISE EXCEPTION 'Perfil de administrador no encontrado para admin_id: %', p_admin_id;
     END IF;
     
     -- Crear cuenta para el doctor
@@ -270,9 +349,9 @@ BEGIN
     VALUES (p_email, p_password, 'doctor', TRUE)
     RETURNING id INTO v_cuenta_id;
     
-    -- Crear perfil de doctor
-    INSERT INTO perfil_doctor (cuenta_id, admin_id, nombre, especialidad, cedula_profesional, telefono)
-    VALUES (v_cuenta_id, v_admin_id, p_nombre, p_especialidad, p_cedula_profesional, p_telefono)
+    -- Crear perfil de doctor usando directamente el admin_id
+    INSERT INTO perfil_doctor (cuenta_id, admin_id, nombre, especialidad_id, cedula_profesional, telefono, telefono_1, telefono_2)
+    VALUES (v_cuenta_id, p_admin_id, p_nombre, p_especialidad_id, p_cedula_profesional, p_telefono, p_telefono_1, p_telefono_2)
     RETURNING id INTO v_doctor_id;
     
     RETURN v_doctor_id;
@@ -470,7 +549,7 @@ CREATE OR REPLACE FUNCTION reporte_consumo_mensual(
     p_ano INTEGER
 )
 RETURNS TABLE(
-    tipo_comida registro_comida_tipo_comida_enum,
+    tipo_comida registro_comida_tipo_enum,
     total_comidas BIGINT,
     promedio_calorias NUMERIC,
     total_proteinas NUMERIC,
@@ -500,7 +579,7 @@ RETURNS TABLE(
     total_actividades_registradas BIGINT,
     promedio_calorias_diarias NUMERIC,
     usuario_mas_activo VARCHAR,
-    comida_mas_comun registro_comida_tipo_comida_enum
+    comida_mas_comun registro_comida_tipo_enum
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -557,16 +636,16 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION buscar_usuarios_por_perfil(
     p_patron_nombre TEXT DEFAULT NULL,
-    p_nivel_actividad users_nivel_actividad_enum DEFAULT NULL,
-    p_genero users_genero_enum DEFAULT NULL
+    p_nivel_actividad nivel_actividad_enum DEFAULT NULL,
+    p_genero VARCHAR DEFAULT NULL
 )
 RETURNS TABLE(
     usuario_id UUID,
     nombre VARCHAR,
     email VARCHAR,
     fecha_nacimiento DATE,
-    genero users_genero_enum,
-    nivel_actividad users_nivel_actividad_enum,
+    genero VARCHAR,
+    nivel_actividad nivel_actividad_enum,
     peso_actual NUMERIC,
     objetivo_peso NUMERIC,
     doctor_asignado VARCHAR,
@@ -619,7 +698,7 @@ BEGIN
     LEFT JOIN admins a ON d.admin_id = a.id
     WHERE d.nombre ILIKE '%' || p_patron_nombre || '%'
         OR d.email ILIKE '%' || p_patron_nombre || '%'
-    GROUP BY d.id, d.nombre, d.email, d.created_at, a.nombre,
+    GROUP BY d.id, d.nombre, d.email, d.created_at, a.nombre
     ORDER BY tipo_staff, total_usuarios_asignados DESC;
 END;
 $$ LANGUAGE plpgsql;
@@ -634,7 +713,7 @@ COMMENT ON FUNCTION sp_update_patient_doctor(UUID, UUID) IS 'Actualiza el doctor
 COMMENT ON FUNCTION sp_toggle_patient_status(UUID) IS 'Activa o desactiva la cuenta de un paciente (toggle)';
 COMMENT ON FUNCTION sp_get_all_doctors() IS 'Obtiene listado completo de doctores con estadisticas';
 COMMENT ON FUNCTION sp_get_doctor_patients(UUID) IS 'Obtiene pacientes asignados a un doctor';
-COMMENT ON FUNCTION sp_create_doctor(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, UUID) IS 'Crea un nuevo doctor con su cuenta (recibe cuenta_id del admin)';
+COMMENT ON FUNCTION sp_create_doctor(VARCHAR, VARCHAR, VARCHAR, UUID, VARCHAR, VARCHAR, VARCHAR, VARCHAR, UUID) IS 'Crea un nuevo doctor con su cuenta (recibe admin_id del perfil_admin)';
 COMMENT ON FUNCTION sp_get_all_admins() IS 'Obtiene listado completo de administradores';
 COMMENT ON FUNCTION sp_get_admin_details(VARCHAR) IS 'Obtiene detalles de un administrador especifico';
 COMMENT ON FUNCTION sp_get_dashboard_stats() IS 'Obtiene estadisticas generales para el dashboard';

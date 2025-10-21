@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { Cuenta } from '../../cuentas/models/cuenta.model';
 import { PerfilDoctor } from '../../doctor/models/doctor.model';
-import { GeneroEnum } from '../../shared/enum';
+import { Genero } from '../../genero/models/genero.model';
 
 @Entity('perfil_usuario')
 export class PerfilUsuario {
@@ -30,18 +30,20 @@ export class PerfilUsuario {
   @Column({ type: 'date' })
   fecha_nacimiento: Date;
 
-  @Column({
-    type: 'enum',
-    enum: GeneroEnum,
-    enumName: 'genero_enum',
-  })
-  genero: GeneroEnum;
+  @Column({ type: 'uuid' })
+  genero_id: string;
 
   @Column({ type: 'numeric', precision: 5, scale: 2 })
   altura: number;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
   telefono: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono_1: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono_2: string;
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
@@ -56,4 +58,8 @@ export class PerfilUsuario {
   @ManyToOne(() => PerfilDoctor, (doctor) => doctor.pacientes)
   @JoinColumn({ name: 'doctor_id' })
   doctor: PerfilDoctor;
+
+  @ManyToOne(() => Genero, (genero) => genero.usuarios)
+  @JoinColumn({ name: 'genero_id' })
+  genero: Genero;
 }

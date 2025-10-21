@@ -19,6 +19,19 @@ import { RegistroComidaModule } from './nutrition/nutrition.module';
 import { RegistroComidaItemsModule } from './registro-comida-item/registro-comida-item.module';
 import { RecomendacionModule } from './recommendation/recommendation.module';
 import { RecomendacionDatosModule } from './recomendacion-dato/recomendacion-dato.module';
+import { EspecialidadModule } from './especialidad/especialidad.module';
+import { GeneroModule } from './genero/genero.module';
+import { TiposConsultaModule } from './tipos-consulta/tipos-consulta.module';
+import { EstadosCitaModule } from './estados-cita/estados-cita.module';
+import { CategoriasAlertaModule } from './categorias-alerta/categorias-alerta.module';
+import { NivelesPrioridadAlertaModule } from './niveles-prioridad-alerta/niveles-prioridad-alerta.module';
+import { EstadosAlertaModule } from './estados-alerta/estados-alerta.module';
+import { TiposAlertaModule } from './tipos-alerta/tipos-alerta.module';
+import { CitasMedicasModule } from './citas-medicas/citas-medicas.module';
+import { AlertasModule } from './alertas/alertas.module';
+import { AlertasAccionesModule } from './alertas-acciones/alertas-acciones.module';
+import { ConfiguracionAlertasAutomaticasModule } from './configuracion-alertas-automaticas/configuracion-alertas-automaticas.module';
+import { CouchbaseAlertsCitasModule } from './couchbase-alerts-citas/couchbase-alerts-citas.module';
 
 @Module({
   imports: [
@@ -54,6 +67,19 @@ import { RecomendacionDatosModule } from './recomendacion-dato/recomendacion-dat
     RegistroComidaItemsModule,
     RecomendacionModule,
     RecomendacionDatosModule,
+    EspecialidadModule,
+    GeneroModule,
+    TiposConsultaModule,
+    EstadosCitaModule,
+    CategoriasAlertaModule,
+    NivelesPrioridadAlertaModule,
+    EstadosAlertaModule,
+    TiposAlertaModule,
+    CitasMedicasModule,
+    AlertasModule,
+    AlertasAccionesModule,
+    ConfiguracionAlertasAutomaticasModule,
+    CouchbaseAlertsCitasModule,
   ],
 })
 export class AppModule {}
