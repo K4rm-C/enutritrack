@@ -18,9 +18,6 @@ export class CreateObjetivoUsuarioDto {
   @IsEnum(NivelActividadEnum)
   nivel_actividad: NivelActividadEnum;
 
-  @IsNumber()
-  @IsOptional()
-  calorias_objetivo?: number;
 
   @IsBoolean()
   @IsOptional()

@@ -39,6 +39,7 @@ import {
   AlertTriangle,
   Thermometer,
   ThermometerIcon,
+  Phone,
 } from "lucide-react";
 import { useUsers } from "../../context/user/user.context";
 import { useAuth } from "../../context/auth/auth.context";
@@ -57,14 +58,17 @@ const UsersListDashboard = ({ darkMode = false }) => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const { createUser, updateUser, getUsers, getUsersByDoctorId, deleteUser } = useUsers();
+  const { createUser, updateUser, getUsers, getUsersByDoctorId, deleteUser, getUserById } = useUsers();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     nombre: "",
     email: "",
+    email_1: "",
+    email_2: "",
     contraseña: "",
     genero: "",
     fecha_nacimiento: "",
@@ -72,6 +76,9 @@ const UsersListDashboard = ({ darkMode = false }) => {
     peso_actual: "",
     objetivo_peso: "",
     nivel_actividad: "",
+    telefono: "",
+    telefono_1: "",
+    telefono_2: "",
     doctorId: user?.userId || "",
   });
 
@@ -93,30 +100,74 @@ const UsersListDashboard = ({ darkMode = false }) => {
     }));
   };
 
-  const handleOpenForm = (userdata = null) => {
+  const handleOpenForm = async (userdata = null) => {
     if (userdata) {
-      // Modo edición
+      // Verificar que tenemos un ID válido
+      if (!userdata.id) {
+        console.error("Error: userdata.id es undefined", userdata);
+        toast.error("Error: ID de usuario no válido");
+        return;
+      }
+      
+      // Modo edición - obtener datos completos del usuario
       setEditingUser(userdata);
-      setFormData({
-        nombre: userdata.nombre || "",
-        email: userdata.email || "",
-        contraseña: "",
-        genero: userdata.genero || userdata.género || "",
-        fecha_nacimiento:
-          userdata.fechaNacimiento || userdata.fecha_nacimiento || "",
-        altura: userdata.altura || "",
-        peso_actual: userdata.pesoActual || userdata.peso_actual || "",
-        objetivo_peso: userdata.objetivoPeso || userdata.objetivo_peso || "",
-        nivel_actividad:
-          userdata.nivelActividad || userdata.nivel_actividad || "",
-        doctorId: user?.userId || "",
-      });
+      try {
+        const fullUserData = await getUserById(userdata.id);
+        
+        // Actualizar editingUser con los datos completos, asegurando que tenga el ID correcto
+        setEditingUser({ ...fullUserData, id: userdata.id });
+        
+        const formDate = fullUserData.fecha_nacimiento instanceof Date 
+          ? fullUserData.fecha_nacimiento.toISOString().split('T')[0]
+          : fullUserData.fecha_nacimiento || fullUserData.fechaNacimiento || "";
+        
+        setFormData({
+          nombre: fullUserData.nombre || "",
+          email: fullUserData.email || fullUserData.cuenta?.email || "",
+          email_1: fullUserData.email_1 || "",
+          email_2: fullUserData.email_2 || "",
+          contraseña: "",
+          genero: fullUserData.genero_id || fullUserData.genero?.id || "",
+          fecha_nacimiento: formDate,
+          altura: fullUserData.altura || "",
+          peso_actual: fullUserData.peso_actual || fullUserData.pesoActual || "",
+          objetivo_peso: fullUserData.objetivo_peso || fullUserData.objetivoPeso || "",
+          nivel_actividad: fullUserData.nivel_actividad || fullUserData.nivelActividad || "",
+          telefono: fullUserData.telefono || "",
+          telefono_1: fullUserData.telefono_1 || "",
+          telefono_2: fullUserData.telefono_2 || "",
+          doctorId: user?.userId || "",
+        });
+      } catch (error) {
+        console.error("Error obteniendo datos completos del usuario:", error);
+        toast.error("Error al cargar los datos del usuario");
+        // Fallback a datos básicos si falla la llamada
+        setFormData({
+          nombre: userdata.nombre || "",
+          email: userdata.email || "",
+          email_1: "",
+          email_2: "",
+          contraseña: "",
+          genero: userdata.genero_id || userdata.genero?.id || "",
+          fecha_nacimiento: userdata.fecha_nacimiento || userdata.fechaNacimiento || "",
+          altura: userdata.altura || "",
+          peso_actual: userdata.peso_actual || userdata.pesoActual || "",
+          objetivo_peso: userdata.objetivo_peso || userdata.objetivoPeso || "",
+          nivel_actividad: userdata.nivel_actividad || userdata.nivelActividad || "",
+          telefono: userdata.telefono || "",
+          telefono_1: userdata.telefono_1 || "",
+          telefono_2: userdata.telefono_2 || "",
+          doctorId: user?.userId || "",
+        });
+      }
     } else {
       // Modo creación
       setEditingUser(null);
       setFormData({
         nombre: "",
         email: "",
+        email_1: "",
+        email_2: "",
         contraseña: "",
         genero: "",
         fecha_nacimiento: "",
@@ -124,6 +175,9 @@ const UsersListDashboard = ({ darkMode = false }) => {
         peso_actual: "",
         objetivo_peso: "",
         nivel_actividad: "",
+        telefono: "",
+        telefono_1: "",
+        telefono_2: "",
         doctorId: user?.userId || "",
       });
     }
@@ -171,11 +225,18 @@ const UsersListDashboard = ({ darkMode = false }) => {
     e.preventDefault();
     try {
       if (editingUser) {
+        // Verificar que tenemos un ID válido antes de actualizar
+        if (!editingUser.id) {
+          console.error("Error: editingUser.id es undefined", editingUser);
+          toast.error("Error: ID de usuario no válido para actualización");
+          return;
+        }
+        
         // Actualizar usuario existente
-        const updatedUser = await updateUser(editingUser.userId, formData);
+        const updatedUser = await updateUser(editingUser.id, formData);
         setUsers(
           users.map((user) =>
-            user.id === editingUser.userId ? updatedUser : user
+            user.id === editingUser.id ? updatedUser : user
           )
         );
         toast.success("Usuario actualizado correctamente");
@@ -224,10 +285,23 @@ const UsersListDashboard = ({ darkMode = false }) => {
     const matchesSearch =
       user.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGender =
-      !filterGender ||
-      user.genero === filterGender ||
-      user.género === filterGender;
+    
+    // Corregir filtro de género
+    const matchesGender = !filterGender || (() => {
+      const genero = user.genero?.nombre || user.genero;
+      if (filterGender === "M") {
+        return genero === "Masculino" || genero === "M";
+      }
+      if (filterGender === "F") {
+        return genero === "Femenino" || genero === "F";
+      }
+      if (filterGender === "O") {
+        return genero === "Otro" || genero === "O";
+      }
+      return false;
+    })();
+    
+    // Corregir filtro de actividad
     const matchesActivity =
       !filterActivity ||
       user.nivelActividad === filterActivity ||
@@ -263,22 +337,28 @@ const UsersListDashboard = ({ darkMode = false }) => {
   const u = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
 
-  // Estadísticas generales
+  // Estadísticas generales - usar todos los usuarios, no solo los paginados
   const stats = {
-    total: u.length,
-    hombres: u.filter((u) => (u.genero || u.género) === "M").length,
-    mujeres: u.filter((u) => (u.genero || u.género) === "F").length,
+    total: users.length,
+    hombres: users.filter((user) => {
+      const genero = user.genero?.nombre || user.genero;
+      return genero === "Masculino" || genero === "M";
+    }).length,
+    mujeres: users.filter((user) => {
+      const genero = user.genero?.nombre || user.genero;
+      return genero === "Femenino" || genero === "F";
+    }).length,
     edadPromedio:
-      u.length > 0
+      users.length > 0
         ? (
-            u.reduce((sum, u) => {
+            users.reduce((sum, user) => {
               const edad = calcularEdad(
-                u.fechaNacimiento || u.fecha_nacimiento
+                user.fechaNacimiento || user.fecha_nacimiento
               );
               return sum + (edad || 0);
             }, 0) /
-            u.filter((u) =>
-              calcularEdad(u.fechaNacimiento || u.fecha_nacimiento)
+            users.filter((user) =>
+              calcularEdad(user.fechaNacimiento || user.fecha_nacimiento)
             ).length
           ).toFixed(1)
         : 0,
@@ -344,9 +424,24 @@ const UsersListDashboard = ({ darkMode = false }) => {
     );
   };
 
+  const handleViewDetails = async (userId) => {
+    setLoadingUserDetails(true);
+    try {
+      const userDetails = await getUserById(userId);
+      setSelectedUser(userDetails);
+      setShowUserModal(true);
+    } catch (error) {
+      console.error("Error cargando detalles del usuario:", error);
+      toast.error("Error al cargar los detalles del paciente");
+    } finally {
+      setLoadingUserDetails(false);
+    }
+  };
+
   const UserCard = ({ user }) => {
     const edad = calcularEdad(user.fechaNacimiento || user.fecha_nacimiento);
-    const imc = calcularIMC(user.pesoActual || user.peso_actual, user.altura);
+    // Usar el IMC del backend si está disponible, de lo contrario calcularlo
+    const imc = user.imc || calcularIMC(user.pesoActual || user.peso_actual, user.altura);
     const estadoIMC = getEstadoIMC(imc);
 
     return (
@@ -406,18 +501,16 @@ const UsersListDashboard = ({ darkMode = false }) => {
               }`}
             >
               <button
-                onClick={() => {
-                  setSelectedUser(user);
-                  setShowUserModal(true);
-                }}
-                className={`w-full flex items-center px-4 py-2 text-sm hover:bg-opacity-50 ${
+                onClick={() => handleViewDetails(user.id)}
+                disabled={loadingUserDetails}
+                className={`w-full flex items-center px-4 py-2 text-sm hover:bg-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed ${
                   darkMode
                     ? "text-gray-300 hover:bg-gray-700"
                     : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <Eye className="h-4 w-4 mr-2" />
-                Ver detalles
+                {loadingUserDetails ? "Cargando..." : "Ver detalles"}
               </button>
               <button
                 onClick={() => handleOpenForm(user)}
@@ -459,7 +552,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
               Género
             </span>
             <span className={darkMode ? "text-white" : "text-gray-900"}>
-              {user.genero || user.género || "N/A"}
+              {user.genero?.nombre || user.genero || user.género || "N/A"}
             </span>
           </div>
 
@@ -517,7 +610,8 @@ const UsersListDashboard = ({ darkMode = false }) => {
     const edad = calcularEdad(
       selectedUser.fechaNacimiento || selectedUser.fecha_nacimiento
     );
-    const imc = calcularIMC(
+    // Usar el IMC del backend si está disponible, de lo contrario calcularlo
+    const imc = selectedUser.imc || calcularIMC(
       selectedUser.pesoActual || selectedUser.peso_actual,
       selectedUser.altura
     );
@@ -722,7 +816,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
             <MetricCard
               icon={Mail}
               label="Email"
-              value={selectedUser.email}
+              value={selectedUser.email || "No especificado"}
               color="emerald"
             />
             <MetricCard
@@ -735,7 +829,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
               icon={User}
               label="Género"
               value={
-                selectedUser.genero || selectedUser.género || "No especificado"
+                selectedUser.genero?.nombre || selectedUser.genero || selectedUser.género || "No especificado"
               }
               color="emerald"
             />
@@ -746,6 +840,38 @@ const UsersListDashboard = ({ darkMode = false }) => {
               color="emerald"
             />
           </div>
+
+          {/* Sección de teléfonos */}
+          {(selectedUser.telefono || selectedUser.telefono_1 || selectedUser.telefono_2) && (
+            <div className="mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {selectedUser.telefono && (
+                  <MetricCard
+                    icon={Phone}
+                    label="Teléfono Principal"
+                    value={selectedUser.telefono}
+                    color="emerald"
+                  />
+                )}
+                {selectedUser.telefono_1 && (
+                  <MetricCard
+                    icon={Phone}
+                    label="Teléfono 1"
+                    value={selectedUser.telefono_1}
+                    color="emerald"
+                  />
+                )}
+                {selectedUser.telefono_2 && (
+                  <MetricCard
+                    icon={Phone}
+                    label="Teléfono 2"
+                    value={selectedUser.telefono_2}
+                    color="emerald"
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
@@ -1846,7 +1972,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
 
         {/* Lista de usuarios */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          {users.map((user) => (
+          {u.map((user) => (
             <UserCard key={user.id} user={user} />
           ))}
         </div>
@@ -2077,6 +2203,56 @@ const UsersListDashboard = ({ darkMode = false }) => {
                           darkMode ? "text-gray-300" : "text-gray-700"
                         }`}
                       >
+                        Email Adicional 1
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="email"
+                          name="email_1"
+                          value={formData.email_1}
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
+                            darkMode
+                              ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                              : "border-gray-300 bg-white text-gray-900 placeholder-gray-400"
+                          }`}
+                          placeholder="email1@correo.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Email Adicional 2
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="email"
+                          name="email_2"
+                          value={formData.email_2}
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
+                            darkMode
+                              ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                              : "border-gray-300 bg-white text-gray-900 placeholder-gray-400"
+                          }`}
+                          placeholder="email2@correo.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
                         Contraseña
                       </label>
                       <div className="relative">
@@ -2122,9 +2298,9 @@ const UsersListDashboard = ({ darkMode = false }) => {
                           }`}
                         >
                           <option value="">Seleccionar género</option>
-                          <option value="M">Masculino</option>
-                          <option value="F">Femenino</option>
-                          <option value="O">Otro</option>
+                          <option value="a1b2c3d4-e5f6-7890-abcd-ef1234567890">Masculino</option>
+                          <option value="b2c3d4e5-f6a7-8901-bcde-f12345678901">Femenino</option>
+                          <option value="c3d4e5f6-a7b8-9012-cdef-123456789012">Otro</option>
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                       </div>
@@ -2264,6 +2440,81 @@ const UsersListDashboard = ({ darkMode = false }) => {
                           <option value="muy_activo">Muy Activo</option>
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Teléfono Principal
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="tel"
+                          name="telefono"
+                          value={formData.telefono}
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
+                            darkMode
+                              ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                              : "border-gray-300 bg-white text-gray-900 placeholder-gray-400"
+                          }`}
+                          placeholder="Ej: 555-123-4567"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Teléfono 1
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="tel"
+                          name="telefono_1"
+                          value={formData.telefono_1}
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
+                            darkMode
+                              ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                              : "border-gray-300 bg-white text-gray-900 placeholder-gray-400"
+                          }`}
+                          placeholder="Ej: 555-987-6543"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Teléfono 2
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="tel"
+                          name="telefono_2"
+                          value={formData.telefono_2}
+                          onChange={handleInputChange}
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
+                            darkMode
+                              ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                              : "border-gray-300 bg-white text-gray-900 placeholder-gray-400"
+                          }`}
+                          placeholder="Ej: 555-456-7890"
+                        />
                       </div>
                     </div>
                   </div>

@@ -46,9 +46,9 @@ export class PerfilDoctorController {
     return this.perfilDoctorService.searchDoctores(query);
   }
 
-  @Get('especialidad/:especialidad')
-  getDoctoresPorEspecialidad(@Param('especialidad') especialidad: string) {
-    return this.perfilDoctorService.getDoctoresPorEspecialidad(especialidad);
+  @Get('especialidad/:especialidadId')
+  getDoctoresPorEspecialidad(@Param('especialidadId') especialidadId: string) {
+    return this.perfilDoctorService.getDoctoresPorEspecialidad(especialidadId);
   }
 
   @Get('cuenta/:cuentaId')

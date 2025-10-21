@@ -26,6 +26,12 @@ export class PerfilAdmin {
   @Column({ type: 'varchar', length: 20, nullable: true })
   telefono: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono_1: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono_2: string;
+
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 

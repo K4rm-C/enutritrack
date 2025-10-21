@@ -4,6 +4,8 @@ import { UsersController } from './users.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './models/user.model';
 import { Cuenta } from '../shared/models/cuenta.model';
+import { Genero } from '../shared/models/genero.model';
+import { Especialidad } from '../shared/models/especialidad.model';
 import { HistorialPeso } from './models/historial-peso.model';
 import { ObjetivoUsuario } from './models/objetivo-usuario.model';
 import { CouchbaseModule } from '../couchbase/couchbase.module';
@@ -14,7 +16,7 @@ import { DoctorModule } from '../doctor/doctor.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Cuenta, HistorialPeso, ObjetivoUsuario]),
+    TypeOrmModule.forFeature([User, Cuenta, Genero, Especialidad, HistorialPeso, ObjetivoUsuario]),
     CacheModule.register(),
     HttpModule,
     CouchbaseModule,

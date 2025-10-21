@@ -14,4 +14,12 @@ export class CreatePerfilAdminDto {
   @IsString()
   @IsOptional()
   telefono?: string;
+
+  @IsString()
+  @IsOptional()
+  telefono_1?: string;
+
+  @IsString()
+  @IsOptional()
+  telefono_2?: string;
 }

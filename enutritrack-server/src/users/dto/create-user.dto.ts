@@ -2,11 +2,10 @@ import {
   IsUUID,
   IsString,
   IsDate,
-  IsEnum,
   IsNumber,
   IsOptional,
 } from 'class-validator';
-import { GeneroEnum } from '../../shared/enum';
+import { Transform, Type } from 'class-transformer';
 
 export class CreatePerfilUsuarioDto {
   @IsUUID()
@@ -20,10 +19,12 @@ export class CreatePerfilUsuarioDto {
   nombre: string;
 
   @IsDate()
+  @Type(() => Date)
+  @Transform(({ value }) => new Date(value))
   fecha_nacimiento: Date;
 
-  @IsEnum(GeneroEnum)
-  genero: GeneroEnum;
+  @IsUUID()
+  genero_id: string;
 
   @IsNumber()
   altura: number;
@@ -31,4 +32,12 @@ export class CreatePerfilUsuarioDto {
   @IsString()
   @IsOptional()
   telefono?: string;
+
+  @IsString()
+  @IsOptional()
+  telefono_1?: string;
+
+  @IsString()
+  @IsOptional()
+  telefono_2?: string;
 }

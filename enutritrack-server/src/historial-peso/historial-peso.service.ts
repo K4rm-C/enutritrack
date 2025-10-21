@@ -2,8 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { HistorialPeso } from './models/historial-peso.model';
-import { CreateHistorialPesoDto } from './dto/create-historial-peso.dto';
-import { UpdateHistorialPesoDto } from './dto/update-historial-peso.dto';
 
 @Injectable()
 export class HistorialPesoService {
@@ -12,79 +10,65 @@ export class HistorialPesoService {
     private readonly historialPesoRepository: Repository<HistorialPeso>,
   ) {}
 
-  async create(
-    createHistorialPesoDto: CreateHistorialPesoDto,
-  ): Promise<HistorialPeso> {
-    const historialPeso = this.historialPesoRepository.create(
-      createHistorialPesoDto,
-    );
-    return await this.historialPesoRepository.save(historialPeso);
+  async findByUsuarioId(usuarioId: string): Promise<HistorialPeso[]> {
+    return await this.historialPesoRepository.find({
+      where: { usuario_id: usuarioId },
+      order: { fecha_registro: 'DESC' },
+    });
+  }
+
+  async getUltimoPeso(usuarioId: string): Promise<HistorialPeso | null> {
+    return await this.historialPesoRepository.findOne({
+      where: { usuario_id: usuarioId },
+      order: { fecha_registro: 'DESC' },
+    });
+  }
+
+  async create(pesoData: Partial<HistorialPeso>): Promise<HistorialPeso> {
+    const peso = this.historialPesoRepository.create(pesoData);
+    return await this.historialPesoRepository.save(peso);
+  }
+
+  async update(id: string, pesoData: Partial<HistorialPeso>): Promise<HistorialPeso | null> {
+    await this.historialPesoRepository.update(id, pesoData);
+    return await this.historialPesoRepository.findOne({ where: { id } });
   }
 
   async findAll(): Promise<HistorialPeso[]> {
     return await this.historialPesoRepository.find({
-      relations: ['usuario'],
       order: { fecha_registro: 'DESC' },
     });
   }
 
-  async findOne(id: string): Promise<HistorialPeso> {
-    const historialPeso = await this.historialPesoRepository.findOne({
-      where: { id },
-      relations: ['usuario'],
-    });
-    if (!historialPeso) {
+  async findOne(id: string): Promise<HistorialPeso | null> {
+    const peso = await this.historialPesoRepository.findOne({ where: { id } });
+    if (!peso) {
       throw new NotFoundException('Registro de peso no encontrado');
     }
-    return historialPeso;
+    return peso;
   }
 
-  async findByUsuarioId(usuarioId: string): Promise<HistorialPeso[]> {
-    return await this.historialPesoRepository.find({
-      where: { usuario_id: usuarioId },
-      relations: ['usuario'],
-      order: { fecha_registro: 'DESC' },
-    });
-  }
-
-  async findUltimoRegistro(usuarioId: string): Promise<HistorialPeso> {
-    const historial = await this.historialPesoRepository.findOne({
+  async findUltimoRegistro(usuarioId: string): Promise<HistorialPeso | null> {
+    return await this.historialPesoRepository.findOne({
       where: { usuario_id: usuarioId },
       order: { fecha_registro: 'DESC' },
     });
-    if (!historial) {
-      throw new NotFoundException(
-        'No se encontraron registros de peso para el usuario',
-      );
-    }
-    return historial;
   }
 
-  async findByRangoFechas(
-    usuarioId: string,
-    fechaInicio: Date,
-    fechaFin: Date,
-  ): Promise<HistorialPeso[]> {
+  async findByRangoFechas(usuarioId: string, fechaInicio: Date, fechaFin: Date): Promise<HistorialPeso[]> {
     return await this.historialPesoRepository.find({
       where: {
         usuario_id: usuarioId,
         fecha_registro: Between(fechaInicio, fechaFin),
       },
-      order: { fecha_registro: 'ASC' },
+      order: { fecha_registro: 'DESC' },
     });
   }
 
-  async update(
-    id: string,
-    updateHistorialPesoDto: UpdateHistorialPesoDto,
-  ): Promise<HistorialPeso> {
-    const historialPeso = await this.findOne(id);
-    Object.assign(historialPeso, updateHistorialPesoDto);
-    return await this.historialPesoRepository.save(historialPeso);
-  }
-
   async remove(id: string): Promise<void> {
-    const historialPeso = await this.findOne(id);
-    await this.historialPesoRepository.remove(historialPeso);
+    const peso = await this.findOne(id);
+    if (peso) {
+      await this.historialPesoRepository.remove(peso);
+    }
   }
 }

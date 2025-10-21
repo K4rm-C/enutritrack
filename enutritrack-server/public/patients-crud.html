@@ -521,6 +521,7 @@
                   type="text"
                   class="form-control"
                   id="patient-nombre"
+                  name="patient-nombre"
                   required
                 />
               </div>
@@ -530,6 +531,7 @@
                   type="date"
                   class="form-control"
                   id="patient-fecha-nacimiento"
+                  name="patient-fecha-nacimiento"
                   required
                 />
               </div>
@@ -537,11 +539,11 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Género *</label>
-                <select class="form-control" id="patient-genero" required>
+                <select class="form-control" id="patient-genero-id" name="patient-genero-id" required>
                   <option value="">Seleccionar...</option>
-                  <option value="M">Masculino</option>
-                  <option value="F">Femenino</option>
-                  <option value="O">Otro</option>
+                  <option value="a1b2c3d4-e5f6-7890-abcd-ef1234567890">Masculino</option>
+                  <option value="b2c3d4e5-f6a7-8901-bcde-f12345678901">Femenino</option>
+                  <option value="c3d4e5f6-a7b8-9012-cdef-123456789012">Otro</option>
                 </select>
               </div>
               <div class="form-group">
@@ -550,6 +552,7 @@
                   type="number"
                   class="form-control"
                   id="patient-altura"
+                  name="patient-altura"
                   step="0.01"
                   min="0"
                   required
@@ -613,6 +616,7 @@
                     type="email"
                     class="form-control"
                     id="patient-email"
+                    name="patient-email"
                     required
                   />
                 </div>
@@ -622,6 +626,7 @@
                     type="password"
                     class="form-control"
                     id="patient-password"
+                    name="patient-password"
                     required
                   />
                 </div>
@@ -805,8 +810,9 @@
                     <td>${getGenderLabel(patient.genero)}</td>
                     <td>${edad}</td>
                     <td>
-                        <div style="font-weight: 600; color: #1f2937;">${patient.peso_actual || 'N/A'} kg</div>
-                        <div style="font-size: 0.75rem; color: #6b7280;">Objetivo: ${patient.peso_objetivo || 'N/A'} kg</div>
+                        <div style="font-weight: 600; color: #1f2937;">${patient.ultimo_peso || 'N/A'} kg</div>
+                        <div style="font-size: 0.75rem; color: #6b7280;">Objetivo: ${patient.objetivo_peso || 'N/A'} kg</div>
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 2px;">${getActivityLevelLabel(patient.nivel_actividad)}</div>
                     </td>
                     <td>
                         <span class="badge ${patient.cuenta && patient.cuenta.activa ? 'badge-success' : 'badge-danger'}">
@@ -876,20 +882,31 @@
           const patient = await apiCall(`/users/${patientId}`);
           currentPatientId = patientId;
 
+          console.log('Datos del paciente cargado:', patient);
+          console.log('patient.genero_id:', patient.genero_id);
+          console.log('patient.genero:', patient.genero);
+
           document.getElementById('patient-modal-title').textContent =
             'Editar Paciente';
           document.getElementById('patient-id').value = patient.id;
           document.getElementById('patient-nombre').value = patient.nombre;
           document.getElementById('patient-fecha-nacimiento').value =
-            patient.fechaNacimiento;
-          document.getElementById('patient-genero').value = patient.genero;
+            new Date(patient.fecha_nacimiento).toISOString().split('T')[0];
+          
+          // Asegurar que se use el genero_id correcto
+          const generoIdToSet = patient.genero_id || (patient.genero && patient.genero.id);
+          console.log('Género ID a establecer:', generoIdToSet);
+          document.getElementById('patient-genero-id').value = generoIdToSet || '';
+          
           document.getElementById('patient-altura').value = patient.altura;
+          
+          // Cargar datos de peso y actividad desde los objetos relacionados
           document.getElementById('patient-peso-actual').value =
-            patient.pesoActual;
+            patient.ultimoPeso?.peso || '';
           document.getElementById('patient-peso-objetivo').value =
-            patient.pesoObjetivo || '';
+            patient.objetivo?.peso_objetivo || '';
           document.getElementById('patient-nivel-actividad').value =
-            patient.nivelActividad;
+            patient.objetivo?.nivel_actividad || '';
           document.getElementById('patient-doctor-id').value =
             patient.doctor_id || '';
 
@@ -906,48 +923,137 @@
 
       // Guardar paciente (crear o actualizar)
       async function savePatient() {
-        const form = document.getElementById('patient-form');
-        if (!form.checkValidity()) {
-          form.reportValidity();
+        // Validación manual de campos requeridos para el backend
+        const nombre = document.getElementById('patient-nombre').value;
+        const fechaNacimiento = document.getElementById('patient-fecha-nacimiento').value;
+        const generoId = document.getElementById('patient-genero-id').value;
+        const altura = document.getElementById('patient-altura').value;
+
+        // Debug: verificar que estamos obteniendo el UUID correcto
+        console.log('Valor inicial del género obtenido del selector:', generoId);
+        console.log('Tipo de dato:', typeof generoId);
+        
+        // Verificar si por alguna razón se está obteniendo el texto en lugar del value
+        const generoSelect = document.getElementById('patient-genero-id');
+        const selectedOption = generoSelect.options[generoSelect.selectedIndex];
+        console.log('Opción seleccionada:', selectedOption.text, 'Valor:', selectedOption.value);
+
+        if (!nombre.trim()) {
+          alert('El nombre es requerido');
+          document.getElementById('patient-nombre').focus();
           return;
+        }
+
+        if (!fechaNacimiento) {
+          alert('La fecha de nacimiento es requerida');
+          document.getElementById('patient-fecha-nacimiento').focus();
+          return;
+        }
+
+        if (!generoId) {
+          alert('El género es requerido');
+          document.getElementById('patient-genero-id').focus();
+          return;
+        }
+
+        // Validar que el género ID sea un UUID válido
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(generoId)) {
+          console.error('UUID inválido detectado:', generoId, 'Length:', generoId.length);
+          alert('Error: El género seleccionado no es válido. Por favor, seleccione un género válido.');
+          document.getElementById('patient-genero-id').focus();
+          return;
+        }
+
+        // Validar que sea uno de los UUIDs esperados
+        const validGenderIds = [
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890', // Masculino
+          'b2c3d4e5-f6a7-8901-bcde-f12345678901', // Femenino
+          'c3d4e5f6-a7b8-9012-cdef-123456789012'  // Otro
+        ];
+        
+        if (!validGenderIds.includes(generoId)) {
+          console.error('UUID de género no válido:', generoId);
+          alert('Error: El género seleccionado no es reconocido por el sistema.');
+          document.getElementById('patient-genero-id').focus();
+          return;
+        }
+
+        if (!altura || parseFloat(altura) <= 0) {
+          alert('La altura es requerida y debe ser mayor a 0');
+          document.getElementById('patient-altura').focus();
+          return;
+        }
+
+        // Validación adicional para creación
+        if (!currentPatientId) {
+          const email = document.getElementById('patient-email').value;
+          const password = document.getElementById('patient-password').value;
+
+          if (!email.trim()) {
+            alert('El email es requerido');
+            document.getElementById('patient-email').focus();
+            return;
+          }
+
+          if (!password.trim()) {
+            alert('La contraseña es requerida');
+            document.getElementById('patient-password').focus();
+            return;
+          }
         }
 
         try {
           if (currentPatientId) {
             // Actualizar paciente existente
+            console.log('Valor del género validado:', generoId, 'Tipo:', typeof generoId);
+            
             const patientData = {
               nombre: document.getElementById('patient-nombre').value,
-              fechaNacimiento: document.getElementById(
+              fecha_nacimiento: document.getElementById(
                 'patient-fecha-nacimiento',
               ).value,
-              genero: document.getElementById('patient-genero').value,
+              genero_id: generoId, // Usar la variable ya validada
               altura: parseFloat(
                 document.getElementById('patient-altura').value,
               ),
-              pesoActual: parseFloat(
-                document.getElementById('patient-peso-actual').value,
-              ),
-              nivelActividad: document.getElementById('patient-nivel-actividad')
-                .value,
             };
+            
+            console.log('Datos del paciente a enviar:', patientData);
 
-            // Campos opcionales
-            const pesoObjetivo = document.getElementById(
-              'patient-peso-objetivo',
-            ).value;
-            if (pesoObjetivo) {
-              patientData.pesoObjetivo = parseFloat(pesoObjetivo);
-            }
-
-            const doctorId = document.getElementById('patient-doctor-id').value;
-            if (doctorId) {
-              patientData.doctor_id = doctorId;
-            }
-
+            // Actualizar información básica del paciente primero
             await apiCall(`/users/${currentPatientId}`, {
               method: 'PATCH',
               body: JSON.stringify(patientData),
             });
+
+            // Actualizar doctor del paciente por separado usando el endpoint específico
+            const doctorId = document.getElementById('patient-doctor-id').value;
+            if (doctorId) {
+              try {
+                await apiCall(`/dashboard/patients/${currentPatientId}/doctor`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ doctorId: doctorId }),
+                });
+                console.log('Doctor del paciente actualizado exitosamente');
+              } catch (error) {
+                console.error('Error al actualizar doctor del paciente:', error);
+                alert('Paciente actualizado pero hubo un error al cambiar el doctor asignado');
+              }
+            } else {
+              // Si no hay doctor seleccionado, asignar null (quitar doctor)
+              try {
+                await apiCall(`/dashboard/patients/${currentPatientId}/doctor`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ doctorId: null }),
+                });
+                console.log('Doctor removido del paciente exitosamente');
+              } catch (error) {
+                console.error('Error al remover doctor del paciente:', error);
+                alert('Paciente actualizado pero hubo un error al quitar el doctor asignado');
+              }
+            }
+            
             alert('Paciente actualizado exitosamente');
           } else {
             // Crear nuevo paciente - necesitamos crear la cuenta primero
@@ -971,28 +1077,23 @@
             }
 
             // 2. Luego crear el perfil del paciente
+            console.log('Valor del género validado para crear:', generoId, 'Tipo:', typeof generoId);
+            
             const patientData = {
               nombre: document.getElementById('patient-nombre').value,
               fecha_nacimiento: document.getElementById(
                 'patient-fecha-nacimiento',
               ).value,
-              genero: document.getElementById('patient-genero').value,
+              genero_id: generoId, // Usar la variable ya validada
               altura: parseFloat(
                 document.getElementById('patient-altura').value,
               ),
-              pesoActual: parseFloat(
-                document.getElementById('patient-peso-actual').value,
-              ),
-              nivelActividad: document.getElementById('patient-nivel-actividad')
-                .value,
               cuenta_id: cuenta.id,
             };
-            const pesoObjetivo = document.getElementById(
-              'patient-peso-objetivo',
-            ).value;
-            if (pesoObjetivo) {
-              patientData.pesoObjetivo = parseFloat(pesoObjetivo);
-            }
+            
+            console.log('Datos del paciente para crear:', patientData);
+
+            // Campos opcionales
             const doctorId = document.getElementById('patient-doctor-id').value;
             if (doctorId) {
               patientData.doctor_id = doctorId;
@@ -1006,7 +1107,11 @@
           }
 
           closeModal('patient-modal');
-          loadPatients(); // Recargar la lista
+          
+          // Forzar recarga de pacientes después de un breve delay para asegurar que la DB se actualice
+          setTimeout(() => {
+            loadPatients();
+          }, 500);
         } catch (error) {
           console.error('Error saving patient:', error);
           alert(
@@ -1083,15 +1188,15 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Peso Actual</div>
-                        <div class="detail-value">${patient.peso_actual} kg</div>
+                        <div class="detail-value">${patient.ultimo_peso || 'No registrado'} kg</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Peso Objetivo</div>
-                        <div class="detail-value">${patient.peso_objetivo || 'No establecido'} kg</div>
+                        <div class="detail-value">${patient.objetivo_peso || 'No establecido'} kg</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Nivel de Actividad</div>
-                        <div class="detail-value">${patient.nivel_actividad}</div>
+                        <div class="detail-value">${getActivityLevelLabel(patient.nivel_actividad)}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Doctor Asignado</div>
@@ -1336,8 +1441,29 @@
       }
 
       function getGenderLabel(gender) {
-        const labels = { M: 'Masculino', F: 'Femenino', O: 'Otro' };
-        return labels[gender] || gender;
+        // Si ya es un objeto con nombre, extraer el nombre
+        if (typeof gender === 'object' && gender !== null) {
+          return gender.nombre || '[object Object]';
+        }
+        // Si es un string, verificar si es un nombre completo o código
+        if (typeof gender === 'string') {
+          const labels = { M: 'Masculino', F: 'Femenino', O: 'Otro' };
+          return labels[gender] || gender;
+        }
+        return gender || 'No especificado';
+      }
+
+      function getActivityLevelLabel(activityLevel) {
+        if (!activityLevel) return 'No especificado';
+        
+        const labels = {
+          'sedentario': 'Sedentario',
+          'moderado': 'Moderado', 
+          'activo': 'Activo',
+          'muy_activo': 'Muy Activo'
+        };
+        
+        return labels[activityLevel] || activityLevel;
       }
 
       function calcularEdad(fechaNacimiento) {

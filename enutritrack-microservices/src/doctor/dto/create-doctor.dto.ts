@@ -2,6 +2,7 @@
 import {
   IsEmail,
   IsString,
+  IsUUID,
   MinLength,
   Matches,
   IsOptional,
@@ -22,9 +23,9 @@ export class CreateDoctorDto {
   })
   password: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
-  especialidad?: string;
+  especialidad_id?: string;
 
   @IsString()
   @IsOptional()

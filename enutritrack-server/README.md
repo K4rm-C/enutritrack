@@ -33,9 +33,10 @@ Para nuevos desarrolladores que clonan el repositorio:
 - [ ] Clonar repositorio y ejecutar `npm install`
 - [ ] Iniciar Docker: `docker-compose up -d`
 - [ ] Configurar Couchbase en `http://localhost:8091` (Usuario: `Alfredo`, Password: `alfredo124`)
-- [ ] Ejecutar `scripts/init-db.sql` en PostgreSQL para crear tablas y superusuario
+- [ ] **Primero:** Iniciar backend con `npm run start:dev` (para que TypeORM cree tablas base)
+- [ ] **Luego:** Detener servidor y ejecutar `scripts/init-db.sql` para poblar datos
 - [ ] Ejecutar `scripts/apply-stored-procedures.ps1` para habilitar el dashboard
-- [ ] Iniciar backend: `npm run start:dev`
+- [ ] Reiniciar backend: `npm run start:dev`
 - [ ] Acceder al dashboard: `http://localhost:4000/auth/login` (admin@enutritrack.com / admin123)
 
 Ver instrucciones detalladas abajo ⬇️
@@ -59,7 +60,24 @@ Espera unos 30-60 segundos para que los servicios estén completamente iniciados
 
 ### 2. Inicializar la Base de Datos
 
-El archivo `scripts/init-db.sql` contiene la estructura inicial de la base de datos y crea el primer superusuario.
+> **⚠️ CRÍTICO: Orden de Ejecución**
+
+El archivo `scripts/init-db.sql` modifica y popula tablas existentes, por lo que **DEBE ejecutarse DESPUÉS** de que TypeORM haya creado la estructura base.
+
+#### **Paso 2A: Primero ejecutar TypeORM (Obligatorio)**
+
+```bash
+# Esto crea las tablas base (cuentas, perfil_usuario, perfil_doctor, etc.)
+npm run start:dev
+```
+
+Espera unos 10-15 segundos hasta que veas mensajes como:
+- `Database connection established`
+- `Schema synchronization completed`
+
+Luego **detén el servidor** (Ctrl+C).
+
+#### **Paso 2B: Luego ejecutar init-db.sql**
 
 **Opción A: Ejecución manual con pgAdmin**
 1. Abre pgAdmin y conecta a `localhost:5433`
@@ -69,6 +87,8 @@ El archivo `scripts/init-db.sql` contiene la estructura inicial de la base de da
 ```bash
 psql -U postgres -d enutritrack -p 5433 -f scripts/init-db.sql
 ```
+
+> **¿Por qué este orden?** El script `init-db.sql` modifica tablas existentes mediante `ALTER TABLE` y `INSERT`. Si se ejecuta antes de que TypeORM cree la estructura base, fallará con errores como "relation does not exist".
 
 ### 3. Configurar Couchbase Manualmente
 
@@ -139,7 +159,9 @@ psql -U postgres -d enutritrack -p 5433 -f scripts/stored-procedures.sql
 - `sp_get_all_admins()` - Listado de administradores
 - `sp_get_admin_details(email)` - Detalles de un administrador
 
-### 6. Iniciar el Backend
+### 6. Iniciar el Backend (Reiniciar)
+
+Después de haber ejecutado todos los scripts anteriores:
 
 ```bash
 # watch mode (recomendado para desarrollo)
@@ -148,6 +170,8 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+> **Nota:** Este será el segundo inicio del backend en el proceso de setup. El primero fue necesario para crear las tablas base antes de ejecutar `init-db.sql`.
 
 ### 7. Acceder al Dashboard de Superusuario
 

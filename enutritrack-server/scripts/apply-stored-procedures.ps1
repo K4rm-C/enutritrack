@@ -62,7 +62,7 @@ try {
         "-h", $DB_HOST,
         "-p", $DB_PORT,
         "-d", $DB_NAME,
-        "-f", "scripts\stored-procedures.sql"
+        "-f", "stored-procedures.sql"
     )
     
     # Ejecutar psql con la ruta completa
@@ -80,6 +80,7 @@ try {
         Write-Host '  - sp_get_all_doctors()' -ForegroundColor Gray
         Write-Host '  - sp_get_doctor_patients(doctor_id)' -ForegroundColor Gray
         Write-Host '  - sp_create_doctor(...)' -ForegroundColor Gray
+        Write-Host '  - sp_update_doctor(...)' -ForegroundColor Gray
         Write-Host '  - sp_get_all_admins()' -ForegroundColor Gray
         Write-Host '  - sp_get_admin_details(email)' -ForegroundColor Gray
         Write-Host '  - sp_get_dashboard_stats()' -ForegroundColor Gray

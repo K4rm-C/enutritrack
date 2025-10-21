@@ -190,9 +190,11 @@ export class DashboardController {
       nombre: string;
       email: string;
       password: string;
-      especialidad: string;
+      especialidad_id: string;
       cedula_profesional: string;
       telefono: string;
+      telefono_1?: string;
+      telefono_2?: string;
       admin_id: string;
     },
   ) {
@@ -200,9 +202,11 @@ export class DashboardController {
       nombre,
       email,
       password,
-      especialidad,
+      especialidad_id,
       cedula_profesional,
       telefono,
+      telefono_1,
+      telefono_2,
       admin_id,
     } = createDoctorDto;
 
@@ -217,14 +221,16 @@ export class DashboardController {
 
     try {
       const result = await this.connection.query(
-        'SELECT sp_create_doctor($1, $2, $3, $4, $5, $6, $7) as doctor_id',
+        'SELECT sp_create_doctor($1, $2, $3, $4, $5, $6, $7, $8, $9) as doctor_id',
         [
           nombre,
           email,
           hashedPassword,
-          especialidad || null,
+          especialidad_id || null,
           cedula_profesional || null,
           telefono || null,
+          telefono_1 || null,
+          telefono_2 || null,
           admin_id,
         ],
       );
@@ -244,6 +250,49 @@ export class DashboardController {
       }
       throw new BadRequestException('Error al crear el doctor');
     }
+  }
+
+  @Patch('doctors/:id')
+  async updateDoctor(
+    @Param('id') id: string,
+    @Body()
+    updateDoctorDto: {
+      nombre?: string;
+      cedula_profesional?: string;
+      especialidad_id?: string;
+      telefono?: string;
+    },
+  ) {
+    const { nombre, cedula_profesional, especialidad_id, telefono } = updateDoctorDto;
+
+    // Primero obtener los valores actuales del doctor
+    const currentDoctorResult = await this.connection.query(
+      'SELECT nombre, cedula_profesional, especialidad_id, telefono FROM perfil_doctor WHERE id = $1',
+      [id],
+    );
+
+    if (!currentDoctorResult || currentDoctorResult.length === 0) {
+      throw new BadRequestException('Doctor no encontrado');
+    }
+
+    const currentDoctor = currentDoctorResult[0];
+
+    // Usar los valores proporcionados o mantener los valores actuales
+    const finalNombre = nombre !== undefined ? nombre : currentDoctor.nombre;
+    const finalCedula = cedula_profesional !== undefined ? cedula_profesional : currentDoctor.cedula_profesional;
+    const finalEspecialidadId = especialidad_id !== undefined ? especialidad_id : currentDoctor.especialidad_id;
+    const finalTelefono = telefono !== undefined ? telefono : currentDoctor.telefono;
+
+    const result = await this.connection.query(
+      'SELECT sp_update_doctor($1, $2, $3, $4, $5) as success',
+      [id, finalNombre, finalCedula, finalEspecialidadId, finalTelefono],
+    );
+
+    if (!result[0].success) {
+      throw new BadRequestException('Error al actualizar el doctor');
+    }
+
+    return { message: 'Doctor actualizado exitosamente' };
   }
 
   // ========================================

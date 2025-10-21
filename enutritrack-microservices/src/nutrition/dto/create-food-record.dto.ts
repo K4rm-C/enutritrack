@@ -6,7 +6,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { MealType } from '../models/nutrition.model';
+import { TipoComidaEnum } from '../../shared/enums';
 import { Transform } from 'class-transformer';
 
 export class CreateFoodRecordDto {
@@ -17,8 +17,8 @@ export class CreateFoodRecordDto {
   @Transform(({ value }) => new Date(value))
   fecha: Date;
 
-  @IsEnum(MealType)
-  tipo_comida: MealType;
+  @IsEnum(TipoComidaEnum)
+  tipo_comida: TipoComidaEnum;
 
   @IsString()
   descripcion: string;

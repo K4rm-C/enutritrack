@@ -26,7 +26,7 @@ export class RegistroComida {
   @Column({
     type: 'enum',
     enum: TipoComidaEnum,
-    enumName: 'tipo_comida_enum',
+    enumName: 'registro_comida_tipo_enum',
   })
   tipo_comida: TipoComidaEnum;
 
