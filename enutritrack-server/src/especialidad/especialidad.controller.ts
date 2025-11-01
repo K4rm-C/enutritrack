@@ -11,9 +11,9 @@ import { EspecialidadService } from './especialidad.service';
 import { CreateEspecialidadDto } from './dto/create-especialidad.dto';
 import { UpdateEspecialidadDto } from './dto/update-especialidad.dto';
 
-@Controller('especialidades')
+@Controller('specialties')
 export class EspecialidadController {
-  constructor(private readonly especialidadService: EspecialidadService) {}
+  constructor(private readonly especialidadService: EspecialidadService) { }
 
   @Post()
   create(@Body() createEspecialidadDto: CreateEspecialidadDto) {

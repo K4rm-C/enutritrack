@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: enutritrack
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
+      POSTGRES_PASSWORD: 4ndr3$G22004
     ports:
       - '5433:5432'
     volumes:
@@ -14,7 +14,7 @@ services:
     networks:
       - enutritrack-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d enutritrack']
+      test: [ 'CMD-SHELL', 'pg_isready -U postgres -d enutritrack' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,7 +45,7 @@ services:
     networks:
       - enutritrack-network
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', 'redispassword', 'ping']
+      test: [ 'CMD', 'redis-cli', '-a', 'redispassword', 'ping' ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -54,6 +54,7 @@ volumes:
   postgres_data:
   couchbase_data:
   redis_data:
+
 
 networks:
   enutritrack-network:

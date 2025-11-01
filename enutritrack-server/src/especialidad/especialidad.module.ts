@@ -10,4 +10,4 @@ import { Especialidad } from './models/especialidad.model';
   providers: [EspecialidadService],
   exports: [EspecialidadService],
 })
-export class EspecialidadModule {}
+export class EspecialidadModule { }

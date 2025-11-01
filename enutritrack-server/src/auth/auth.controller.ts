@@ -19,7 +19,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   @Get('login')
   loginPage(@Res() res: Response) {
@@ -29,6 +29,10 @@ export class AuthController {
   @Get('doctors-crud.html')
   doctorPage(@Res() res: Response) {
     res.sendFile(join(__dirname, '../../public/doctors-crud.html'));
+  }
+  @Get('specialties-crud.html')
+  specialtiesPage(@Res() res: Response) {
+    res.sendFile(join(__dirname, '../../public/specialties-crud.html'));
   }
   @Get('patients-crud.html')
   userPage(@Res() res: Response) {
