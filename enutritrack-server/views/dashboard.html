@@ -1309,7 +1309,7 @@
           <a class="nav-link" data-view="admins">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-6 0H5m2 0h4M9 7h6m-6 4h6m-6 4h6" />
             </svg>
             Administradores
           </a>
@@ -1339,6 +1339,15 @@
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             Pacientes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-view="medicines">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Medicamentos
           </a>
         </li>
         <li class="nav-item">
@@ -2151,45 +2160,6 @@
       loadCharts();
     });
 
-    // Navigation
-    function setupNavigation() {
-      document.querySelectorAll('.nav-link').forEach((link) => {
-        link.addEventListener('click', (e) => {
-          if (link.getAttribute('href')) return;
-
-          e.preventDefault();
-          const view = link.dataset.view;
-          if (view) {
-            switchView(view);
-
-            document
-              .querySelectorAll('.nav-link')
-              .forEach((l) => l.classList.remove('active'));
-            link.classList.add('active');
-          }
-        });
-      });
-    }
-
-    function switchView(view) {
-      currentView = view;
-
-      document
-        .querySelectorAll('.view')
-        .forEach((v) => v.classList.remove('active'));
-      document.getElementById(`${view}-view`).classList.add('active');
-
-      if (view === 'dashboard') {
-        loadDashboard();
-        loadCharts();
-      }
-      if (view === 'admins') loadAdmins();
-      if (view === 'doctors') loadDoctors();
-      if (view === 'patients') loadPatients();
-      if (view === 'analytics') loadAnalytics();
-      if (view === 'search') loadSearchView();
-    }
-
     function updateDateTime() {
       const now = new Date();
       const hours = now.getHours();
@@ -2566,48 +2536,71 @@
 
     // Navigation
     function setupNavigation() {
+      console.log('🔧 Configurando navegación...');
+
       document.querySelectorAll('.nav-link').forEach((link) => {
         link.addEventListener('click', (e) => {
+          // Si tiene href (como Documentación API), dejar que funcione normal
           if (link.getAttribute('href')) return;
 
           e.preventDefault();
           const view = link.dataset.view;
+          console.log('🖱️ Click en menú:', view);
+
           if (view) {
             switchView(view);
-
-            document
-              .querySelectorAll('.nav-link')
-              .forEach((l) => l.classList.remove('active'));
-            link.classList.add('active');
           }
         });
       });
-
-      // Search functionality
-      document
-        .getElementById('patient-search')
-        ?.addEventListener('input', (e) => {
-          filterPatients(e.target.value);
-        });
-
-      document
-        .getElementById('doctor-search')
-        ?.addEventListener('input', (e) => {
-          filterDoctors(e.target.value);
-        });
     }
 
     function switchView(view) {
+      console.log('🔍 Cambiando a vista:', view);
+
       currentView = view;
 
-      document
-        .querySelectorAll('.view')
-        .forEach((v) => v.classList.remove('active'));
-      document.getElementById(`${view}-view`).classList.add('active');
+      // 1. Actualizar estado activo del MENÚ
+      document.querySelectorAll('.nav-link').forEach((link) => {
+        link.classList.remove('active');
+      });
 
+      // Activar el item del menú clickeado
+      const activeMenuItem = document.querySelector(`[data-view="${view}"]`);
+      if (activeMenuItem) {
+        activeMenuItem.classList.add('active');
+        console.log(`✅ Menú activado: ${view}`);
+      } else {
+        console.error(`❌ No se encontró el item del menú: ${view}`);
+      }
+
+      // 2. Actualizar estado activo de las VISTAS
+      document.querySelectorAll('.view').forEach((v) => {
+        v.classList.remove('active');
+        console.log(`➖ Removiendo active de vista: ${v.id}`);
+      });
+
+      // Activar la vista seleccionada
+      const targetView = document.getElementById(`${view}-view`);
+      if (targetView) {
+        targetView.classList.add('active');
+        console.log(`✅ Vista activada: ${view}-view`);
+      } else {
+        console.error(`❌ No se encontró la vista: ${view}-view`);
+        alert(`Error: La vista "${view}" no está disponible`);
+        return;
+      }
+
+      // 3. Llamar a las funciones de carga específicas
+      console.log('🔄 Ejecutando función de carga para:', view);
+      if (view === 'dashboard') {
+        loadDashboard();
+        loadCharts();
+      }
       if (view === 'admins') loadAdmins();
+      if (view === 'specialties') loadSpecialties();
       if (view === 'doctors') loadDoctors();
       if (view === 'patients') loadPatients();
+      if (view === 'medicines') loadMedicines();
       if (view === 'analytics') loadAnalytics();
       if (view === 'search') loadSearchView();
     }
@@ -3084,7 +3077,7 @@
     // Specialties
     async function loadSpecialties() {
       try {
-        const specialties = await apiCall('/dashboard/specialties');
+        const specialties = await apiCall('/specialties');
         allSpecialties = specialties;
         renderSpecialties(specialties);
       } catch (error) {
