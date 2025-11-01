@@ -1,0 +1,270 @@
+/* frontend/doctor-dashboard/css/appointments.css */
+.appointments-management {
+    padding: 20px 0;
+}
+
+.appointments-filters {
+    background: var(--white);
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: end;
+}
+
+.appointments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.appointment-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-left: 6px solid var(--primary-color);
+    transition: all 0.3s;
+}
+
+.appointment-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.appointment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.appointment-patient {
+    flex: 1;
+}
+
+.appointment-patient h3 {
+    color: var(--gray-dark);
+    margin-bottom: 8px;
+    font-size: 18px;
+}
+
+.appointment-meta {
+    display: flex;
+    gap: 20px;
+    color: var(--gray);
+    font-size: 14px;
+}
+
+.appointment-datetime {
+    text-align: right;
+    min-width: 180px;
+}
+
+.appointment-date {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-dark);
+    margin-bottom: 5px;
+}
+
+.appointment-time {
+    font-size: 14px;
+    color: var(--gray);
+}
+
+.appointment-details {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--gray-light);
+}
+
+.appointment-motivo {
+    margin-bottom: 10px;
+}
+
+.appointment-motivo strong {
+    color: var(--gray-dark);
+}
+
+.appointment-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-pendiente {
+    background: #FFF3E0;
+    color: #F57C00;
+}
+
+.status-confirmada {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.status-completada {
+    background: #E8F5E8;
+    color: #2E7D32;
+}
+
+.status-cancelada {
+    background: #FFEBEE;
+    color: #C62828;
+}
+
+.calendar-view {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 25px;
+    margin-top: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.calendar-nav {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--gray-light);
+    border: 1px solid var(--gray-light);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.calendar-day-header {
+    background: var(--primary-light);
+    padding: 15px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.calendar-day {
+    background: var(--white);
+    padding: 10px;
+    min-height: 100px;
+    border: 1px solid var(--gray-light);
+}
+
+.calendar-day.other-month {
+    background: #fafafa;
+    color: var(--gray);
+}
+
+.calendar-day-number {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.calendar-appointments {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.calendar-appointment {
+    background: var(--primary-light);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    border-left: 3px solid var(--primary-color);
+}
+
+.calendar-appointment:hover {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.quick-actions {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.view-toggle {
+    display: flex;
+    background: var(--gray-light);
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.view-toggle-btn {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.view-toggle-btn.active {
+    background: var(--white);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.appointment-modal .modal-content {
+    max-width: 600px;
+}
+
+.appointment-form .form-row {
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+    .appointment-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .appointment-datetime {
+        text-align: left;
+    }
+    
+    .appointment-meta {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .filter-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .calendar-grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
+    
+    .calendar-day-header {
+        display: none;
+    }
+}

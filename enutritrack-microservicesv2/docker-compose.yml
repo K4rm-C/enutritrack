@@ -1,0 +1,87 @@
+# docker-compose.yml
+version: '3.8'
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+  
+  couchbase:
+    image: couchbase:community
+    ports:
+      - "8091-8094:8091-8094"
+      - "11210:11210"
+  
+  auth-service:
+    build: ./microservices/auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+      - JWT_SECRET=your-secret-key
+  
+  user-service:
+    build: ./microservices/user-service
+    ports:
+      - "3002:3002"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+  
+  doctor-service:
+    build: ./microservices/doctor-service
+    ports:
+      - "3003:3003"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+  
+  patient-service:
+    build: ./microservices/patient-service
+    ports:
+      - "3004:3004"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+  
+  appointment-service:
+    build: ./microservices/appointment-service
+    ports:
+      - "3005:3005"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+  
+  alert-service:
+    build: ./microservices/alert-service
+    ports:
+      - "3006:3006"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+  
+  nutrition-service:
+    build: ./microservices/nutrition-service
+    ports:
+      - "3007:3007"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+  
+  activity-service:
+    build: ./microservices/activity-service
+    ports:
+      - "3008:3008"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+  
+  recommendation-service:
+    build: ./microservices/recommendation-service
+    ports:
+      - "3009:3009"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - COUCHBASE_URL=couchbase://couchbase
+      - AI_API_KEY=your-ai-api-key
