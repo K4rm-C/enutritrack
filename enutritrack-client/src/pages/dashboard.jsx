@@ -33,6 +33,14 @@ import {
   Stethoscope,
   UserCheck,
   AlertCircle,
+  Briefcase,
+  Pill,
+  ClipboardClock,
+  FishOffIcon,
+  FishOff,
+  ActivityIcon,
+  HeartHandshake,
+  CalendarHeart,
 } from "lucide-react";
 import { useAuth } from "../context/auth/auth.context";
 import Perfil from "../components/profile";
@@ -503,7 +511,7 @@ const DashboardHeader = ({ user }) => {
             title="Especialidad médica"
           >
             <Stethoscope className="w-4 h-4 mr-2" />
-            Nutriólogo
+            {user.especialida_id}
           </p>
         </div>
       </div>
@@ -949,6 +957,17 @@ const Sidebar = ({
     { id: "dashboard", name: "Dashboard", icon: LayoutDashboard },
     { id: "perfil", name: "Perfil", icon: UserCircle },
     { id: "usuarios", name: "Pacientes", icon: Users },
+    { id: "medicamentos", name: "Medicamentos", icon: Pill },
+    {
+      id: "historialmedico",
+      name: "Historiales Medicos",
+      icon: ClipboardClock,
+    },
+    { id: "alergias", name: "Alergias", icon: FishOff },
+    { id: "nutricion", name: "Registros Nutricionales", icon: Apple },
+    { id: "actividadfiscia", name: "Actividades Fisicas", icon: ActivityIcon },
+    { id: "recomendaciones", name: "Recomendaciones", icon: HeartHandshake },
+    { id: "citas", name: "Citas Medicas", icon: CalendarHeart },
   ];
 
   const handleNavigation = useCallback(
