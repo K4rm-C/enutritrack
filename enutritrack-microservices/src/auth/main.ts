@@ -13,8 +13,15 @@ async function bootstrap() {
   app.use('/users', xmlParser);
   app.useGlobalInterceptors(new XmlInterceptor());
   app.enableCors({
-    origin: 'http://localhost:5174',
+    origin: [
+      'http://localhost:5174', // Frontend web
+      'http://10.0.2.2:3004', // Emulador Android
+      'http://127.0.0.1:3004', // Localhost alternativo
+      /^http:\/\/192\.168\.\d+\.\d+:3004$/, // IPs locales para Android físico
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // Validación global

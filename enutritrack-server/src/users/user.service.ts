@@ -129,7 +129,7 @@ export class PerfilUsuarioService {
   async findOne(id: string): Promise<PerfilUsuario> {
     const perfilUsuario = await this.perfilUsuarioRepository.findOne({
       where: { id },
-      relations: ['cuenta', 'doctor', 'genero'],
+      relations: ['cuenta', 'doctor', 'doctor.cuenta', 'doctor.especialidad', 'genero'],
     });
     if (!perfilUsuario) {
       throw new NotFoundException('Perfil de usuario no encontrado');
@@ -140,7 +140,7 @@ export class PerfilUsuarioService {
   async findByCuentaId(cuentaId: string): Promise<PerfilUsuario> {
     const perfilUsuario = await this.perfilUsuarioRepository.findOne({
       where: { cuenta_id: cuentaId },
-      relations: ['cuenta', 'doctor', 'genero'],
+      relations: ['cuenta', 'doctor', 'doctor.cuenta', 'doctor.especialidad', 'genero'],
     });
     if (!perfilUsuario) {
       throw new NotFoundException('Perfil de usuario no encontrado');

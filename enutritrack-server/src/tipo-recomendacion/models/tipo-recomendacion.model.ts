@@ -3,9 +3,7 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
-  OneToMany,
 } from 'typeorm';
-import { Recomendacion } from '../../recommendation/models/recommendation.model';
 
 @Entity('tipos_recomendacion')
 export class TipoRecomendacion {
@@ -24,9 +22,7 @@ export class TipoRecomendacion {
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 
-  @OneToMany(
-    () => Recomendacion,
-    (recomendacion) => recomendacion.tipoRecomendacion,
-  )
-  recomendaciones: Recomendacion[];
+  // Relación OneToMany eliminada porque Recomendacion usa 'tipo' como string
+  // en lugar de una FK a tipos_recomendacion.id
+  // Si se necesita la relación, se debe agregar una FK en la BD primero
 }
