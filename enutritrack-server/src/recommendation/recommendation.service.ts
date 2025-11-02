@@ -25,7 +25,7 @@ export class RecomendacionService {
 
   async findAll(): Promise<Recomendacion[]> {
     return await this.recomendacionRepository.find({
-      relations: ['usuario', 'tipoRecomendacion', 'datos'],
+      relations: ['usuario', 'datos'],
       order: { fecha_generacion: 'DESC' },
     });
   }
@@ -33,7 +33,7 @@ export class RecomendacionService {
   async findOne(id: string): Promise<Recomendacion> {
     const recomendacion = await this.recomendacionRepository.findOne({
       where: { id },
-      relations: ['usuario', 'tipoRecomendacion', 'datos'],
+      relations: ['usuario', 'datos'],
     });
     if (!recomendacion) {
       throw new NotFoundException('Recomendación no encontrada');
@@ -44,7 +44,7 @@ export class RecomendacionService {
   async findByUsuarioId(usuarioId: string): Promise<Recomendacion[]> {
     return await this.recomendacionRepository.find({
       where: { usuario_id: usuarioId },
-      relations: ['usuario', 'tipoRecomendacion', 'datos'],
+      relations: ['usuario', 'datos'],
       order: { fecha_generacion: 'DESC' },
     });
   }
@@ -52,9 +52,10 @@ export class RecomendacionService {
   async findByTipoRecomendacionId(
     tipoRecomendacionId: string,
   ): Promise<Recomendacion[]> {
+    // La BD usa 'tipo' como string, no como FK
     return await this.recomendacionRepository.find({
-      where: { tipo_recomendacion_id: tipoRecomendacionId },
-      relations: ['usuario', 'tipoRecomendacion', 'datos'],
+      where: { tipo: tipoRecomendacionId },
+      relations: ['usuario', 'datos'],
     });
   }
 
@@ -65,7 +66,7 @@ export class RecomendacionService {
         usuario_id: usuarioId,
         activa: true,
       },
-      relations: ['usuario', 'tipoRecomendacion', 'datos'],
+      relations: ['usuario', 'datos'], // Removido 'tipoRecomendacion' porque no hay FK
       order: { prioridad: 'DESC', fecha_generacion: 'DESC' },
     });
   }
@@ -80,7 +81,6 @@ export class RecomendacionService {
         { hoy },
       )
       .leftJoinAndSelect('recomendacion.usuario', 'usuario')
-      .leftJoinAndSelect('recomendacion.tipoRecomendacion', 'tipoRecomendacion')
       .leftJoinAndSelect('recomendacion.datos', 'datos')
       .orderBy('recomendacion.prioridad', 'DESC')
       .addOrderBy('recomendacion.fecha_generacion', 'DESC')

@@ -17,7 +17,7 @@ export class RegistroComida {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', name: 'usuarioId' })
   usuario_id: string;
 
   @Column({ type: 'timestamp', default: () => 'now()' })
@@ -30,8 +30,8 @@ export class RegistroComida {
   })
   tipo_comida: TipoComidaEnum;
 
-  @Column({ type: 'text', nullable: true })
-  notas: string;
+  @Column({ type: 'text', nullable: true, name: 'descripcion' })
+  notas: string; // Mapeado a 'descripcion' en la BD
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
@@ -40,7 +40,7 @@ export class RegistroComida {
   updated_at: Date;
 
   @ManyToOne(() => PerfilUsuario, (usuario) => usuario.id)
-  @JoinColumn({ name: 'usuario_id' })
+  @JoinColumn({ name: 'usuarioId' })
   usuario: PerfilUsuario;
 
   @OneToMany(

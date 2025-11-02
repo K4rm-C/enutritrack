@@ -10,8 +10,9 @@ export class CreateRecomendacionDto {
   @IsUUID()
   usuario_id: string;
 
-  @IsUUID()
-  tipo_recomendacion_id: string;
+  @IsString()
+  @IsOptional()
+  tipo?: string; // La BD usa 'tipo' como string, no como FK
 
   @IsString()
   contenido: string;

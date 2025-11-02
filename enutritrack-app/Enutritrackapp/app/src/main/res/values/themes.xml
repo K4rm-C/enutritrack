@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.Enutritrackapp" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/emerald_600</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/emerald_50</item>
+        <item name="colorOnPrimaryContainer">@color/emerald_700</item>
+        
+        <item name="colorError">@color/red_600</item>
+        <item name="colorOnError">@color/white</item>
+        
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.Enutritrackapp" parent="Base.Theme.Enutritrackapp" />
+</resources>

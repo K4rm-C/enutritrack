@@ -8,7 +8,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import { PerfilUsuario } from '../../users/models/user.model';
-import { TipoRecomendacion } from '../../tipo-recomendacion/models/tipo-recomendacion.model';
 import { RecomendacionDato } from '../../recomendacion-dato/models/recomendacion-dato.model';
 import { CitaMedica } from '../../citas-medicas/models/citas-medicas.model';
 import { Alerta } from '../../alertas/models/alertas.model';
@@ -21,8 +20,8 @@ export class Recomendacion {
   @Column({ type: 'uuid' })
   usuario_id: string;
 
-  @Column({ type: 'uuid' })
-  tipo_recomendacion_id: string;
+  @Column({ type: 'varchar', nullable: true })
+  tipo: string;
 
   @Column({ type: 'text' })
   contenido: string;
@@ -52,12 +51,8 @@ export class Recomendacion {
   @JoinColumn({ name: 'usuario_id' })
   usuario: PerfilUsuario;
 
-  @ManyToOne(
-    () => TipoRecomendacion,
-    (tipoRecomendacion) => tipoRecomendacion.id,
-  )
-  @JoinColumn({ name: 'tipo_recomendacion_id' })
-  tipoRecomendacion: TipoRecomendacion;
+  // Relación con TipoRecomendacion eliminada porque la BD usa 'tipo' como string, no FK
+  // Si se necesita la relación, se debe agregar una FK en la BD primero
 
   @OneToMany(
     () => RecomendacionDato,
