@@ -11,7 +11,7 @@ $DB_HOST = 'localhost'
 $DB_PORT = '5433'
 $DB_NAME = 'enutritrack'
 $DB_USER = 'postgres'
-$DB_PASSWORD = '1234'
+$DB_PASSWORD = '4ndr3$G22004'
 
 Write-Host 'Conectando a PostgreSQL...' -ForegroundColor Yellow
 Write-Host "Host: $DB_HOST" -ForegroundColor Gray

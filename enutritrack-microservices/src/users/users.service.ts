@@ -93,10 +93,7 @@ export class UserService {
     }
 
     const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(
-      passwordToUse,
-      saltRounds,
-    );
+    const hashedPassword = await bcrypt.hash(passwordToUse, saltRounds);
     console.log('Password hasheado en microservicio');
 
     // 1. Crear cuenta primero
@@ -223,21 +220,27 @@ export class UserService {
     });
 
     // Ordenar el historial de peso y objetivos después de obtener los datos
-    patients.forEach(patient => {
+    patients.forEach((patient) => {
       if (patient.historialPeso) {
-        patient.historialPeso.sort((a, b) => 
-          new Date(b.fecha_registro).getTime() - new Date(a.fecha_registro).getTime()
+        patient.historialPeso.sort(
+          (a, b) =>
+            new Date(b.fecha_registro).getTime() -
+            new Date(a.fecha_registro).getTime(),
         );
       }
       if (patient.objetivos) {
-        patient.objetivos.sort((a, b) => 
-          new Date(b.fecha_establecido).getTime() - new Date(a.fecha_establecido).getTime()
+        patient.objetivos.sort(
+          (a, b) =>
+            new Date(b.fecha_establecido).getTime() -
+            new Date(a.fecha_establecido).getTime(),
         );
       }
     });
 
     // Formatear cada paciente con los datos necesarios para el frontend
-    const formattedPatients = patients.map(user => this.formatUserForFrontend(user));
+    const formattedPatients = patients.map((user) =>
+      this.formatUserForFrontend(user),
+    );
 
     try {
       await this.cacheManager.set(
@@ -290,7 +293,9 @@ export class UserService {
 
   async findById(id: string): Promise<any | undefined> {
     try {
-      const cachedUser = await this.cacheManager.get<User>(`user:${id}:detailed`);
+      const cachedUser = await this.cacheManager.get<User>(
+        `user:${id}:detailed`,
+      );
       if (cachedUser) {
         console.log('Usuario detallado encontrado en cache');
         return this.formatUserForFrontend(cachedUser);
@@ -329,21 +334,28 @@ export class UserService {
 
   private formatUserForFrontend(user: User): any {
     // Obtener el peso más reciente
-    const pesoActual = user.historialPeso && user.historialPeso.length > 0 
-      ? user.historialPeso[0].peso 
-      : null;
+    const pesoActual =
+      user.historialPeso && user.historialPeso.length > 0
+        ? user.historialPeso[0].peso
+        : null;
 
     // Obtener el objetivo más reciente
-    const objetivoVigente = user.objetivos && user.objetivos.length > 0 
-      ? user.objetivos.find(obj => obj.vigente) || user.objetivos[0]
-      : null;
+    const objetivoVigente =
+      user.objetivos && user.objetivos.length > 0
+        ? user.objetivos.find((obj) => obj.vigente) || user.objetivos[0]
+        : null;
 
     // Calcular IMC si tenemos peso y altura
     let imc: number | null = null;
     if (pesoActual && user.altura) {
       const alturaEnMetros = parseFloat(user.altura.toString()) / 100;
       if (alturaEnMetros > 0) {
-        imc = parseFloat((parseFloat(pesoActual.toString()) / (alturaEnMetros * alturaEnMetros)).toFixed(1));
+        imc = parseFloat(
+          (
+            parseFloat(pesoActual.toString()) /
+            (alturaEnMetros * alturaEnMetros)
+          ).toFixed(1),
+        );
       }
     }
 
@@ -439,7 +451,10 @@ export class UserService {
 
     // Actualizar cuenta si hay cambios
     if (Object.keys(cuentaUpdateData).length > 0 && existingUser.cuenta) {
-      await this.cuentaRepository.update(existingUser.cuenta_id, cuentaUpdateData);
+      await this.cuentaRepository.update(
+        existingUser.cuenta_id,
+        cuentaUpdateData,
+      );
     }
 
     // Actualizar password en cuenta si se proporciona
@@ -459,13 +474,18 @@ export class UserService {
       updateDataForEntity.fecha_nacimiento = new Date(
         updateData.fecha_nacimiento,
       );
-    if (updateData.genero_id) updateDataForEntity.genero_id = updateData.genero_id;
+    if (updateData.genero_id)
+      updateDataForEntity.genero_id = updateData.genero_id;
     // Manejar campo legacy 'genero' que viene del frontend
-    if (updateData.genero && !updateData.genero_id) updateDataForEntity.genero_id = updateData.genero;
+    if (updateData.genero && !updateData.genero_id)
+      updateDataForEntity.genero_id = updateData.genero;
     if (updateData.altura) updateDataForEntity.altura = updateData.altura;
-    if (updateData.telefono !== undefined) updateDataForEntity.telefono = updateData.telefono;
-    if (updateData.telefono_1 !== undefined) updateDataForEntity.telefono_1 = updateData.telefono_1;
-    if (updateData.telefono_2 !== undefined) updateDataForEntity.telefono_2 = updateData.telefono_2;
+    if (updateData.telefono !== undefined)
+      updateDataForEntity.telefono = updateData.telefono;
+    if (updateData.telefono_1 !== undefined)
+      updateDataForEntity.telefono_1 = updateData.telefono_1;
+    if (updateData.telefono_2 !== undefined)
+      updateDataForEntity.telefono_2 = updateData.telefono_2;
     if (updateData.doctorId !== undefined)
       updateDataForEntity.doctor_id =
         updateData.doctorId && updateData.doctorId.trim() !== ''
@@ -473,35 +493,49 @@ export class UserService {
           : undefined;
 
     // Actualizar peso actual en historial_peso si se proporciona
-    if (updateData.peso_actual !== undefined && updateData.peso_actual !== null) {
+    if (
+      updateData.peso_actual !== undefined &&
+      updateData.peso_actual !== null
+    ) {
       const nuevoRegistroPeso = this.historialPesoRepository.create({
         usuario_id: id,
         peso: updateData.peso_actual,
         fecha_registro: new Date(),
-        notas: 'Actualizado desde formulario de edición'
+        notas: 'Actualizado desde formulario de edición',
       });
       await this.historialPesoRepository.save(nuevoRegistroPeso);
     }
 
     // Actualizar objetivo de peso y nivel de actividad si se proporcionan
-    if (updateData.objetivo_peso !== undefined || updateData.nivel_actividad !== undefined) {
+    if (
+      updateData.objetivo_peso !== undefined ||
+      updateData.nivel_actividad !== undefined
+    ) {
       // Buscar el objetivo vigente actual
       const objetivoVigente = await this.objetivoUsuarioRepository.findOne({
         where: { usuario_id: id, vigente: true },
-        order: { fecha_establecido: 'DESC' }
+        order: { fecha_establecido: 'DESC' },
       });
 
       if (objetivoVigente) {
         // Marcar el objetivo actual como no vigente
-        await this.objetivoUsuarioRepository.update(objetivoVigente.id, { vigente: false });
+        await this.objetivoUsuarioRepository.update(objetivoVigente.id, {
+          vigente: false,
+        });
 
         // Crear nuevo objetivo con los datos actualizados
         const nuevoObjetivo = this.objetivoUsuarioRepository.create({
           usuario_id: id,
-          peso_objetivo: updateData.objetivo_peso !== undefined ? updateData.objetivo_peso : objetivoVigente.peso_objetivo,
-          nivel_actividad: updateData.nivel_actividad !== undefined ? updateData.nivel_actividad : objetivoVigente.nivel_actividad,
+          peso_objetivo:
+            updateData.objetivo_peso !== undefined
+              ? updateData.objetivo_peso
+              : objetivoVigente.peso_objetivo,
+          nivel_actividad:
+            updateData.nivel_actividad !== undefined
+              ? updateData.nivel_actividad
+              : objetivoVigente.nivel_actividad,
           fecha_establecido: new Date(),
-          vigente: true
+          vigente: true,
         });
         await this.objetivoUsuarioRepository.save(nuevoObjetivo);
       } else {
@@ -511,7 +545,7 @@ export class UserService {
           peso_objetivo: updateData.objetivo_peso,
           nivel_actividad: updateData.nivel_actividad,
           fecha_establecido: new Date(),
-          vigente: true
+          vigente: true,
         });
         await this.objetivoUsuarioRepository.save(nuevoObjetivo);
       }
@@ -549,14 +583,17 @@ export class UserService {
       if (updateData.doctorId) {
         await this.cacheManager.del(`doctor:${updateData.doctorId}:patients`);
       }
-      
+
       // Limpiar cache de pacientes si se actualizaron datos relacionados (peso, actividad)
-      if (existingUser.doctor_id && (
-        updateData.peso_actual !== undefined || 
-        updateData.nivel_actividad !== undefined ||
-        updateData.objetivo_peso !== undefined
-      )) {
-        await this.cacheManager.del(`doctor:${existingUser.doctor_id}:patients`);
+      if (
+        existingUser.doctor_id &&
+        (updateData.peso_actual !== undefined ||
+          updateData.nivel_actividad !== undefined ||
+          updateData.objetivo_peso !== undefined)
+      ) {
+        await this.cacheManager.del(
+          `doctor:${existingUser.doctor_id}:patients`,
+        );
       }
 
       console.log('Cache limpiado después de actualizar usuario');

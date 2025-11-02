@@ -270,24 +270,6 @@ const AuthContainer = () => {
               togglePassword={() => setShowPassword(!showPassword)}
             />
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center cursor-pointer group">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded transition-colors"
-                />
-                <span className="ml-2 text-sm text-gray-600 group-hover:text-gray-800">
-                  Recordarme
-                </span>
-              </label>
-              <button
-                type="button"
-                className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold hover:underline transition-all"
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
-
             <button
               onClick={handleLoginSubmit}
               disabled={isLoading}
