@@ -9,10 +9,7 @@ data class ActividadFisicaResponse(
     val usuarioId: String,
     
     @SerializedName("tipo_actividad_id")
-    val tipoActividadId: String?,
-    
-    @SerializedName("tipo_actividad")
-    val tipoActividad: String?,
+    val tipoActividadId: String,
     
     @SerializedName("duracion_min")
     val duracionMin: Int,

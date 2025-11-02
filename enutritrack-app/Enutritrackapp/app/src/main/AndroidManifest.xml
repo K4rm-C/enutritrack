@@ -91,6 +91,20 @@
             android:windowSoftInputMode="adjustResize"
             android:parentActivityName=".presentation.nutrition.NutritionActivity" />
         
+        <!-- Appointments Activity -->
+        <activity
+            android:name=".presentation.appointments.AppointmentsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.dashboard.DashboardActivity" />
+        
+        <!-- Appointment Detail Activity -->
+        <activity
+            android:name=".presentation.appointments.AppointmentDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.appointments.AppointmentsActivity" />
+        
         <!-- Legacy MainActivity (puede ser removida después) -->
         <activity
             android:name=".MainActivity"

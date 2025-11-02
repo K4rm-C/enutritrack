@@ -14,6 +14,7 @@ import com.example.enutritrack_app.presentation.auth.LoginActivity
 import com.example.enutritrack_app.presentation.health.HealthActivity
 import com.example.enutritrack_app.presentation.profile.ProfileActivity
 import com.example.enutritrack_app.presentation.nutrition.NutritionActivity
+import com.example.enutritrack_app.presentation.appointments.AppointmentsActivity
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -74,14 +75,10 @@ class DashboardActivity : AppCompatActivity() {
             startActivity(intent)
         }
         
-        // Navegación a Citas (placeholder)
+        // Navegación a Citas y Alertas
         binding.appointmentsCard.setOnClickListener {
-            // TODO: Implementar AppointmentsActivity
-            android.widget.Toast.makeText(
-                this,
-                "Módulo de Citas próximamente",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
+            val intent = Intent(this, AppointmentsActivity::class.java)
+            startActivity(intent)
         }
         
         // Navegación a Perfil

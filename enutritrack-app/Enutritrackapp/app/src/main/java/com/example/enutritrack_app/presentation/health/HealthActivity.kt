@@ -12,6 +12,9 @@ import com.example.enutritrack_app.data.local.entities.ActivityLevel
 import com.example.enutritrack_app.databinding.ActivityHealthBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -174,6 +177,54 @@ class HealthActivity : AppCompatActivity() {
             }
         }
         
+        // Observar actividades físicas
+        lifecycleScope.launch {
+            viewModel.actividadesFisicas.collect { actividades ->
+                binding.actividadesFisicasList.removeAllViews()
+                
+                if (actividades.isNotEmpty()) {
+                    binding.noActividadesFisicasText.visibility = View.GONE
+                    
+                    actividades.forEach { actividad ->
+                        val actividadView = layoutInflater.inflate(
+                            R.layout.item_actividad_fisica,
+                            binding.actividadesFisicasList,
+                            false
+                        )
+                        
+                        val tipoText = actividadView.findViewById<android.widget.TextView>(R.id.actividadTipo)
+                        val fechaText = actividadView.findViewById<android.widget.TextView>(R.id.actividadFecha)
+                        val duracionText = actividadView.findViewById<android.widget.TextView>(R.id.actividadDuracion)
+                        val caloriasText = actividadView.findViewById<android.widget.TextView>(R.id.actividadCalorias)
+                        val editButton = actividadView.findViewById<com.google.android.material.button.MaterialButton>(R.id.editActividadButton)
+                        val deleteButton = actividadView.findViewById<com.google.android.material.button.MaterialButton>(R.id.deleteActividadButton)
+                        
+                        // Obtener nombre del tipo de actividad desde el ViewModel
+                        val tipoActividad = viewModel.tiposActividad.value.find { it.id == actividad.tipo_actividad_id }
+                        tipoText.text = tipoActividad?.nombre ?: "Actividad desconocida"
+                        fechaText.text = dateFormat.format(Date(actividad.fecha))
+                        duracionText.text = "${actividad.duracion_min} min"
+                        caloriasText.text = "${actividad.calorias_quemadas} kcal"
+                        
+                        editButton.setOnClickListener {
+                            showAddEditActividadFisicaDialog(actividad)
+                        }
+                        
+                        deleteButton.setOnClickListener {
+                            val tipoNombre = tipoActividad?.nombre ?: "Actividad desconocida"
+                            showDeleteActividadFisicaConfirmation(actividad.id, tipoNombre)
+                        }
+                        
+                        binding.actividadesFisicasList.addView(actividadView)
+                    }
+                } else {
+                    binding.noActividadesFisicasText.visibility = View.VISIBLE
+                }
+                
+                binding.actividadesFisicasCard.visibility = View.VISIBLE
+            }
+        }
+        
         // Observar medicamentos activos
         lifecycleScope.launch {
             viewModel.activeMedications.collect { medications ->
@@ -229,6 +280,10 @@ class HealthActivity : AppCompatActivity() {
         // Botón agregar alergia
         binding.addAlergiaButton.setOnClickListener {
             showAddEditAlergiaDialog(null)
+        }
+        
+        binding.addActividadFisicaButton.setOnClickListener {
+            showAddEditActividadFisicaDialog(null)
         }
     }
     
@@ -402,6 +457,174 @@ class HealthActivity : AppCompatActivity() {
                     // Mostrar mensaje de error
                     Toast.makeText(this, "Por favor, completa los campos obligatorios", Toast.LENGTH_SHORT).show()
                 }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun showAddEditActividadFisicaDialog(existingActividad: com.example.enutritrack_app.data.local.entities.ActividadFisicaEntity?) {
+        // Verificar si hay tipos de actividad disponibles
+        val tiposActividadActuales = viewModel.tiposActividad.value
+        
+        if (tiposActividadActuales.isEmpty()) {
+            // Si no hay tipos, sincronizar primero y esperar
+            lifecycleScope.launch {
+                viewModel.syncFromServer()
+                
+                // Esperar a que los tipos estén disponibles (máximo 5 segundos)
+                val tiposDisponibles = try {
+                    kotlinx.coroutines.withTimeoutOrNull(5000) {
+                        viewModel.tiposActividad
+                            .filter { it.isNotEmpty() }
+                            .first()
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+                
+                if (tiposDisponibles != null && tiposDisponibles.isNotEmpty()) {
+                    // Ahora sí mostrar el diálogo
+                    mostrarDialogoActividadFisica(existingActividad, tiposDisponibles)
+                } else {
+                    Toast.makeText(this@HealthActivity, "No se pudieron cargar los tipos de actividad. Intente nuevamente.", Toast.LENGTH_LONG).show()
+                }
+            }
+        } else {
+            // Si ya hay tipos, mostrar el diálogo directamente
+            mostrarDialogoActividadFisica(existingActividad, tiposActividadActuales)
+        }
+    }
+    
+    private fun mostrarDialogoActividadFisica(
+        existingActividad: com.example.enutritrack_app.data.local.entities.ActividadFisicaEntity?,
+        tiposActividad: List<com.example.enutritrack_app.data.local.entities.TipoActividadEntity>
+    ) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_edit_actividad_fisica, null)
+        val tipoSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.tipoActividadSpinner)
+        val duracionInput = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.duracionInputLayout)
+        val caloriasInput = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.caloriasInputLayout)
+        val fechaInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.fechaInput)
+        val errorText = dialogView.findViewById<android.widget.TextView>(R.id.errorText)
+        
+        var selectedDate = existingActividad?.let { Date(it.fecha) } ?: Date()
+        
+        // Configurar spinner inmediatamente con los tipos disponibles
+        setupTipoActividadSpinner(tipoSpinner, tiposActividad, existingActividad?.tipo_actividad_id)
+        
+        // Cargar datos existentes si hay
+        existingActividad?.let {
+            duracionInput?.editText?.setText(it.duracion_min.toString())
+            caloriasInput?.editText?.setText(it.calorias_quemadas.toString())
+            fechaInput?.setText(dateFormat.format(Date(it.fecha)))
+        } ?: run {
+            fechaInput?.setText(dateFormat.format(selectedDate))
+        }
+        
+        // Configurar date picker
+        fechaInput?.setOnClickListener {
+            val calendar = Calendar.getInstance()
+            calendar.time = selectedDate
+            android.app.DatePickerDialog(
+                this,
+                { _, year, month, dayOfMonth ->
+                    calendar.set(year, month, dayOfMonth)
+                    selectedDate = calendar.time
+                    fechaInput.setText(dateFormat.format(selectedDate))
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle(if (existingActividad != null) "Editar Actividad Física" else "Registrar Actividad Física")
+            .setView(dialogView)
+            .setPositiveButton("Guardar") { _, _ ->
+                val selectedTipoIndex = tipoSpinner?.selectedItemPosition ?: -1
+                val duracionText = duracionInput?.editText?.text?.toString()?.trim()
+                val caloriasText = caloriasInput?.editText?.text?.toString()?.trim()
+                
+                // Validaciones
+                if (selectedTipoIndex < 0 || selectedTipoIndex >= tiposActividad.size) {
+                    errorText.text = "Debe seleccionar un tipo de actividad"
+                    errorText.visibility = View.VISIBLE
+                    return@setPositiveButton
+                }
+                
+                val tipoActividadSeleccionado = tiposActividad[selectedTipoIndex]
+                
+                val duracion = duracionText?.toIntOrNull()
+                if (duracion == null || duracion <= 0) {
+                    errorText.text = "La duración debe ser un número válido mayor a 0"
+                    errorText.visibility = View.VISIBLE
+                    return@setPositiveButton
+                }
+                
+                val calorias = caloriasText?.toDoubleOrNull()
+                if (calorias == null || calorias <= 0) {
+                    errorText.text = "Las calorías deben ser un número válido mayor a 0"
+                    errorText.visibility = View.VISIBLE
+                    return@setPositiveButton
+                }
+                
+                errorText.visibility = View.GONE
+                
+                if (existingActividad != null) {
+                    // Actualizar
+                    viewModel.updateActividadFisica(
+                        actividadFisicaId = existingActividad.id,
+                        tipoActividadId = tipoActividadSeleccionado.id,
+                        duracionMin = duracion,
+                        caloriasQuemadas = calorias,
+                        fecha = selectedDate
+                    )
+                } else {
+                    // Crear nueva
+                    viewModel.addActividadFisica(
+                        tipoActividadId = tipoActividadSeleccionado.id,
+                        duracionMin = duracion,
+                        caloriasQuemadas = calorias,
+                        fecha = selectedDate
+                    )
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun setupTipoActividadSpinner(
+        spinner: android.widget.Spinner?,
+        tiposActividad: List<com.example.enutritrack_app.data.local.entities.TipoActividadEntity>,
+        selectedTipoId: String?
+    ) {
+        if (spinner == null || tiposActividad.isEmpty()) return
+        
+        val nombres = tiposActividad.map { it.nombre }
+        val adapter = android.widget.ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            nombres
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        spinner.adapter = adapter
+        
+        // Seleccionar el tipo existente si hay
+        selectedTipoId?.let { id ->
+            val index = tiposActividad.indexOfFirst { it.id == id }
+            if (index != -1) {
+                spinner.setSelection(index)
+            }
+        }
+    }
+    
+    private fun showDeleteActividadFisicaConfirmation(actividadId: String, tipoActividadNombre: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Eliminar Actividad Física")
+            .setMessage("¿Está seguro de que desea eliminar la actividad física \"$tipoActividadNombre\"?")
+            .setPositiveButton("Eliminar") { _, _ ->
+                viewModel.deleteActividadFisica(actividadId)
             }
             .setNegativeButton("Cancelar", null)
             .show()

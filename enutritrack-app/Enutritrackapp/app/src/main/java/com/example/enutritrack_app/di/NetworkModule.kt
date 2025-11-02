@@ -8,6 +8,8 @@ import com.example.enutritrack_app.data.remote.api.MedicalHistoryApiService
 import com.example.enutritrack_app.data.remote.api.UserApiService
 import com.example.enutritrack_app.data.remote.api.ProfileApiService
 import com.example.enutritrack_app.data.remote.api.NutritionApiService
+import com.example.enutritrack_app.data.remote.api.AppointmentsApiService
+import com.example.enutritrack_app.data.remote.api.AlertsApiService
 import com.example.enutritrack_app.data.remote.interceptors.AuthInterceptor
 import com.example.enutritrack_app.data.remote.interceptors.TokenRefreshInterceptor
 import okhttp3.OkHttpClient
@@ -107,6 +109,32 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ProfileApiService::class.java)
+    }
+
+    /**
+     * Crea el servicio API para endpoints de citas médicas
+     * Estos endpoints están en el servidor principal (puerto 4000)
+     */
+    fun createAppointmentsApiService(context: Context): AppointmentsApiService {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.BASE_URL_SERVER)  // Servidor principal
+            .client(createOkHttpClient(context))  // Con autenticación
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AppointmentsApiService::class.java)
+    }
+
+    /**
+     * Crea el servicio API para endpoints de alertas
+     * Estos endpoints están en el servidor principal (puerto 4000)
+     */
+    fun createAlertsApiService(context: Context): AlertsApiService {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.BASE_URL_SERVER)  // Servidor principal
+            .client(createOkHttpClient(context))  // Con autenticación
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AlertsApiService::class.java)
     }
 
     private fun createOkHttpClient(context: Context): OkHttpClient {

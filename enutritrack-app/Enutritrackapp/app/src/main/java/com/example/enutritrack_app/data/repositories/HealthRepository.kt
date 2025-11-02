@@ -36,6 +36,7 @@ class HealthRepository(
     private val medicamentoDao: MedicamentoDao,
     private val alergiaDao: AlergiaDao,
     private val actividadFisicaDao: ActividadFisicaDao,
+    private val tipoActividadDao: TipoActividadDao,
     private val userLocalRepository: UserLocalRepository
 ) {
     
@@ -744,7 +745,7 @@ class HealthRepository(
      */
     suspend fun addActividadFisica(
         usuarioId: String,
-        tipoActividad: String,
+        tipoActividadId: String,
         duracionMin: Int,
         caloriasQuemadas: Double,
         fecha: Date
@@ -754,7 +755,7 @@ class HealthRepository(
             val entity = ActividadFisicaEntity(
                 id = UUID.randomUUID().toString(),
                 usuario_id = usuarioId,
-                tipo_actividad = tipoActividad,
+                tipo_actividad_id = tipoActividadId,
                 duracion_min = duracionMin,
                 calorias_quemadas = caloriasQuemadas,
                 fecha = fecha.time,
@@ -786,7 +787,7 @@ class HealthRepository(
      */
     suspend fun updateActividadFisica(
         actividadFisicaId: String,
-        tipoActividad: String? = null,
+        tipoActividadId: String? = null,
         duracionMin: Int? = null,
         caloriasQuemadas: Double? = null,
         fecha: Date? = null
@@ -799,7 +800,7 @@ class HealthRepository(
             }
             
             val updated = existing.copy(
-                tipo_actividad = tipoActividad ?: existing.tipo_actividad,
+                tipo_actividad_id = tipoActividadId ?: existing.tipo_actividad_id,
                 duracion_min = duracionMin ?: existing.duracion_min,
                 calorias_quemadas = caloriasQuemadas ?: existing.calorias_quemadas,
                 fecha = fecha?.time ?: existing.fecha,
@@ -980,7 +981,7 @@ class HealthRepository(
                     if (existing != null) {
                         // Actualizar existente
                         val updated = existing.copy(
-                            tipo_actividad = serverEntity.tipo_actividad,
+                            tipo_actividad_id = serverEntity.tipo_actividad_id,
                             duracion_min = serverEntity.duracion_min,
                             calorias_quemadas = serverEntity.calorias_quemadas,
                             fecha = serverEntity.fecha,
@@ -1005,6 +1006,50 @@ class HealthRepository(
             }
         } catch (e: Exception) {
             Log.e("HealthRepository", "Error sincronizando actividades físicas desde servidor", e)
+            Result.failure(e)
+        }
+    }
+    
+    // ========== TIPOS DE ACTIVIDAD (SOLO LECTURA) ==========
+    
+    /**
+     * Obtiene todos los tipos de actividad desde Room
+     */
+    fun getTiposActividad(): Flow<List<TipoActividadEntity>> {
+        return tipoActividadDao.getAllFlow()
+    }
+    
+    /**
+     * Sincroniza tipos de actividad desde el servidor
+     */
+    suspend fun syncTiposActividadFromServer(): Result<List<TipoActividadEntity>> {
+        return try {
+            if (!isOnline()) {
+                return Result.failure(Exception("No hay conexión a internet"))
+            }
+            
+            val response = healthApiService.getTiposActividad()
+            
+            if (response.isSuccessful && response.body() != null) {
+                val serverTipos = response.body()!!
+                val entities = serverTipos.map { tipoResponse ->
+                    tipoResponse.toEntity()
+                }
+                
+                // Reemplazar todos los tipos de actividad
+                tipoActividadDao.deleteAll()
+                if (entities.isNotEmpty()) {
+                    tipoActividadDao.insertOrReplaceAll(entities)
+                }
+                
+                Log.d("HealthRepository", "Sincronizados ${entities.size} tipos de actividad desde servidor")
+                Result.success(entities)
+            } else {
+                Log.w("HealthRepository", "Error sincronizando tipos de actividad: ${response.code()}")
+                Result.failure(Exception("Error ${response.code()}: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Log.e("HealthRepository", "Error sincronizando tipos de actividad desde servidor", e)
             Result.failure(e)
         }
     }

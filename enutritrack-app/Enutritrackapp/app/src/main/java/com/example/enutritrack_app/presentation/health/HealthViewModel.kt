@@ -35,6 +35,7 @@ class HealthViewModel(application: Application) : AndroidViewModel(application) 
         medicamentoDao = database.medicamentoDao(),
         alergiaDao = database.alergiaDao(),
         actividadFisicaDao = database.actividadFisicaDao(),
+        tipoActividadDao = database.tipoActividadDao(),
         userLocalRepository = userLocalRepository
     )
     
@@ -114,6 +115,13 @@ class HealthViewModel(application: Application) : AndroidViewModel(application) 
     } else {
         MutableStateFlow(emptyList())
     }
+    
+    val tiposActividad: StateFlow<List<com.example.enutritrack_app.data.local.entities.TipoActividadEntity>> = 
+        healthRepository.getTiposActividad().stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
     
     init {
         loadHealthData()
@@ -271,6 +279,15 @@ class HealthViewModel(application: Application) : AndroidViewModel(application) 
                     Log.w("HealthViewModel", "No se pudo sincronizar alergias desde servidor")
                 }
                 
+                // Sincronizar tipos de actividad primero (necesarios para actividades físicas)
+                val tiposActividadResult = healthRepository.syncTiposActividadFromServer()
+                if (tiposActividadResult.isSuccess) {
+                    syncCount++
+                } else {
+                    errorCount++
+                    Log.w("HealthViewModel", "No se pudo sincronizar tipos de actividad desde servidor")
+                }
+                
                 // Sincronizar actividades físicas (manejar 404 silenciosamente)
                 val actividadFisicaResult = healthRepository.syncActividadesFisicasFromServer(userId)
                 if (actividadFisicaResult.isSuccess) {
@@ -420,7 +437,7 @@ class HealthViewModel(application: Application) : AndroidViewModel(application) 
      * Agrega una nueva actividad física
      */
     fun addActividadFisica(
-        tipoActividad: String,
+        tipoActividadId: String,
         duracionMin: Int,
         caloriasQuemadas: Double,
         fecha: Date
@@ -432,7 +449,7 @@ class HealthViewModel(application: Application) : AndroidViewModel(application) 
             
             val result = healthRepository.addActividadFisica(
                 usuarioId = userId!!,
-                tipoActividad = tipoActividad,
+                tipoActividadId = tipoActividadId,
                 duracionMin = duracionMin,
                 caloriasQuemadas = caloriasQuemadas,
                 fecha = fecha
@@ -460,7 +477,7 @@ class HealthViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun updateActividadFisica(
         actividadFisicaId: String,
-        tipoActividad: String? = null,
+        tipoActividadId: String? = null,
         duracionMin: Int? = null,
         caloriasQuemadas: Double? = null,
         fecha: Date? = null
@@ -470,7 +487,7 @@ class HealthViewModel(application: Application) : AndroidViewModel(application) 
             
             val result = healthRepository.updateActividadFisica(
                 actividadFisicaId = actividadFisicaId,
-                tipoActividad = tipoActividad,
+                tipoActividadId = tipoActividadId,
                 duracionMin = duracionMin,
                 caloriasQuemadas = caloriasQuemadas,
                 fecha = fecha

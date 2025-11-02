@@ -24,7 +24,7 @@ data class ActividadFisicaEntity(
     
     val usuario_id: String, // FK → UserEntity.id
     
-    val tipo_actividad: String, // Tipo de actividad física (ej: "Caminar", "Correr", "Nadar", etc.)
+    val tipo_actividad_id: String, // FK → TipoActividadEntity.id
     
     val duracion_min: Int, // Duración en minutos
     

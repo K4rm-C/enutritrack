@@ -38,7 +38,7 @@ fun ActividadFisicaResponse.toEntity(): ActividadFisicaEntity {
     return ActividadFisicaEntity(
         id = id,
         usuario_id = usuarioId,
-        tipo_actividad = tipoActividad ?: "",
+        tipo_actividad_id = tipoActividadId,
         duracion_min = duracionMin,
         calorias_quemadas = caloriasQuemadas,
         fecha = fechaMillis,
@@ -57,7 +57,7 @@ fun ActividadFisicaResponse.toEntity(): ActividadFisicaEntity {
 fun ActividadFisicaEntity.toCreateRequest(): CreateActividadFisicaRequest {
     return CreateActividadFisicaRequest(
         usuario_id = usuario_id,
-        tipo_actividad = tipo_actividad,
+        tipo_actividad_id = tipo_actividad_id,
         duracion_min = duracion_min,
         calorias_quemadas = calorias_quemadas,
         fecha = Date(fecha)
