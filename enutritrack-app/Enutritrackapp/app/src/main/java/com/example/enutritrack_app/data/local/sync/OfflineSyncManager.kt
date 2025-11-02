@@ -7,6 +7,8 @@ import com.example.enutritrack_app.data.local.SecurityManager
 import com.example.enutritrack_app.data.local.database.EnutritrackDatabase
 import com.example.enutritrack_app.data.local.repositories.UserLocalRepository
 import com.example.enutritrack_app.data.repositories.HealthRepository
+import com.example.enutritrack_app.data.repositories.AppointmentsRepository
+import com.example.enutritrack_app.data.repositories.AlertsRepository
 import com.example.enutritrack_app.di.DatabaseModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -143,10 +145,49 @@ class OfflineSyncManager(
                 medicamentoDao = database.medicamentoDao(),
                 alergiaDao = database.alergiaDao(),
                 actividadFisicaDao = database.actividadFisicaDao(),
+                tipoActividadDao = database.tipoActividadDao(),
                 userLocalRepository = userLocalRepository
             )
             
+            val appointmentsRepository = AppointmentsRepository(
+                context = context,
+                citaMedicaDao = database.citaMedicaDao(),
+                citaMedicaVitalesDao = database.citaMedicaVitalesDao(),
+                citaMedicaDocumentosDao = database.citaMedicaDocumentosDao(),
+                tipoConsultaDao = database.tipoConsultaDao(),
+                estadoCitaDao = database.estadoCitaDao(),
+                userLocalRepository = userLocalRepository
+            )
+            
+            val alertsRepository = AlertsRepository(
+                context = context,
+                alertaDao = database.alertaDao(),
+                tipoAlertaDao = database.tipoAlertaDao(),
+                categoriaAlertaDao = database.categoriaAlertaDao(),
+                nivelPrioridadAlertaDao = database.nivelPrioridadAlertaDao(),
+                estadoAlertaDao = database.estadoAlertaDao()
+            )
+            
+            // Sincronizar datos de salud
             healthRepository.syncAllPendingHealthData()
+            
+            // Sincronizar citas pendientes
+            appointmentsRepository.syncAllPendingCitas()
+            
+            // Sincronizar catálogos de citas
+            appointmentsRepository.syncTiposConsultaFromServer()
+            appointmentsRepository.syncEstadosCitaFromServer()
+            
+            // Sincronizar citas desde servidor
+            appointmentsRepository.syncCitasFromServer(userId)
+            
+            // Sincronizar alertas (solo lectura, no hay pendientes)
+            alertsRepository.syncTiposAlertaFromServer()
+            alertsRepository.syncCategoriasAlertaFromServer()
+            alertsRepository.syncNivelesPrioridadFromServer()
+            alertsRepository.syncEstadosAlertaFromServer()
+            alertsRepository.syncAlertasFromServer(userId)
+            
             Log.d("OfflineSyncManager", "Sincronización manual completada")
             Result.success(Unit)
         } catch (e: Exception) {

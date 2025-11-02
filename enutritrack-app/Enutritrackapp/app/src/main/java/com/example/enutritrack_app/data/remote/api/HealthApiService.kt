@@ -231,5 +231,13 @@ interface HealthApiService {
     suspend fun deleteActividadFisica(
         @Path("id") id: String
     ): Response<Unit>
+    
+    // ========== TIPOS DE ACTIVIDAD (SOLO LECTURA) ==========
+    
+    /**
+     * Obtiene todos los tipos de actividad física
+     */
+    @GET("tipos-actividad")
+    suspend fun getTiposActividad(): Response<List<com.example.enutritrack_app.data.remote.dto.TipoActividadResponse>>
 }
 

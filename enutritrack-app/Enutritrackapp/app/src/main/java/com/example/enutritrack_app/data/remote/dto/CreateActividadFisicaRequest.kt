@@ -13,10 +13,7 @@ data class CreateActividadFisicaRequest(
     val usuario_id: String,
     
     @SerializedName("tipo_actividad_id")
-    val tipo_actividad_id: String? = null,
-    
-    @SerializedName("tipo_actividad")
-    val tipo_actividad: String? = null,
+    val tipo_actividad_id: String,
     
     @SerializedName("duracion_min")
     val duracion_min: Int,
@@ -29,14 +26,13 @@ data class CreateActividadFisicaRequest(
 ) {
     constructor(
         usuario_id: String,
-        tipo_actividad: String,
+        tipo_actividad_id: String,
         duracion_min: Int,
         calorias_quemadas: Double,
         fecha: Date
     ) : this(
         usuario_id = usuario_id,
-        tipo_actividad_id = null,
-        tipo_actividad = tipo_actividad,
+        tipo_actividad_id = tipo_actividad_id,
         duracion_min = duracion_min,
         calorias_quemadas = calorias_quemadas,
         fecha = isoDateFormat.format(fecha)

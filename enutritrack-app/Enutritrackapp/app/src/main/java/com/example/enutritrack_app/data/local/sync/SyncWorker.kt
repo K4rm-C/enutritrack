@@ -7,6 +7,8 @@ import com.example.enutritrack_app.data.local.SecurityManager
 import com.example.enutritrack_app.data.local.database.EnutritrackDatabase
 import com.example.enutritrack_app.data.local.repositories.UserLocalRepository
 import com.example.enutritrack_app.data.repositories.HealthRepository
+import com.example.enutritrack_app.data.repositories.AppointmentsRepository
+import com.example.enutritrack_app.data.repositories.AlertsRepository
 import com.example.enutritrack_app.di.DatabaseModule
 import android.util.Log
 
@@ -37,7 +39,7 @@ class SyncWorker(
                 return Result.success()  // No es un error, simplemente no hay nada que sincronizar
             }
             
-            // Crear HealthRepository
+            // Crear Repositories
             val healthRepository = HealthRepository(
                 context = applicationContext,
                 historialPesoDao = database.historialPesoDao(),
@@ -46,11 +48,48 @@ class SyncWorker(
                 medicamentoDao = database.medicamentoDao(),
                 alergiaDao = database.alergiaDao(),
                 actividadFisicaDao = database.actividadFisicaDao(),
+                tipoActividadDao = database.tipoActividadDao(),
                 userLocalRepository = userLocalRepository
             )
             
-            // Sincronizar todos los datos pendientes
+            val appointmentsRepository = AppointmentsRepository(
+                context = applicationContext,
+                citaMedicaDao = database.citaMedicaDao(),
+                citaMedicaVitalesDao = database.citaMedicaVitalesDao(),
+                citaMedicaDocumentosDao = database.citaMedicaDocumentosDao(),
+                tipoConsultaDao = database.tipoConsultaDao(),
+                estadoCitaDao = database.estadoCitaDao(),
+                userLocalRepository = userLocalRepository
+            )
+            
+            val alertsRepository = AlertsRepository(
+                context = applicationContext,
+                alertaDao = database.alertaDao(),
+                tipoAlertaDao = database.tipoAlertaDao(),
+                categoriaAlertaDao = database.categoriaAlertaDao(),
+                nivelPrioridadAlertaDao = database.nivelPrioridadAlertaDao(),
+                estadoAlertaDao = database.estadoAlertaDao()
+            )
+            
+            // Sincronizar todos los datos pendientes de salud
             healthRepository.syncAllPendingHealthData()
+            
+            // Sincronizar citas pendientes
+            appointmentsRepository.syncAllPendingCitas()
+            
+            // Sincronizar catálogos de citas (si no existen)
+            appointmentsRepository.syncTiposConsultaFromServer()
+            appointmentsRepository.syncEstadosCitaFromServer()
+            
+            // Sincronizar citas desde servidor
+            appointmentsRepository.syncCitasFromServer(userId)
+            
+            // Sincronizar alertas (solo lectura)
+            alertsRepository.syncTiposAlertaFromServer()
+            alertsRepository.syncCategoriasAlertaFromServer()
+            alertsRepository.syncNivelesPrioridadFromServer()
+            alertsRepository.syncEstadosAlertaFromServer()
+            alertsRepository.syncAlertasFromServer(userId)
             
             Log.d("SyncWorker", "=== SINCRONIZACIÓN COMPLETADA ===")
             Result.success()

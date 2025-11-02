@@ -13,6 +13,13 @@ import com.example.enutritrack_app.data.local.entities.*
 /**
  * Base de datos Room principal para la aplicación
  * 
+ * Version 9: Agregadas entidades del módulo de Citas y Alertas
+ * - CitaMedicaEntity, CitaMedicaVitalesEntity, CitaMedicaDocumentosEntity
+ * - TipoConsultaEntity, EstadoCitaEntity
+ * - AlertaEntity, TipoAlertaEntity, CategoriaAlertaEntity
+ * - NivelPrioridadAlertaEntity, EstadoAlertaEntity
+ * 
+ * Version 8: Added TipoActividadEntity
  * Version 6: Agregadas entidades del módulo de Nutrición
  * - AlimentoEntity
  * - RegistroComidaEntity
@@ -48,9 +55,22 @@ import com.example.enutritrack_app.data.local.entities.*
         RegistroComidaEntity::class,
         RegistroComidaItemEntity::class,
         RecomendacionEntity::class,
-        ActividadFisicaEntity::class
+        ActividadFisicaEntity::class,
+        TipoActividadEntity::class,
+        // Citas Médicas
+        CitaMedicaEntity::class,
+        CitaMedicaVitalesEntity::class,
+        CitaMedicaDocumentosEntity::class,
+        TipoConsultaEntity::class,
+        EstadoCitaEntity::class,
+        // Alertas
+        AlertaEntity::class,
+        TipoAlertaEntity::class,
+        CategoriaAlertaEntity::class,
+        NivelPrioridadAlertaEntity::class,
+        EstadoAlertaEntity::class
     ],
-    version = 7, // Incremented version - Added ActividadFisicaEntity
+    version = 9, // Incremented version - Added Citas and Alertas entities
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -115,6 +135,65 @@ abstract class EnutritrackDatabase : RoomDatabase() {
      * DAO para operaciones con actividad física
      */
     abstract fun actividadFisicaDao(): ActividadFisicaDao
+
+    /**
+     * DAO para operaciones con tipos de actividad (solo lectura)
+     */
+    abstract fun tipoActividadDao(): TipoActividadDao
+
+    // ========== CITAS MÉDICAS ==========
+
+    /**
+     * DAO para operaciones con citas médicas
+     */
+    abstract fun citaMedicaDao(): CitaMedicaDao
+
+    /**
+     * DAO para operaciones con vitales de citas médicas (solo lectura)
+     */
+    abstract fun citaMedicaVitalesDao(): CitaMedicaVitalesDao
+
+    /**
+     * DAO para operaciones con documentos de citas médicas (solo lectura)
+     */
+    abstract fun citaMedicaDocumentosDao(): CitaMedicaDocumentosDao
+
+    /**
+     * DAO para operaciones con tipos de consulta (solo lectura)
+     */
+    abstract fun tipoConsultaDao(): TipoConsultaDao
+
+    /**
+     * DAO para operaciones con estados de cita (solo lectura)
+     */
+    abstract fun estadoCitaDao(): EstadoCitaDao
+
+    // ========== ALERTAS ==========
+
+    /**
+     * DAO para operaciones con alertas (solo lectura)
+     */
+    abstract fun alertaDao(): AlertaDao
+
+    /**
+     * DAO para operaciones con tipos de alerta (solo lectura)
+     */
+    abstract fun tipoAlertaDao(): TipoAlertaDao
+
+    /**
+     * DAO para operaciones con categorías de alerta (solo lectura)
+     */
+    abstract fun categoriaAlertaDao(): CategoriaAlertaDao
+
+    /**
+     * DAO para operaciones con niveles de prioridad de alerta (solo lectura)
+     */
+    abstract fun nivelPrioridadAlertaDao(): NivelPrioridadAlertaDao
+
+    /**
+     * DAO para operaciones con estados de alerta (solo lectura)
+     */
+    abstract fun estadoAlertaDao(): EstadoAlertaDao
 
     companion object {
         private const val DATABASE_NAME = "enutritrack_db"
