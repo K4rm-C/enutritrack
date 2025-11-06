@@ -49,7 +49,7 @@ CREATE TABLE public.cuentas (
 	email_1 varchar(255) NULL,
 	email_2 varchar(255) NULL,
 	password_hash varchar(255) NOT NULL,
-	tipo_cuenta public.tipo_cuenta_enum NOT NULL,
+	tipo_cuenta tipo_cuenta_enum NOT NULL,
 	activa bool DEFAULT true NOT NULL,
 	ultimo_acceso timestamp NULL,
 	created_at timestamp DEFAULT now() NOT NULL,
@@ -280,7 +280,7 @@ CREATE TABLE public.registro_comida (
 	id uuid DEFAULT uuid_generate_v4() NOT NULL,
 	usuario_id uuid NOT NULL,
 	fecha timestamp DEFAULT now() NOT NULL,
-	tipo_comida public.registro_comida_tipo_enum NOT NULL,
+	tipo_comida registro_comida_tipo_enum NOT NULL,
 	notas text NULL,
 	created_at timestamp DEFAULT now() NOT NULL,
 	updated_at timestamp DEFAULT now() NOT NULL,
@@ -366,7 +366,7 @@ CREATE TABLE public.alergias (
 	usuario_id uuid NOT NULL,
 	tipo varchar(100) NULL,
 	nombre varchar(200) NOT NULL,
-	severidad public.alergia_severidad_enum NOT NULL,
+	severidad alergia_severidad_enum NOT NULL,
 	reaccion text NULL,
 	notas text NULL,
 	activa bool DEFAULT true NOT NULL,
@@ -460,7 +460,7 @@ CREATE TABLE public.condiciones_medicas (
 	id uuid DEFAULT uuid_generate_v4() NOT NULL,
 	usuario_id uuid NOT NULL,
 	nombre varchar(200) NOT NULL,
-	severidad public.condicion_medica_severidad_enum NULL,
+	severidad condicion_medica_severidad_enum NULL,
 	fecha_diagnostico date NULL,
 	notas text NULL,
 	activa bool DEFAULT true NOT NULL,
@@ -545,7 +545,7 @@ CREATE TABLE public.objetivo_usuario (
 	id uuid DEFAULT uuid_generate_v4() NOT NULL,
 	usuario_id uuid NOT NULL,
 	peso_objetivo numeric(5, 2) NULL,
-	nivel_actividad public.nivel_actividad_enum NOT NULL,
+	nivel_actividad nivel_actividad_enum NOT NULL,
 	fecha_establecido timestamp DEFAULT now() NOT NULL,
 	vigente bool DEFAULT true NOT NULL,
 	CONSTRAINT "PK_5ad83df62ac6c122a895484fa24" PRIMARY KEY (id),
@@ -847,3 +847,331 @@ VALUES
     ('a1b2c3d4-e5f6-7890-abcd-ef1234567859', 'Rowing (remo máquina)', 'Remo en máquina', 7.00, 'Cardio', CURRENT_TIMESTAMP),
     ('a1b2c3d4-e5f6-7890-abcd-ef1234567860', 'Escalada (muro)', 'Escalada en muro', 8.00, 'Fuerza', CURRENT_TIMESTAMP)
 ON CONFLICT (nombre) DO NOTHING;
+
+INSERT INTO especialidades (id, nombre, descripcion, created_at)
+VALUES 
+    ('4f671de1-075a-4842-ac74-817b5b974652', 'Medicina General', 'Atencion medica general y preventiva', CURRENT_TIMESTAMP),
+    ('8861e869-93de-4209-bbc6-5b79f6e605aa', 'Nutricion', 'Especialidad en nutricion y dietetica', CURRENT_TIMESTAMP),
+    ('581313fb-683b-41ca-b66a-907e99e7ee2a', 'Endocrinologia', 'Trastornos del sistema endocrino', CURRENT_TIMESTAMP),
+    ('6ce306f7-2ed3-4540-bf23-f5bdf1b59dd6', 'Cardiologia', 'Enfermedades del corazon y sistema cardiovascular', CURRENT_TIMESTAMP),
+    ('ac7e8a61-82bf-4c51-840c-88170d2238d8', 'Pediatria', 'Atencion medica para ninos y adolescentes', CURRENT_TIMESTAMP)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO generos (id, nombre, descripcion, created_at)
+VALUES 
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Masculino', 'Genero masculino', CURRENT_TIMESTAMP),
+    ('b2c3d4e5-f6a7-8901-bcde-f12345678901', 'Femenino', 'Genero femenino', CURRENT_TIMESTAMP),
+    ('c3d4e5f6-a7b8-9012-cdef-123456789012', 'Otro', 'Otro genero no especificado', CURRENT_TIMESTAMP)
+ON CONFLICT (id) DO NOTHING;
+
+-- Crear cuenta de administrador por defecto
+-- Contraseña: admin123 (ya hasheada con bcrypt)
+INSERT INTO cuentas (id, email, email_1, email_2, password_hash, tipo_cuenta, activa, created_at, updated_at)
+VALUES (
+  uuid_generate_v4(),
+  'admin@enutritrack.com',
+  NULL,
+  NULL,
+  '$2b$10$maEqA0.WZZU7LzvTDQ8CWOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi',
+  'admin',
+  true,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+)
+ON CONFLICT (email) DO NOTHING;
+
+-- Crear perfil de admin por defecto
+INSERT INTO perfil_admin (id, cuenta_id, nombre, departamento, telefono, telefono_1, telefono_2, created_at, updated_at)
+SELECT 
+  uuid_generate_v4(),
+  c.id,
+  'Administrador',
+  'TI',
+  NULL,
+  NULL,
+  NULL,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+FROM cuentas c
+WHERE c.email = 'admin@enutritrack.com'
+  AND NOT EXISTS (
+    SELECT 1 FROM perfil_admin pa WHERE pa.cuenta_id = c.id
+  );
+
+-- Insertar datos de ejemplo completos: 5 doctores con 4 pacientes cada uno
+-- Password para doctores: doctor123 (ya hasheada con bcrypt)
+-- Password para usuarios: usuario123 (ya hasheada con bcrypt)
+
+-- Crear 5 cuentas de doctores
+INSERT INTO cuentas (id, email, email_1, email_2, password_hash, tipo_cuenta, activa, created_at, updated_at)
+VALUES 
+  (uuid_generate_v4(), 'dr.perez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'doctor', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'dr.garcia@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'doctor', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'dr.lopez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'doctor', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'dr.martinez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'doctor', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'dr.rodriguez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'doctor', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (email) DO NOTHING;
+
+-- Crear perfiles de doctores
+INSERT INTO perfil_doctor (id, cuenta_id, admin_id, nombre, especialidad_id, cedula_profesional, telefono, telefono_1, telefono_2, created_at, updated_at)
+SELECT 
+  uuid_generate_v4(),
+  c.id,
+  pa.id,
+  CASE 
+    WHEN c.email = 'dr.perez@enutritrack.com' THEN 'Dr. Juan Carlos Perez'
+    WHEN c.email = 'dr.garcia@enutritrack.com' THEN 'Dra. Maria Elena Garcia'
+    WHEN c.email = 'dr.lopez@enutritrack.com' THEN 'Dr. Carlos Alberto Lopez'
+    WHEN c.email = 'dr.martinez@enutritrack.com' THEN 'Dra. Ana Sofia Martinez'
+    WHEN c.email = 'dr.rodriguez@enutritrack.com' THEN 'Dr. Luis Fernando Rodriguez'
+  END,
+  CASE 
+    WHEN c.email = 'dr.perez@enutritrack.com' THEN '8861e869-93de-4209-bbc6-5b79f6e605aa'::uuid  -- Nutricion
+    WHEN c.email = 'dr.garcia@enutritrack.com' THEN '4f671de1-075a-4842-ac74-817b5b974652'::uuid  -- Medicina General
+    WHEN c.email = 'dr.lopez@enutritrack.com' THEN '581313fb-683b-41ca-b66a-907e99e7ee2a'::uuid  -- Endocrinologia
+    WHEN c.email = 'dr.martinez@enutritrack.com' THEN '6ce306f7-2ed3-4540-bf23-f5bdf1b59dd6'::uuid  -- Cardiologia
+    WHEN c.email = 'dr.rodriguez@enutritrack.com' THEN 'ac7e8a61-82bf-4c51-840c-88170d2238d8'::uuid  -- Pediatria
+  END,
+  CASE 
+    WHEN c.email = 'dr.perez@enutritrack.com' THEN '12345678'
+    WHEN c.email = 'dr.garcia@enutritrack.com' THEN '23456789'
+    WHEN c.email = 'dr.lopez@enutritrack.com' THEN '34567890'
+    WHEN c.email = 'dr.martinez@enutritrack.com' THEN '45678901'
+    WHEN c.email = 'dr.rodriguez@enutritrack.com' THEN '56789012'
+  END,
+  CASE 
+    WHEN c.email = 'dr.perez@enutritrack.com' THEN '555-1001'
+    WHEN c.email = 'dr.garcia@enutritrack.com' THEN '555-1002'
+    WHEN c.email = 'dr.lopez@enutritrack.com' THEN '555-1003'
+    WHEN c.email = 'dr.martinez@enutritrack.com' THEN '555-1004'
+    WHEN c.email = 'dr.rodriguez@enutritrack.com' THEN '555-1005'
+  END,
+  NULL,
+  NULL,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+FROM cuentas c
+CROSS JOIN perfil_admin pa
+WHERE c.tipo_cuenta = 'doctor'
+  AND NOT EXISTS (
+    SELECT 1 FROM perfil_doctor pd WHERE pd.cuenta_id = c.id
+  );
+
+-- Crear 20 cuentas de usuarios (4 por doctor)
+INSERT INTO cuentas (id, email, email_1, email_2, password_hash, tipo_cuenta, activa, created_at, updated_at)
+VALUES 
+  (uuid_generate_v4(), 'maria.garcia@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'juan.rodriguez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'ana.lopez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'carlos.martinez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'lucia.fernandez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'pedro.gonzalez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'sofia.herrera@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'diego.torres@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'isabella.morales@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'mateo.jimenez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'valentina.ramirez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'santiago.castro@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'camila.ortiz@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'alejandro.vargas@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'natalia.delgado@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'sebastian.flores@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'valeria.gutierrez@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'daniel.ruiz@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'emma.aguilar@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (uuid_generate_v4(), 'maximiliano.medina@enutritrack.com', NULL, NULL, '$2b$10$KqMcR2WpdFQinFNXUpa/CYxiOmzosuH.KqMcR2WpdFQinFNXUpa/CYxi', 'usuario', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (email) DO NOTHING;
+
+-- Crear perfiles de usuarios (4 por doctor)
+INSERT INTO perfil_usuario (id, cuenta_id, doctor_id, nombre, fecha_nacimiento, genero_id, altura, telefono, telefono_1, telefono_2, created_at, updated_at)
+SELECT 
+  uuid_generate_v4(),
+  c.id,
+  pd.id,
+  CASE 
+    WHEN c.email = 'maria.garcia@enutritrack.com' THEN 'Maria Garcia'
+    WHEN c.email = 'juan.rodriguez@enutritrack.com' THEN 'Juan Rodriguez'
+    WHEN c.email = 'ana.lopez@enutritrack.com' THEN 'Ana Lopez'
+    WHEN c.email = 'carlos.martinez@enutritrack.com' THEN 'Carlos Martinez'
+    WHEN c.email = 'lucia.fernandez@enutritrack.com' THEN 'Lucia Fernandez'
+    WHEN c.email = 'pedro.gonzalez@enutritrack.com' THEN 'Pedro Gonzalez'
+    WHEN c.email = 'sofia.herrera@enutritrack.com' THEN 'Sofia Herrera'
+    WHEN c.email = 'diego.torres@enutritrack.com' THEN 'Diego Torres'
+    WHEN c.email = 'isabella.morales@enutritrack.com' THEN 'Isabella Morales'
+    WHEN c.email = 'mateo.jimenez@enutritrack.com' THEN 'Mateo Jimenez'
+    WHEN c.email = 'valentina.ramirez@enutritrack.com' THEN 'Valentina Ramirez'
+    WHEN c.email = 'santiago.castro@enutritrack.com' THEN 'Santiago Castro'
+    WHEN c.email = 'camila.ortiz@enutritrack.com' THEN 'Camila Ortiz'
+    WHEN c.email = 'alejandro.vargas@enutritrack.com' THEN 'Alejandro Vargas'
+    WHEN c.email = 'natalia.delgado@enutritrack.com' THEN 'Natalia Delgado'
+    WHEN c.email = 'sebastian.flores@enutritrack.com' THEN 'Sebastian Flores'
+    WHEN c.email = 'valeria.gutierrez@enutritrack.com' THEN 'Valeria Gutierrez'
+    WHEN c.email = 'daniel.ruiz@enutritrack.com' THEN 'Daniel Ruiz'
+    WHEN c.email = 'emma.aguilar@enutritrack.com' THEN 'Emma Aguilar'
+    WHEN c.email = 'maximiliano.medina@enutritrack.com' THEN 'Maximiliano Medina'
+  END,
+  CASE 
+    WHEN c.email = 'maria.garcia@enutritrack.com' THEN '1990-05-15'::date
+    WHEN c.email = 'juan.rodriguez@enutritrack.com' THEN '1985-08-22'::date
+    WHEN c.email = 'ana.lopez@enutritrack.com' THEN '1992-12-03'::date
+    WHEN c.email = 'carlos.martinez@enutritrack.com' THEN '1988-03-17'::date
+    WHEN c.email = 'lucia.fernandez@enutritrack.com' THEN '1995-07-11'::date
+    WHEN c.email = 'pedro.gonzalez@enutritrack.com' THEN '1987-11-28'::date
+    WHEN c.email = 'sofia.herrera@enutritrack.com' THEN '1993-04-09'::date
+    WHEN c.email = 'diego.torres@enutritrack.com' THEN '1989-09-14'::date
+    WHEN c.email = 'isabella.morales@enutritrack.com' THEN '1996-01-25'::date
+    WHEN c.email = 'mateo.jimenez@enutritrack.com' THEN '1991-06-18'::date
+    WHEN c.email = 'valentina.ramirez@enutritrack.com' THEN '1994-10-07'::date
+    WHEN c.email = 'santiago.castro@enutritrack.com' THEN '1986-02-13'::date
+    WHEN c.email = 'camila.ortiz@enutritrack.com' THEN '1997-05-30'::date
+    WHEN c.email = 'alejandro.vargas@enutritrack.com' THEN '1984-08-16'::date
+    WHEN c.email = 'natalia.delgado@enutritrack.com' THEN '1998-12-21'::date
+    WHEN c.email = 'sebastian.flores@enutritrack.com' THEN '1983-03-05'::date
+    WHEN c.email = 'valeria.gutierrez@enutritrack.com' THEN '1999-07-08'::date
+    WHEN c.email = 'daniel.ruiz@enutritrack.com' THEN '1982-11-12'::date
+    WHEN c.email = 'emma.aguilar@enutritrack.com' THEN '2000-04-26'::date
+    WHEN c.email = 'maximiliano.medina@enutritrack.com' THEN '1981-09-19'::date
+  END,
+  CASE 
+    WHEN c.email IN ('maria.garcia@enutritrack.com', 'ana.lopez@enutritrack.com', 'lucia.fernandez@enutritrack.com', 'sofia.herrera@enutritrack.com', 'isabella.morales@enutritrack.com', 'valentina.ramirez@enutritrack.com', 'camila.ortiz@enutritrack.com', 'natalia.delgado@enutritrack.com', 'valeria.gutierrez@enutritrack.com', 'emma.aguilar@enutritrack.com') THEN 'b2c3d4e5-f6a7-8901-bcde-f12345678901'::uuid  -- Femenino
+    ELSE 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'::uuid  -- Masculino
+  END,
+  CASE 
+    WHEN c.email = 'maria.garcia@enutritrack.com' THEN 165.5
+    WHEN c.email = 'juan.rodriguez@enutritrack.com' THEN 175.2
+    WHEN c.email = 'ana.lopez@enutritrack.com' THEN 162.8
+    WHEN c.email = 'carlos.martinez@enutritrack.com' THEN 180.1
+    WHEN c.email = 'lucia.fernandez@enutritrack.com' THEN 158.3
+    WHEN c.email = 'pedro.gonzalez@enutritrack.com' THEN 177.9
+    WHEN c.email = 'sofia.herrera@enutritrack.com' THEN 164.7
+    WHEN c.email = 'diego.torres@enutritrack.com' THEN 172.4
+    WHEN c.email = 'isabella.morales@enutritrack.com' THEN 160.9
+    WHEN c.email = 'mateo.jimenez@enutritrack.com' THEN 178.6
+    WHEN c.email = 'valentina.ramirez@enutritrack.com' THEN 163.2
+    WHEN c.email = 'santiago.castro@enutritrack.com' THEN 176.8
+    WHEN c.email = 'camila.ortiz@enutritrack.com' THEN 159.4
+    WHEN c.email = 'alejandro.vargas@enutritrack.com' THEN 181.3
+    WHEN c.email = 'natalia.delgado@enutritrack.com' THEN 157.6
+    WHEN c.email = 'sebastian.flores@enutritrack.com' THEN 174.7
+    WHEN c.email = 'valeria.gutierrez@enutritrack.com' THEN 161.8
+    WHEN c.email = 'daniel.ruiz@enutritrack.com' THEN 179.2
+    WHEN c.email = 'emma.aguilar@enutritrack.com' THEN 156.9
+    WHEN c.email = 'maximiliano.medina@enutritrack.com' THEN 182.1
+  END,
+  CASE 
+    WHEN c.email = 'maria.garcia@enutritrack.com' THEN '555-2001'
+    WHEN c.email = 'juan.rodriguez@enutritrack.com' THEN '555-2002'
+    WHEN c.email = 'ana.lopez@enutritrack.com' THEN '555-2003'
+    WHEN c.email = 'carlos.martinez@enutritrack.com' THEN '555-2004'
+    WHEN c.email = 'lucia.fernandez@enutritrack.com' THEN '555-2005'
+    WHEN c.email = 'pedro.gonzalez@enutritrack.com' THEN '555-2006'
+    WHEN c.email = 'sofia.herrera@enutritrack.com' THEN '555-2007'
+    WHEN c.email = 'diego.torres@enutritrack.com' THEN '555-2008'
+    WHEN c.email = 'isabella.morales@enutritrack.com' THEN '555-2009'
+    WHEN c.email = 'mateo.jimenez@enutritrack.com' THEN '555-2010'
+    WHEN c.email = 'valentina.ramirez@enutritrack.com' THEN '555-2011'
+    WHEN c.email = 'santiago.castro@enutritrack.com' THEN '555-2012'
+    WHEN c.email = 'camila.ortiz@enutritrack.com' THEN '555-2013'
+    WHEN c.email = 'alejandro.vargas@enutritrack.com' THEN '555-2014'
+    WHEN c.email = 'natalia.delgado@enutritrack.com' THEN '555-2015'
+    WHEN c.email = 'sebastian.flores@enutritrack.com' THEN '555-2016'
+    WHEN c.email = 'valeria.gutierrez@enutritrack.com' THEN '555-2017'
+    WHEN c.email = 'daniel.ruiz@enutritrack.com' THEN '555-2018'
+    WHEN c.email = 'emma.aguilar@enutritrack.com' THEN '555-2019'
+    WHEN c.email = 'maximiliano.medina@enutritrack.com' THEN '555-2020'
+  END,
+  NULL,
+  NULL,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+FROM cuentas c
+CROSS JOIN (
+  SELECT pd.id, pd.nombre, ROW_NUMBER() OVER (ORDER BY pd.nombre) as rn
+  FROM perfil_doctor pd
+) pd
+WHERE c.tipo_cuenta = 'usuario'
+  AND NOT EXISTS (
+    SELECT 1 FROM perfil_usuario pu WHERE pu.cuenta_id = c.id
+  )
+  AND (
+    (c.email IN ('maria.garcia@enutritrack.com', 'juan.rodriguez@enutritrack.com', 'ana.lopez@enutritrack.com', 'carlos.martinez@enutritrack.com') AND pd.rn = 1) OR
+    (c.email IN ('lucia.fernandez@enutritrack.com', 'pedro.gonzalez@enutritrack.com', 'sofia.herrera@enutritrack.com', 'diego.torres@enutritrack.com') AND pd.rn = 2) OR
+    (c.email IN ('isabella.morales@enutritrack.com', 'mateo.jimenez@enutritrack.com', 'valentina.ramirez@enutritrack.com', 'santiago.castro@enutritrack.com') AND pd.rn = 3) OR
+    (c.email IN ('camila.ortiz@enutritrack.com', 'alejandro.vargas@enutritrack.com', 'natalia.delgado@enutritrack.com', 'sebastian.flores@enutritrack.com') AND pd.rn = 4) OR
+    (c.email IN ('valeria.gutierrez@enutritrack.com', 'daniel.ruiz@enutritrack.com', 'emma.aguilar@enutritrack.com', 'maximiliano.medina@enutritrack.com') AND pd.rn = 5)
+  );
+
+-- Crear registros de historial de peso (peso actual) para cada usuario
+INSERT INTO historial_peso (id, usuario_id, peso, fecha_registro, notas)
+SELECT 
+  uuid_generate_v4(),
+  pu.id,
+  CASE 
+    WHEN c.email = 'maria.garcia@enutritrack.com' THEN 65.5
+    WHEN c.email = 'juan.rodriguez@enutritrack.com' THEN 78.2
+    WHEN c.email = 'ana.lopez@enutritrack.com' THEN 58.8
+    WHEN c.email = 'carlos.martinez@enutritrack.com' THEN 85.1
+    WHEN c.email = 'lucia.fernandez@enutritrack.com' THEN 52.3
+    WHEN c.email = 'pedro.gonzalez@enutritrack.com' THEN 82.9
+    WHEN c.email = 'sofia.herrera@enutritrack.com' THEN 64.7
+    WHEN c.email = 'diego.torres@enutritrack.com' THEN 77.4
+    WHEN c.email = 'isabella.morales@enutritrack.com' THEN 55.9
+    WHEN c.email = 'mateo.jimenez@enutritrack.com' THEN 83.6
+    WHEN c.email = 'valentina.ramirez@enutritrack.com' THEN 63.2
+    WHEN c.email = 'santiago.castro@enutritrack.com' THEN 81.8
+    WHEN c.email = 'camila.ortiz@enutritrack.com' THEN 54.4
+    WHEN c.email = 'alejandro.vargas@enutritrack.com' THEN 86.3
+    WHEN c.email = 'natalia.delgado@enutritrack.com' THEN 52.6
+    WHEN c.email = 'sebastian.flores@enutritrack.com' THEN 79.7
+    WHEN c.email = 'valeria.gutierrez@enutritrack.com' THEN 56.8
+    WHEN c.email = 'daniel.ruiz@enutritrack.com' THEN 84.2
+    WHEN c.email = 'emma.aguilar@enutritrack.com' THEN 51.9
+    WHEN c.email = 'maximiliano.medina@enutritrack.com' THEN 87.1
+  END,
+  CURRENT_TIMESTAMP,
+  'Peso inicial registrado'
+FROM perfil_usuario pu
+JOIN cuentas c ON pu.cuenta_id = c.id
+WHERE c.tipo_cuenta = 'usuario';
+
+-- Crear objetivos de usuario para cada usuario
+INSERT INTO objetivo_usuario (id, usuario_id, peso_objetivo, nivel_actividad, fecha_establecido, vigente)
+SELECT 
+  uuid_generate_v4(),
+  pu.id,
+  -- Peso objetivo
+  CASE 
+    WHEN c.email = 'maria.garcia@enutritrack.com' THEN 60.0
+    WHEN c.email = 'juan.rodriguez@enutritrack.com' THEN 75.0
+    WHEN c.email = 'ana.lopez@enutritrack.com' THEN 55.0
+    WHEN c.email = 'carlos.martinez@enutritrack.com' THEN 80.0
+    WHEN c.email = 'lucia.fernandez@enutritrack.com' THEN 50.0
+    WHEN c.email = 'pedro.gonzalez@enutritrack.com' THEN 78.0
+    WHEN c.email = 'sofia.herrera@enutritrack.com' THEN 62.0
+    WHEN c.email = 'diego.torres@enutritrack.com' THEN 75.0
+    WHEN c.email = 'isabella.morales@enutritrack.com' THEN 52.0
+    WHEN c.email = 'mateo.jimenez@enutritrack.com' THEN 80.0
+    WHEN c.email = 'valentina.ramirez@enutritrack.com' THEN 60.0
+    WHEN c.email = 'santiago.castro@enutritrack.com' THEN 78.0
+    WHEN c.email = 'camila.ortiz@enutritrack.com' THEN 52.0
+    WHEN c.email = 'alejandro.vargas@enutritrack.com' THEN 82.0
+    WHEN c.email = 'natalia.delgado@enutritrack.com' THEN 50.0
+    WHEN c.email = 'sebastian.flores@enutritrack.com' THEN 76.0
+    WHEN c.email = 'valeria.gutierrez@enutritrack.com' THEN 54.0
+    WHEN c.email = 'daniel.ruiz@enutritrack.com' THEN 80.0
+    WHEN c.email = 'emma.aguilar@enutritrack.com' THEN 49.0
+    WHEN c.email = 'maximiliano.medina@enutritrack.com' THEN 83.0
+  END,
+  -- Nivel de actividad
+  CASE 
+    WHEN c.email IN ('maria.garcia@enutritrack.com', 'carlos.martinez@enutritrack.com', 'sofia.herrera@enutritrack.com', 'mateo.jimenez@enutritrack.com', 'alejandro.vargas@enutritrack.com') THEN 'sedentario'::nivel_actividad_enum
+    WHEN c.email IN ('juan.rodriguez@enutritrack.com', 'lucia.fernandez@enutritrack.com', 'diego.torres@enutritrack.com', 'valentina.ramirez@enutritrack.com', 'natalia.delgado@enutritrack.com') THEN 'moderado'::nivel_actividad_enum
+    WHEN c.email IN ('ana.lopez@enutritrack.com', 'pedro.gonzalez@enutritrack.com', 'isabella.morales@enutritrack.com', 'santiago.castro@enutritrack.com', 'sebastian.flores@enutritrack.com') THEN 'activo'::nivel_actividad_enum
+    WHEN c.email IN ('camila.ortiz@enutritrack.com', 'valeria.gutierrez@enutritrack.com', 'daniel.ruiz@enutritrack.com', 'emma.aguilar@enutritrack.com', 'maximiliano.medina@enutritrack.com') THEN 'muy_activo'::nivel_actividad_enum
+  END,
+  CURRENT_TIMESTAMP,
+  true
+FROM perfil_usuario pu
+JOIN cuentas c ON pu.cuenta_id = c.id
+WHERE c.tipo_cuenta = 'usuario';
+
