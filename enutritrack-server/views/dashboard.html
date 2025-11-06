@@ -2676,6 +2676,9 @@
             }
           },
         },
+        tooltip: {
+          pointFormat: '<span style="color:{series.color}">●</span> usuarios: <b>{point.y}</b>'
+        },
         plotOptions: {
           series: {
             pointPlacement: 'on'
@@ -2689,7 +2692,7 @@
           }
         },
         series: [{
-          name: 'Usuarios',
+          name: '2025',
           data: data.map(item => item[valueField]),
           color: '#10b981',
           lineColor: '#10b981',
