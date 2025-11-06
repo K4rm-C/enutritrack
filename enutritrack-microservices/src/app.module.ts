@@ -9,6 +9,7 @@ import { RecommendationModule } from './recommendation/recommendation.module';
 import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DoctorModule } from './doctor/doctor.module';
+import { CitasMedicasModule } from './citas/citas-medicas.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { DoctorModule } from './doctor/doctor.module';
     AuthModule,
     NutritionModule,
     MedicalHistoryModule,
+    CitasMedicasModule,
     PhysicalActivityModule,
     RecommendationModule,
   ],

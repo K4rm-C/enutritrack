@@ -24,13 +24,14 @@ export class MedicalHistoryController {
     @Body() createMedicalHistoryDto: CreateMedicalHistoryDto,
     @Req() req: any,
   ) {
-    // Obtener userId del token en lugar del body
-    const userId = req.user?.userId || req.user?.sub;
-    const dtoWithUserId = {
-      ...createMedicalHistoryDto,
-      usuarioId: userId, // Usar el userId del token
-    };
-    return this.medicalHistoryService.create(dtoWithUserId);
+    // Obtener ID del doctor del token
+    const doctorId = req.user?.userId || req.user?.sub;
+
+    console.log(
+      `Doctor ${doctorId} creando historial para paciente ${createMedicalHistoryDto.pacienteId}`,
+    );
+
+    return this.medicalHistoryService.create(createMedicalHistoryDto, doctorId);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -1,25 +1,43 @@
-// src/medical-history/entities/medical-history.entity.ts
+// src/condiciones-medicas/entities/condicion-medica.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/models/user.model';
 
-@Entity('historial_medico')
-export class MedicalHistory {
+@Entity('condiciones_medicas')
+export class CondicionMedica {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.medicalHistories)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'usuario_id' })
   usuario: User;
 
   @Column({ name: 'usuario_id' })
   usuarioId: string;
+
+  @Column()
+  nombre: string;
+
+  @Column({
+    type: 'enum',
+    enum: ['leve', 'moderada', 'severa'],
+    nullable: true,
+  })
+  severidad: string;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_diagnostico: Date;
+
+  @Column({ type: 'text', nullable: true })
+  notas: string;
+
+  @Column({ default: true })
+  activa: boolean;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
