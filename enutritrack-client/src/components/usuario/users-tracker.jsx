@@ -61,7 +61,14 @@ const UsersListDashboard = ({ darkMode = false }) => {
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const { createUser, updateUser, getUsers, getUsersByDoctorId, deleteUser, getUserById } = useUsers();
+  const {
+    createUser,
+    updateUser,
+    getUsers,
+    getUsersByDoctorId,
+    deleteUser,
+    getUserById,
+  } = useUsers();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -108,19 +115,22 @@ const UsersListDashboard = ({ darkMode = false }) => {
         toast.error("Error: ID de usuario no válido");
         return;
       }
-      
+
       // Modo edición - obtener datos completos del usuario
       setEditingUser(userdata);
       try {
         const fullUserData = await getUserById(userdata.id);
-        
-        // Actualizar editingUser con los datos completos, asegurando que tenga el ID correcto
+
+        // Actualizar editingUser con los datos completos
         setEditingUser({ ...fullUserData, id: userdata.id });
-        
-        const formDate = fullUserData.fecha_nacimiento instanceof Date 
-          ? fullUserData.fecha_nacimiento.toISOString().split('T')[0]
-          : fullUserData.fecha_nacimiento || fullUserData.fechaNacimiento || "";
-        
+
+        const formDate =
+          fullUserData.fecha_nacimiento instanceof Date
+            ? fullUserData.fecha_nacimiento.toISOString().split("T")[0]
+            : fullUserData.fecha_nacimiento ||
+              fullUserData.fechaNacimiento ||
+              "";
+
         setFormData({
           nombre: fullUserData.nombre || "",
           email: fullUserData.email || fullUserData.cuenta?.email || "",
@@ -130,18 +140,21 @@ const UsersListDashboard = ({ darkMode = false }) => {
           genero: fullUserData.genero_id || fullUserData.genero?.id || "",
           fecha_nacimiento: formDate,
           altura: fullUserData.altura || "",
-          peso_actual: fullUserData.peso_actual || fullUserData.pesoActual || "",
-          objetivo_peso: fullUserData.objetivo_peso || fullUserData.objetivoPeso || "",
-          nivel_actividad: fullUserData.nivel_actividad || fullUserData.nivelActividad || "",
+          peso_actual:
+            fullUserData.peso_actual || fullUserData.pesoActual || "",
+          objetivo_peso:
+            fullUserData.objetivo_peso || fullUserData.objetivoPeso || "",
+          nivel_actividad:
+            fullUserData.nivel_actividad || fullUserData.nivelActividad || "",
           telefono: fullUserData.telefono || "",
           telefono_1: fullUserData.telefono_1 || "",
           telefono_2: fullUserData.telefono_2 || "",
-          doctorId: user?.userId || "",
+          doctorId: user?.userId,
         });
       } catch (error) {
         console.error("Error obteniendo datos completos del usuario:", error);
         toast.error("Error al cargar los datos del usuario");
-        // Fallback a datos básicos si falla la llamada
+        // Fallback a datos básicos
         setFormData({
           nombre: userdata.nombre || "",
           email: userdata.email || "",
@@ -149,15 +162,17 @@ const UsersListDashboard = ({ darkMode = false }) => {
           email_2: "",
           contraseña: "",
           genero: userdata.genero_id || userdata.genero?.id || "",
-          fecha_nacimiento: userdata.fecha_nacimiento || userdata.fechaNacimiento || "",
+          fecha_nacimiento:
+            userdata.fecha_nacimiento || userdata.fechaNacimiento || "",
           altura: userdata.altura || "",
           peso_actual: userdata.peso_actual || userdata.pesoActual || "",
           objetivo_peso: userdata.objetivo_peso || userdata.objetivoPeso || "",
-          nivel_actividad: userdata.nivel_actividad || userdata.nivelActividad || "",
+          nivel_actividad:
+            userdata.nivel_actividad || userdata.nivelActividad || "",
           telefono: userdata.telefono || "",
           telefono_1: userdata.telefono_1 || "",
           telefono_2: userdata.telefono_2 || "",
-          doctorId: user?.userId || "",
+          doctorId: user?.doctorId || "",
         });
       }
     } else {
@@ -182,6 +197,94 @@ const UsersListDashboard = ({ darkMode = false }) => {
       });
     }
     setShowFormModal(true);
+  };
+
+  // CORREGIR: Carga de usuarios del doctor
+  useEffect(() => {
+    const loadUsers = async () => {
+      // Usar authUser.userId que es el ID del doctor autenticado
+      if (!user?.userId) {
+        console.log("No hay usuario logueado o no tiene userId");
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        console.log("Cargando pacientes del doctor:", user.userId);
+
+        // Usar el endpoint optimizado para obtener solo los pacientes de este doctor
+        const usersData = await getUsersByDoctorId(user.userId);
+        console.log("Pacientes recibidos del doctor:", usersData);
+
+        setUsers(Array.isArray(usersData) ? usersData : []);
+      } catch (error) {
+        console.error("Error cargando pacientes del doctor:", error);
+        toast.error("Error al cargar los pacientes");
+        setUsers([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadUsers();
+  }, [user?.userId]); // Dependencia corregida
+
+  // CORREGIR: Función para enviar datos del paciente
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Preparar los datos para enviar
+      const userData = {
+        nombre: formData.nombre,
+        email: formData.email,
+        email_1: formData.email_1,
+        email_2: formData.email_2,
+        contraseña: formData.contraseña,
+        genero_id: formData.genero, // Asegurar que sea genero_id
+        fecha_nacimiento: formData.fecha_nacimiento,
+        altura: formData.altura ? parseFloat(formData.altura) : null,
+        peso_actual: formData.peso_actual
+          ? parseFloat(formData.peso_actual)
+          : null,
+        objetivo_peso: formData.objetivo_peso
+          ? parseFloat(formData.objetivo_peso)
+          : null,
+        nivel_actividad: formData.nivel_actividad,
+        telefono: formData.telefono,
+        telefono_1: formData.telefono_1,
+        telefono_2: formData.telefono_2,
+        doctorId: formData.doctorId, // Asegurar que sea doctor_id
+      };
+
+      console.log("Enviando datos del paciente:", userData);
+
+      if (editingUser) {
+        // Verificar que tenemos un ID válido antes de actualizar
+        if (!editingUser.id) {
+          console.error("Error: editingUser.id es undefined", editingUser);
+          toast.error("Error: ID de usuario no válido para actualización");
+          return;
+        }
+
+        // Actualizar usuario existente
+        const updatedUser = await updateUser(editingUser.id, userData);
+        setUsers(
+          users.map((user) => (user.id === editingUser.id ? updatedUser : user))
+        );
+        toast.success("Usuario actualizado correctamente");
+      } else {
+        // Crear nuevo usuario
+        const newUser = await createUser(userData);
+        setUsers([...users, newUser]);
+        toast.success("Usuario creado correctamente");
+      }
+      setShowFormModal(false);
+    } catch (error) {
+      console.error("Error al guardar usuario:", error);
+      toast.error(
+        "Error al guardar el usuario: " +
+          (error.response?.data?.message || error.message)
+      );
+    }
   };
 
   // Función para calcular edad
@@ -221,53 +324,21 @@ const UsersListDashboard = ({ darkMode = false }) => {
     return { estado: "Obesidad", color: "red" };
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingUser) {
-        // Verificar que tenemos un ID válido antes de actualizar
-        if (!editingUser.id) {
-          console.error("Error: editingUser.id es undefined", editingUser);
-          toast.error("Error: ID de usuario no válido para actualización");
-          return;
-        }
-        
-        // Actualizar usuario existente
-        const updatedUser = await updateUser(editingUser.id, formData);
-        setUsers(
-          users.map((user) =>
-            user.id === editingUser.id ? updatedUser : user
-          )
-        );
-        toast.success("Usuario actualizado correctamente");
-      } else {
-        // Crear nuevo usuario
-        const newUser = await createUser(formData);
-        setUsers([...users, newUser]);
-        toast.success("Usuario creado correctamente");
-      }
-      setShowFormModal(false);
-    } catch (error) {
-      console.error("Error al guardar usuario:", error);
-      toast.error("Error al guardar el usuario");
-    }
-  };
-
   useEffect(() => {
     const loadUsers = async () => {
       if (!user?.id) {
-        console.log('No hay usuario logueado');
+        console.log("No hay usuario logueado");
         return;
       }
 
       setIsLoading(true);
       try {
-        console.log('Cargando pacientes del doctor:', user.id);
-        
+        console.log("Cargando pacientes del doctor:", user.id);
+
         // Usar el endpoint optimizado para obtener solo los pacientes de este doctor
         const usersData = await getUsersByDoctorId(user.id);
-        console.log('Pacientes recibidos del doctor:', usersData);
-        
+        console.log("Pacientes recibidos del doctor:", usersData);
+
         setUsers(Array.isArray(usersData) ? usersData : []);
       } catch (error) {
         console.error("Error cargando pacientes del doctor:", error);
@@ -285,22 +356,24 @@ const UsersListDashboard = ({ darkMode = false }) => {
     const matchesSearch =
       user.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Corregir filtro de género
-    const matchesGender = !filterGender || (() => {
-      const genero = user.genero?.nombre || user.genero;
-      if (filterGender === "M") {
-        return genero === "Masculino" || genero === "M";
-      }
-      if (filterGender === "F") {
-        return genero === "Femenino" || genero === "F";
-      }
-      if (filterGender === "O") {
-        return genero === "Otro" || genero === "O";
-      }
-      return false;
-    })();
-    
+    const matchesGender =
+      !filterGender ||
+      (() => {
+        const genero = user.genero?.nombre || user.genero;
+        if (filterGender === "M") {
+          return genero === "Masculino" || genero === "M";
+        }
+        if (filterGender === "F") {
+          return genero === "Femenino" || genero === "F";
+        }
+        if (filterGender === "O") {
+          return genero === "Otro" || genero === "O";
+        }
+        return false;
+      })();
+
     // Corregir filtro de actividad
     const matchesActivity =
       !filterActivity ||
@@ -441,7 +514,8 @@ const UsersListDashboard = ({ darkMode = false }) => {
   const UserCard = ({ user }) => {
     const edad = calcularEdad(user.fechaNacimiento || user.fecha_nacimiento);
     // Usar el IMC del backend si está disponible, de lo contrario calcularlo
-    const imc = user.imc || calcularIMC(user.pesoActual || user.peso_actual, user.altura);
+    const imc =
+      user.imc || calcularIMC(user.pesoActual || user.peso_actual, user.altura);
     const estadoIMC = getEstadoIMC(imc);
 
     return (
@@ -611,10 +685,12 @@ const UsersListDashboard = ({ darkMode = false }) => {
       selectedUser.fechaNacimiento || selectedUser.fecha_nacimiento
     );
     // Usar el IMC del backend si está disponible, de lo contrario calcularlo
-    const imc = selectedUser.imc || calcularIMC(
-      selectedUser.pesoActual || selectedUser.peso_actual,
-      selectedUser.altura
-    );
+    const imc =
+      selectedUser.imc ||
+      calcularIMC(
+        selectedUser.pesoActual || selectedUser.peso_actual,
+        selectedUser.altura
+      );
     const estadoIMC = getEstadoIMC(imc);
 
     // Datos de ejemplo para las nuevas secciones
@@ -829,7 +905,10 @@ const UsersListDashboard = ({ darkMode = false }) => {
               icon={User}
               label="Género"
               value={
-                selectedUser.genero?.nombre || selectedUser.genero || selectedUser.género || "No especificado"
+                selectedUser.genero?.nombre ||
+                selectedUser.genero ||
+                selectedUser.género ||
+                "No especificado"
               }
               color="emerald"
             />
@@ -842,7 +921,9 @@ const UsersListDashboard = ({ darkMode = false }) => {
           </div>
 
           {/* Sección de teléfonos */}
-          {(selectedUser.telefono || selectedUser.telefono_1 || selectedUser.telefono_2) && (
+          {(selectedUser.telefono ||
+            selectedUser.telefono_1 ||
+            selectedUser.telefono_2) && (
             <div className="mb-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {selectedUser.telefono && (
@@ -2298,9 +2379,15 @@ const UsersListDashboard = ({ darkMode = false }) => {
                           }`}
                         >
                           <option value="">Seleccionar género</option>
-                          <option value="a1b2c3d4-e5f6-7890-abcd-ef1234567890">Masculino</option>
-                          <option value="b2c3d4e5-f6a7-8901-bcde-f12345678901">Femenino</option>
-                          <option value="c3d4e5f6-a7b8-9012-cdef-123456789012">Otro</option>
+                          <option value="a1b2c3d4-e5f6-7890-abcd-ef1234567890">
+                            Masculino
+                          </option>
+                          <option value="b2c3d4e5-f6a7-8901-bcde-f12345678901">
+                            Femenino
+                          </option>
+                          <option value="c3d4e5f6-a7b8-9012-cdef-123456789012">
+                            Otro
+                          </option>
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                       </div>

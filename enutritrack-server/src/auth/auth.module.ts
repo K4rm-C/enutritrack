@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { DashboardController } from './dashboard.controller';
 import { JwtStrategy } from './strategies/jwt.strategies';
 import { CuentasModule } from '../cuentas/cuentas.module';
+import { PerfilUsuarioModule } from '../users/user.module';
 import { RedisModule } from '../redis/redis.module';
 import { PerfilAdmin } from '../admin/models/admin.model';
 import { PerfilDoctor } from '../doctor/models/doctor.model';
@@ -16,6 +17,7 @@ import { PerfilUsuario } from '../users/models/user.model';
 @Module({
   imports: [
     CuentasModule,
+    forwardRef(() => PerfilUsuarioModule), // Con forwardRef para evitar dependencia circular
     PassportModule,
     RedisModule,
     TypeOrmModule.forFeature([PerfilAdmin, PerfilDoctor, PerfilUsuario]),

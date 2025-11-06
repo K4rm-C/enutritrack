@@ -663,3 +663,187 @@ ALTER TABLE public.recomendacion ADD CONSTRAINT "FK_e010e191ea1cc786cc71eb3e56e"
 -- public.recomendacion_datos foreign keys
 
 ALTER TABLE public.recomendacion_datos ADD CONSTRAINT "FK_ef275625a6238e0131c0f7e8fc1" FOREIGN KEY (recomendacion_id) REFERENCES public.recomendacion(id);
+-- Modificar tabla recomendacion para agregar nuevos campos
+ALTER TABLE recomendacion ADD COLUMN IF NOT EXISTS cita_medica_id UUID REFERENCES citas_medicas(id);
+ALTER TABLE recomendacion ADD COLUMN IF NOT EXISTS alerta_generadora_id UUID REFERENCES alertas(id);
+
+-- Insertar datos de catálogos básicos
+
+-- Tipos de consulta
+INSERT INTO tipos_consulta (id, nombre, descripcion, duracion_minutos, created_at)
+VALUES 
+    (uuid_generate_v4(), 'Consulta General', 'Consulta médica general de rutina', 30, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Primera Vez', 'Primera consulta con el médico', 45, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Control de Seguimiento', 'Consulta de seguimiento y control', 20, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Urgencia', 'Consulta médica de urgencia', 60, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Nutrición', 'Consulta especializada en nutrición', 45, CURRENT_TIMESTAMP)
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Estados de cita
+INSERT INTO estados_cita (id, nombre, descripcion, es_final, created_at)
+VALUES 
+    (uuid_generate_v4(), 'Programada', 'Cita programada y pendiente', false, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'En Proceso', 'Consulta en desarrollo', false, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Completada', 'Consulta completada exitosamente', true, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Cancelada', 'Cita cancelada por el paciente o médico', true, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'No Asistió', 'Paciente no se presentó a la cita', true, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Reprogramada', 'Cita reprogramada para otra fecha', false, CURRENT_TIMESTAMP)
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Categorías de alerta
+INSERT INTO categorias_alerta (id, nombre, descripcion, created_at)
+VALUES 
+    (uuid_generate_v4(), 'Peso', 'Alertas relacionadas con cambios de peso', CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Nutrición', 'Alertas relacionadas con hábitos nutricionales', CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Actividad Física', 'Alertas relacionadas con actividad física', CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Medicamentos', 'Alertas relacionadas con medicamentos', CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Salud General', 'Alertas generales de salud', CURRENT_TIMESTAMP)
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Niveles de prioridad de alerta
+INSERT INTO niveles_prioridad_alerta (id, nombre, descripcion, nivel_numerico, created_at)
+VALUES 
+    (uuid_generate_v4(), 'Baja', 'Alerta de prioridad baja', 1, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Media', 'Alerta de prioridad media', 2, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Alta', 'Alerta de prioridad alta', 3, CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Crítica', 'Alerta de prioridad crítica', 4, CURRENT_TIMESTAMP)
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Estados de alerta
+INSERT INTO estados_alerta (id, nombre, descripcion, created_at)
+VALUES 
+    (uuid_generate_v4(), 'Pendiente', 'Alerta detectada, pendiente de revisión', CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'En Revisión', 'Alerta siendo revisada por el médico', CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Resuelta', 'Alerta resuelta por el médico', CURRENT_TIMESTAMP),
+    (uuid_generate_v4(), 'Descarte', 'Alerta descartada como falsa alarma', CURRENT_TIMESTAMP)
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Tipos de alerta (dependen de categorias_alerta)
+INSERT INTO tipos_alerta (nombre, descripcion, categoria_id, es_automatica, config_validacion, created_at)
+SELECT 
+    'Pérdida de Peso Abrupta',
+    'Alerta cuando se detecta pérdida de peso significativa en poco tiempo',
+    ca.id,
+    true,
+    '{"condiciones":[{"tabla":"historial_peso","campos_evaluacion":["peso"],"operacion":"calcular_perdida_porcentual","parametros":{"umbral_porcentaje":5.0,"periodo_dias":7,"minimo_registros":2}}],"mensaje_template":"Se ha detectado una pérdida de peso del {porcentaje}% en los últimos {dias} días","nivel_prioridad_default":"alta"}'::jsonb,
+    CURRENT_TIMESTAMP
+FROM categorias_alerta ca WHERE ca.nombre = 'Peso'
+ON CONFLICT (nombre) DO NOTHING;
+
+INSERT INTO tipos_alerta (nombre, descripcion, categoria_id, es_automatica, config_validacion, created_at)
+SELECT 
+    'Falta de Registro Nutricional',
+    'Alerta cuando no se registra ingesta de alimentos por más de 3 días',
+    ca.id,
+    true,
+    '{"condiciones":[{"tabla":"registro_comida","campos_evaluacion":["fecha_registro"],"operacion":"verificar_falta_registro","parametros":{"dias_limite":3}}],"mensaje_template":"No se han registrado alimentos en los últimos {dias} días","nivel_prioridad_default":"media"}'::jsonb,
+    CURRENT_TIMESTAMP
+FROM categorias_alerta ca WHERE ca.nombre = 'Nutrición'
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ========================================
+-- TIPOS DE ACTIVIDAD FÍSICA
+-- ========================================
+
+-- Crear tabla tipos_actividad si no existe (para compatibilidad)
+CREATE TABLE IF NOT EXISTS tipos_actividad (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nombre VARCHAR(100) UNIQUE NOT NULL,
+    descripcion TEXT,
+    met_value NUMERIC(4,2) NOT NULL,
+    categoria VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insertar tipos de actividad física con MET values (basados en Compendium of Physical Activities)
+-- Categoría: Cardio/Resistencia
+INSERT INTO tipos_actividad (id, nombre, descripcion, met_value, categoria, created_at)
+VALUES 
+    -- Actividades de alta intensidad
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567801', 'Correr (10 km/h)', 'Correr a velocidad moderada', 11.50, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567802', 'Correr (12 km/h)', 'Correr a velocidad rápida', 13.50, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567803', 'Correr (14 km/h)', 'Correr a velocidad muy rápida', 15.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567804', 'Correr (8 km/h)', 'Trote moderado', 9.80, 'Cardio', CURRENT_TIMESTAMP),
+    
+    -- Caminar
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567805', 'Caminar (4 km/h)', 'Caminata lenta', 3.30, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567806', 'Caminar (5 km/h)', 'Caminata normal', 3.80, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567807', 'Caminar (6 km/h)', 'Caminata rápida', 5.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567808', 'Caminar (7 km/h)', 'Caminata muy rápida', 6.30, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567809', 'Caminar cuesta arriba', 'Caminata en pendiente', 8.00, 'Cardio', CURRENT_TIMESTAMP),
+    
+    -- Ciclismo
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567810', 'Ciclismo (16 km/h)', 'Pedaleo moderado', 6.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567811', 'Ciclismo (20 km/h)', 'Pedaleo rápido', 8.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567812', 'Ciclismo (24 km/h)', 'Pedaleo muy rápido', 10.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567813', 'Bicicleta estática', 'Ejercicio en bicicleta fija', 8.50, 'Cardio', CURRENT_TIMESTAMP),
+    
+    -- Natación
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567814', 'Natación (crol)', 'Estilo libre de natación', 9.80, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567815', 'Natación (espalda)', 'Nado de espalda', 7.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567816', 'Natación (pecho)', 'Nado de pecho', 7.50, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567817', 'Aquagym', 'Ejercicios acuáticos', 5.30, 'Cardio', CURRENT_TIMESTAMP),
+    
+    -- Elíptica y escaleras
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567818', 'Máquina elíptica', 'Ejercicio en elíptica', 7.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567819', 'Subir escaleras', 'Ascenso de escaleras', 8.80, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567820', 'Escaladora', 'Máquina escaladora', 12.00, 'Cardio', CURRENT_TIMESTAMP),
+    
+    -- Cinta y aeróbicos
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567821', 'Cinta de correr (5 km/h)', 'Caminar en cinta', 3.80, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567822', 'Cinta de correr (8 km/h)', 'Trotar en cinta', 9.80, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567823', 'Aeróbicos (bajo impacto)', 'Ejercicios aeróbicos suaves', 5.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567824', 'Aeróbicos (alto impacto)', 'Ejercicios aeróbicos intensos', 7.50, 'Cardio', CURRENT_TIMESTAMP),
+    
+    -- Fuerza y Resistencia
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567825', 'Pesas (entrenamiento moderado)', 'Levantamiento de pesas moderado', 5.00, 'Fuerza', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567826', 'Pesas (entrenamiento intenso)', 'Levantamiento de pesas intenso', 6.00, 'Fuerza', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567827', 'Calistenia', 'Ejercicios con peso corporal', 8.00, 'Fuerza', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567828', 'Yoga', 'Práctica de yoga', 3.00, 'Flexibilidad', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567829', 'Pilates', 'Ejercicios de pilates', 3.50, 'Flexibilidad', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567830', 'Estiramiento', 'Ejercicios de estiramiento', 2.50, 'Flexibilidad', CURRENT_TIMESTAMP),
+    
+    -- Deportes
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567831', 'Fútbol', 'Jugar fútbol', 8.00, 'Deportes', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567832', 'Básquetbol', 'Jugar básquetbol', 8.00, 'Deportes', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567833', 'Tenis (individual)', 'Jugar tenis individual', 8.00, 'Deportes', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567834', 'Tenis (dobles)', 'Jugar tenis dobles', 6.00, 'Deportes', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567835', 'Voleibol', 'Jugar voleibol', 3.00, 'Deportes', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567836', 'Pádel', 'Jugar pádel', 6.00, 'Deportes', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567837', 'Badminton', 'Jugar badminton', 5.50, 'Deportes', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567838', 'Squash', 'Jugar squash', 12.00, 'Deportes', CURRENT_TIMESTAMP),
+    
+    -- Actividades al aire libre
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567839', 'Senderismo', 'Caminar en montaña', 6.00, 'Aire Libre', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567840', 'Montañismo', 'Escalada de montaña', 8.00, 'Aire Libre', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567841', 'Rafting', 'Descenso en río', 5.00, 'Aire Libre', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567842', 'Remo', 'Remo en bote', 7.00, 'Aire Libre', CURRENT_TIMESTAMP),
+    
+    -- Danza y movimiento
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567843', 'Baile (ritmo lento)', 'Baile suave', 3.50, 'Danza', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567844', 'Baile (ritmo rápido)', 'Baile intenso', 6.80, 'Danza', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567845', 'Zumba', 'Clase de zumba', 7.30, 'Danza', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567846', 'Baile latino', 'Bailes latinos', 5.50, 'Danza', CURRENT_TIMESTAMP),
+    
+    -- Artes marciales
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567847', 'Boxeo (entrenamiento)', 'Entrenamiento de boxeo', 12.00, 'Artes Marciales', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567848', 'Kickboxing', 'Kickboxing', 10.30, 'Artes Marciales', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567849', 'Karate', 'Práctica de karate', 10.30, 'Artes Marciales', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567850', 'Taekwondo', 'Práctica de taekwondo', 10.30, 'Artes Marciales', CURRENT_TIMESTAMP),
+    
+    -- Actividades recreativas
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567851', 'Golf (caminando)', 'Golf caminando el campo', 5.30, 'Recreación', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567852', 'Bolos', 'Jugar bolos', 3.00, 'Recreación', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567853', 'Jardinería', 'Trabajo de jardinería', 4.00, 'Recreación', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567854', 'Limpieza pesada', 'Limpieza intensa del hogar', 3.50, 'Recreación', CURRENT_TIMESTAMP),
+    
+    -- Crossfit y HIIT
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567855', 'Crossfit', 'Entrenamiento crossfit', 12.00, 'Crossfit', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567856', 'HIIT', 'Entrenamiento de alta intensidad', 11.00, 'Crossfit', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567857', 'Bootcamp', 'Entrenamiento bootcamp', 10.00, 'Crossfit', CURRENT_TIMESTAMP),
+    
+    -- Actividades específicas
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567858', 'Spinning', 'Clase de spinning', 8.50, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567859', 'Rowing (remo máquina)', 'Remo en máquina', 7.00, 'Cardio', CURRENT_TIMESTAMP),
+    ('a1b2c3d4-e5f6-7890-abcd-ef1234567860', 'Escalada (muro)', 'Escalada en muro', 8.00, 'Fuerza', CURRENT_TIMESTAMP)
+ON CONFLICT (nombre) DO NOTHING;

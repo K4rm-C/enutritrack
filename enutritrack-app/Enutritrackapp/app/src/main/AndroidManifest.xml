@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:name=".EnutritrackApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Enutritrackapp"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+        
+        <!-- Splash/Login Activity -->
+        <activity
+            android:name=".presentation.auth.LoginActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <!-- Register Activity -->
+        <activity
+            android:name=".presentation.auth.RegisterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.auth.LoginActivity" />
+        
+        <!-- Dashboard Activity -->
+        <activity
+            android:name=".presentation.dashboard.DashboardActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        
+        <!-- Health Activity -->
+        <activity
+            android:name=".presentation.health.HealthActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.dashboard.DashboardActivity" />
+        
+        <!-- Profile Activity -->
+        <activity
+            android:name=".presentation.profile.ProfileActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.dashboard.DashboardActivity" />
+        
+        <!-- Nutrition Activity -->
+        <activity
+            android:name=".presentation.nutrition.NutritionActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.dashboard.DashboardActivity" />
+        
+        <!-- Alimento List Activity -->
+        <activity
+            android:name=".presentation.nutrition.AlimentoListActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.nutrition.NutritionActivity" />
+        
+        <!-- Alimento Form Activity -->
+        <activity
+            android:name=".presentation.nutrition.AlimentoFormActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.nutrition.AlimentoListActivity" />
+        
+        <!-- Registro Comida Form Activity -->
+        <activity
+            android:name=".presentation.nutrition.RegistroComidaFormActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.nutrition.NutritionActivity" />
+        
+        <!-- Registro Comida Detail Activity -->
+        <activity
+            android:name=".presentation.nutrition.RegistroComidaDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.nutrition.NutritionActivity" />
+        
+        <!-- Appointments Activity -->
+        <activity
+            android:name=".presentation.appointments.AppointmentsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.dashboard.DashboardActivity" />
+        
+        <!-- Appointment Detail Activity -->
+        <activity
+            android:name=".presentation.appointments.AppointmentDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".presentation.appointments.AppointmentsActivity" />
+        
+        <!-- Legacy MainActivity (puede ser removida después) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+    </application>
+
+</manifest>

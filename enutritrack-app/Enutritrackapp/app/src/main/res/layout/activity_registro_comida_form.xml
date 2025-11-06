@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50"
+    tools:context=".presentation.nutrition.RegistroComidaFormActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/Theme.Enutritrackapp.AppBarOverlay">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/emerald_600"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone" />
+
+            <!-- Sección de Información Básica -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Información de la Comida"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/gray_900"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Tipo de Comida -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Tipo de Comida *"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginBottom="8dp" />
+
+                    <Spinner
+                        android:id="@+id/tipoComidaSpinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:minHeight="56dp" />
+
+                    <!-- Fecha -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Fecha *"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginBottom="8dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/fechaInputLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Fecha"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusTopStart="12dp"
+                        android:layout_marginBottom="8dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/fechaInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="date" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Notas -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/notasInputLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Notas (opcional)"
+                        app:endIconMode="clear_text"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusTopStart="12dp"
+                        android:layout_marginBottom="16dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/notasInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapSentences"
+                            android:minLines="2"
+                            android:maxLines="4" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Sección de Items de Alimentos -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Alimentos en esta Comida"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_900" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/agregarItemButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="+ Agregar"
+                            android:textColor="@color/white"
+                            android:backgroundTint="@color/blue_600"
+                            app:cornerRadius="8dp"
+                            app:icon="@android:drawable/ic_input_add"
+                            app:iconTint="@color/white" />
+                    </LinearLayout>
+
+                    <!-- Lista de Items -->
+                    <LinearLayout
+                        android:id="@+id/itemsList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <TextView
+                        android:id="@+id/noItemsText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No hay alimentos agregados. Presiona + Agregar para agregar un alimento."
+                        android:textSize="14sp"
+                        android:textColor="@color/gray_600"
+                        android:gravity="center"
+                        android:padding="16dp"
+                        android:visibility="visible" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Resumen Nutricional -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/resumenCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/emerald_50"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Resumen Nutricional"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/gray_900"
+                        android:layout_marginBottom="12dp" />
+
+                    <TextView
+                        android:id="@+id/totalCaloriasText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginBottom="4dp"
+                        tools:text="Calorías: 0 kcal" />
+
+                    <TextView
+                        android:id="@+id/totalProteinasText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginBottom="4dp"
+                        tools:text="Proteínas: 0 g" />
+
+                    <TextView
+                        android:id="@+id/totalCarbohidratosText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginBottom="4dp"
+                        tools:text="Carbohidratos: 0 g" />
+
+                    <TextView
+                        android:id="@+id/totalGrasasText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginBottom="4dp"
+                        tools:text="Grasas: 0 g" />
+
+                    <TextView
+                        android:id="@+id/totalFibraText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="@color/gray_700"
+                        tools:text="Fibra: 0 g" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Botones de Acción -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/guardarButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Guardar Registro"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/emerald_600"
+                app:cornerRadius="12dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
