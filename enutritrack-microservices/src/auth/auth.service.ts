@@ -254,14 +254,14 @@ export class AuthService {
       console.log(
         `✅ ${payload.userType === 'user' ? 'Usuario' : 'Doctor'} obtenido del token: ${user.cuenta.email}`,
       );
-      
+
       // Eliminar datos sensibles antes de devolver
       const result = { ...user };
       if (result.cuenta) {
         const { password_hash, ...cuentaSinPassword } = result.cuenta;
         result.cuenta = cuentaSinPassword;
       }
-      
+
       return {
         ...result,
         userType: payload.userType,

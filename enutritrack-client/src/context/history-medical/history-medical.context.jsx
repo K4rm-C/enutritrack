@@ -1,5 +1,5 @@
 // contexts/MedicalHistoryContext.js
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import {
   createMedicalHistoryRequest,
   getMedicalHistoryByUserRequest,
@@ -22,9 +22,14 @@ export function MedicalHistoryProvider({ children }) {
   const [medicalHistory, setMedicalHistory] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentPatient, setCurrentPatient] = useState(null);
 
   const clearError = () => {
     setError(null);
+  };
+
+  const setPatient = (patient) => {
+    setCurrentPatient(patient);
   };
 
   const createMedicalHistory = async (medicalHistoryData) => {
@@ -32,10 +37,7 @@ export function MedicalHistoryProvider({ children }) {
       setLoading(true);
       setError(null);
       const res = await createMedicalHistoryRequest(medicalHistoryData);
-
-      // Actualizar el estado con los nuevos datos
       setMedicalHistory(res.data);
-
       return res.data;
     } catch (error) {
       console.error("Error creating medical history:", error);
@@ -50,12 +52,19 @@ export function MedicalHistoryProvider({ children }) {
 
   const getMedicalHistoryByUser = async (userId) => {
     try {
+      setLoading(true);
+      setError(null);
       const res = await getMedicalHistoryByUserRequest(userId);
       setMedicalHistory(res.data);
       return res.data;
     } catch (error) {
-      console.log(error);
+      console.log("Error fetching medical history:", error);
+      const errorMessage =
+        error.response?.data?.message || "Error al cargar historial médico";
+      setError(errorMessage);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,16 +86,68 @@ export function MedicalHistoryProvider({ children }) {
     }
   };
 
+  const getPatientMedicalHistory = async (patientId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await getMedicalHistoryByUserRequest(patientId);
+      setMedicalHistory(res.data);
+      return res.data;
+    } catch (error) {
+      console.log("Error fetching patient medical history:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Error al cargar historial médico del paciente";
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePatientMedicalHistory = async (patientId, medicalHistoryData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await updateMedicalHistoryRequest(
+        patientId,
+        medicalHistoryData
+      );
+      setMedicalHistory(res.data);
+      return res.data;
+    } catch (error) {
+      console.error("Error updating patient medical history:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Error al actualizar historial médico del paciente";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearMedicalHistory = useCallback(() => {
+    setMedicalHistory(null);
+    setCurrentPatient(null);
+    setError(null);
+  }, []);
+
   return (
     <MedicalHistoryContext.Provider
       value={{
         medicalHistory,
         loading,
         error,
+        currentPatient,
         createMedicalHistory,
+        getMedicalHistoryByUser: getPatientMedicalHistory,
+        updateMedicalHistory: updatePatientMedicalHistory,
         getMedicalHistoryByUser,
         updateMedicalHistory,
         clearError,
+        setPatient,
+        clearMedicalHistory,
       }}
     >
       {children}

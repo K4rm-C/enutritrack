@@ -23,6 +23,7 @@
     "dev:recommendation": "nodemon --exec ts-node src/recommendation/main.ts",
     "dev:user": "nodemon --exec ts-node src/users/main.ts",
     "dev:doctor": "nodemon --exec ts-node src/doctor/main.ts",
+    "dev:citas": "nodemon --exec ts-node src/citas/main.ts",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

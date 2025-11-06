@@ -7,6 +7,7 @@ import {
   AlertCircle,
   CheckCircle,
   Stethoscope,
+  Activity,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth/auth.context";
@@ -26,19 +27,13 @@ const InputField = React.memo(
     togglePassword,
   }) => (
     <div className="space-y-2">
-      <label
-        htmlFor={name}
-        className="block text-sm font-semibold text-gray-700"
-      >
-        {label}
-      </label>
       <div className="relative group">
         {Icon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
             <Icon
-              className={`h-5 w-5 transition-colors duration-200 ${
+              className={`h-4.5 w-4.5 transition-colors duration-200 ${
                 error
-                  ? "text-red-500"
+                  ? "text-red-400"
                   : "text-gray-400 group-focus-within:text-emerald-500"
               }`}
             />
@@ -53,31 +48,31 @@ const InputField = React.memo(
           onKeyPress={onKeyPress}
           placeholder={placeholder}
           autoComplete={type === "password" ? "current-password" : "on"}
-          className={`w-full ${Icon ? "pl-10" : "pl-3"} ${
-            type === "password" ? "pr-10" : "pr-3"
-          } py-3.5 border rounded-xl font-medium transition-all duration-200 bg-white focus:outline-none focus:ring-2 ${
+          className={`w-full ${Icon ? "pl-11" : "pl-4"} ${
+            type === "password" ? "pr-11" : "pr-4"
+          } py-3.5 border border-gray-300 bg-white rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-400 placeholder:text-gray-500 ${
             error
-              ? "border-red-300 focus:border-red-500 focus:ring-red-200"
-              : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-200 hover:border-gray-400"
+              ? "border-red-300 focus:border-red-500 text-red-600"
+              : "border-gray-300 focus:border-emerald-400 text-gray-700"
           }`}
         />
         {type === "password" && togglePassword && (
           <button
             type="button"
             onClick={togglePassword}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center hover:scale-105 transition-transform duration-150"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center hover:scale-110 transition-transform duration-200 z-10"
           >
             {showPassword ? (
-              <EyeOff className="h-5 w-5 text-gray-400 hover:text-emerald-600 transition-colors" />
+              <EyeOff className="h-4.5 w-4.5 text-gray-400 hover:text-emerald-500" />
             ) : (
-              <Eye className="h-5 w-5 text-gray-400 hover:text-emerald-600 transition-colors" />
+              <Eye className="h-4.5 w-4.5 text-gray-400 hover:text-emerald-500" />
             )}
           </button>
         )}
       </div>
       {error && (
-        <div className="flex items-center space-x-1 text-red-600 text-sm font-medium">
-          <AlertCircle className="h-4 w-4" />
+        <div className="flex items-center space-x-1.5 text-red-500 text-xs font-medium pl-1">
+          <AlertCircle className="h-3.5 w-3.5" />
           <span>{error}</span>
         </div>
       )}
@@ -88,39 +83,46 @@ const InputField = React.memo(
 const AuthContainer = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const { login } = useAuth();
-
-  // Estados para el formulario de login
+  const navigate = useNavigate();
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
   });
 
-  // Estados para validación y errores
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState("");
 
-  // Validaciones
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
 
-  // Handlers memoizados
   const handleLoginChange = useCallback((e) => {
     const { name, value } = e.target;
     setLoginData((prev) => ({ ...prev, [name]: value }));
 
-    setErrors((prev) => {
-      if (!prev[name]) return prev;
-      const newErrors = { ...prev };
-      delete newErrors[name];
-      return newErrors;
+    setErrors((prevErrors) => {
+      // Limpiar el error del campo actual si existe
+      if (prevErrors[name]) {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      }
+
+      // Limpiar error general si existe
+      if (prevErrors.general) {
+        const { general, ...rest } = prevErrors;
+        return rest;
+      }
+
+      return prevErrors;
     });
+
+    // Limpiar mensaje de éxito al empezar a escribir
+    setSuccess("");
   }, []);
 
-  // Validar formulario de login
   const validateLogin = () => {
     const newErrors = {};
 
@@ -137,12 +139,12 @@ const AuthContainer = () => {
     return newErrors;
   };
 
-  // Manejar envío del formulario de login
   const handleLoginSubmit = async () => {
     const newErrors = validateLogin();
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setSuccess(""); // Limpiar éxito si hay errores
       return;
     }
 
@@ -177,12 +179,12 @@ const AuthContainer = () => {
       }
 
       setErrors({ general: errorMessage });
+      setSuccess(""); // Limpiar éxito si hay error
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Manejar envío con Enter
   const handleKeyPress = useCallback(
     (e) => {
       if (e.key === "Enter") {
@@ -193,113 +195,177 @@ const AuthContainer = () => {
     [loginData]
   );
 
+  // Determinar qué mensaje mostrar
+  const getStatusMessage = () => {
+    if (errors.general) {
+      return (
+        <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+            <span className="text-red-800 font-medium text-sm">
+              {errors.general}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (success) {
+      return (
+        <div className="bg-emerald-50 border-l-4 border-emerald-500 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+            <span className="text-emerald-800 font-medium text-sm">
+              {success}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Estado normal - mensaje por defecto
+    return (
+      <div className="bg-emerald-50 border-l-4 border-emerald-500 rounded-lg p-4">
+        <div className="flex items-center space-x-2">
+          <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+          <span className="text-emerald-800 font-medium text-sm">
+            Plataforma segura y confiable para profesionales médicos
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center mb-1">
-            <img
-              src="/Logo_ico.png"
-              alt="Enutritrack Logo"
-              className="w-24 h-24 object-contain"
-              onError={(e) => {
-                e.target.style.display = "none";
-              }}
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-center">
-              <Stethoscope className="h-8 w-8 text-emerald-600 mr-2" />
-              <h2 className="text-3xl font-bold text-gray-900">
-                Acceso Doctores
-              </h2>
-            </div>
-            <p className="text-gray-600 font-medium">
-              Accede a tu cuenta médica de EnutriTrack
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Balanced decorative elements */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 left-10 w-64 h-64 bg-white rounded-full blur-2xl"></div>
+        <div className="absolute bottom-20 right-10 w-72 h-72 bg-white rounded-full blur-2xl"></div>
+      </div>
 
-        {/* Mensajes de éxito */}
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <span className="text-green-800 font-medium">{success}</span>
-            </div>
-          </div>
-        )}
+      <div className="w-full max-w-5xl relative z-10">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="grid md:grid-cols-2">
+            {/* Left Panel - Balanced Brand */}
+            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-12 flex flex-col justify-center items-center text-white relative overflow-hidden">
+              <div className="absolute inset-0 opacity-10">
+                <Activity className="absolute top-8 left-8 w-24 h-24" />
+                <Activity className="absolute bottom-8 right-8 w-20 h-20" />
+              </div>
 
-        {/* Errores generales */}
-        {errors.general && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <span className="text-red-800 font-medium">{errors.general}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Formulario de Login */}
-        <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-200">
-          <div className="space-y-6">
-            <InputField
-              label="Correo Electrónico"
-              name="email"
-              type="email"
-              value={loginData.email}
-              onChange={handleLoginChange}
-              onKeyPress={handleKeyPress}
-              error={errors.email}
-              icon={Mail}
-              placeholder="tu@email.com"
-            />
-
-            <InputField
-              label="Contraseña"
-              name="password"
-              type="password"
-              value={loginData.password}
-              onChange={handleLoginChange}
-              onKeyPress={handleKeyPress}
-              error={errors.password}
-              icon={Lock}
-              placeholder="••••••••"
-              showPassword={showPassword}
-              togglePassword={() => setShowPassword(!showPassword)}
-            />
-
-            <button
-              onClick={handleLoginSubmit}
-              disabled={isLoading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Iniciando sesión...</span>
+              <div className="relative z-10 text-center space-y-8">
+                <div className="flex justify-center">
+                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                    <Stethoscope className="h-10 w-10 text-white" />
+                  </div>
                 </div>
-              ) : (
-                <>Iniciar Sesión como Doctor</>
-              )}
-            </button>
-          </div>
-        </div>
 
-        {/* Información adicional */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm">
-          <div className="text-center">
-            <p className="text-blue-800 text-sm font-medium">
-              🔒 <strong>Acceso exclusivo:</strong> Esta plataforma es solo para
-              profesionales médicos autorizados
-            </p>
-          </div>
-        </div>
+                <div className="space-y-4">
+                  <h1 className="text-4xl font-bold tracking-tight">
+                    Hello
+                    <br />
+                    EnutriTrack! 👋
+                  </h1>
+                  <p className="text-emerald-100 font-medium max-w-sm leading-relaxed">
+                    Gestiona la salud de tus pacientes de manera eficiente.
+                    Acceso exclusivo para profesionales médicos.
+                  </p>
+                </div>
 
-        {/* Footer */}
-        <div className="text-center text-sm text-gray-600">
-          <p>© 2025 EnutriTrack. Todos los derechos reservados.</p>
+                <div className="pt-6 space-y-3 text-left max-w-sm">
+                  {[
+                    "Seguimiento nutricional personalizado",
+                    "Análisis de datos en tiempo real",
+                    "Historial clínico completo",
+                  ].map((feature, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center space-x-3 text-emerald-50 text-sm"
+                    >
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="absolute bottom-3 left-0 right-0 text-center">
+                <p className="text-emerald-100 text-sm">
+                  © 2025 EnutriTrack. Todos los derechos reservados.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Panel - Balanced Login Form */}
+            <div className="p-10 flex flex-col justify-center bg-white">
+              <div className="max-w-sm w-full mx-auto space-y-8">
+                <div className="text-center space-y-3">
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    Welcome Back
+                  </h2>
+                  <p className="text-gray-600 font-medium">
+                    Ingresa tus credenciales para acceder
+                  </p>
+                </div>
+
+                {/* Status Message - Condicional */}
+                {getStatusMessage()}
+
+                {/* Login Form */}
+                <div className="space-y-6">
+                  <InputField
+                    name="email"
+                    type="email"
+                    value={loginData.email}
+                    onChange={handleLoginChange}
+                    onKeyPress={handleKeyPress}
+                    error={errors.email}
+                    icon={Mail}
+                    placeholder="hisalim.ux@gmail.com"
+                  />
+
+                  <InputField
+                    name="password"
+                    type="password"
+                    value={loginData.password}
+                    onChange={handleLoginChange}
+                    onKeyPress={handleKeyPress}
+                    error={errors.password}
+                    icon={Lock}
+                    placeholder="Password"
+                    showPassword={showPassword}
+                    togglePassword={() => setShowPassword(!showPassword)}
+                  />
+
+                  <button
+                    onClick={handleLoginSubmit}
+                    disabled={isLoading}
+                    className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3.5 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.99]"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Signing in...</span>
+                      </div>
+                    ) : (
+                      "Login Now"
+                    )}
+                  </button>
+                </div>
+
+                {/* Additional Info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-6">
+                  <div className="text-center">
+                    <p className="text-blue-800 text-xs font-medium">
+                      🔒 <strong>Acceso exclusivo:</strong> Esta plataforma es
+                      solo para profesionales médicos autorizados
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

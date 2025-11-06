@@ -95,7 +95,7 @@ export function UsersProvider({ children }) {
     try {
       const res = await deleteUserByIdRequest(id);
       if (res.status === 200 || res.status === 204) {
-        setUsers(users.filter((record) => record.id !== id));
+        setUsers((prevUsers) => prevUsers.filter((record) => record.id !== id));
         return res;
       } else {
         throw new Error(`Delete failed with status: ${res.status}`);

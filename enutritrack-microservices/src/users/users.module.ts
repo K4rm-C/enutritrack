@@ -16,7 +16,14 @@ import { DoctorModule } from '../doctor/doctor.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Cuenta, Genero, Especialidad, HistorialPeso, ObjetivoUsuario]),
+    TypeOrmModule.forFeature([
+      User,
+      Cuenta,
+      Genero,
+      Especialidad,
+      HistorialPeso,
+      ObjetivoUsuario,
+    ]),
     CacheModule.register(),
     HttpModule,
     CouchbaseModule,

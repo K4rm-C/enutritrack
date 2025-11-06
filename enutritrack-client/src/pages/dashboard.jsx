@@ -41,10 +41,13 @@ import {
   ActivityIcon,
   HeartHandshake,
   CalendarHeart,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../context/auth/auth.context";
 import Perfil from "../components/profile";
 import UsuariosTracker from "../components/usuario/users-tracker";
+import MedicalHistoryManager from "../components/medical-history-manager";
+import MedicalAppointmentsManager from "../components/citas-medicas-manager";
 
 // Constants
 const THEME = {
@@ -957,13 +960,12 @@ const Sidebar = ({
     { id: "dashboard", name: "Dashboard", icon: LayoutDashboard },
     { id: "perfil", name: "Perfil", icon: UserCircle },
     { id: "usuarios", name: "Pacientes", icon: Users },
-    { id: "medicamentos", name: "Medicamentos", icon: Pill },
     {
       id: "historialmedico",
       name: "Historiales Medicos",
       icon: ClipboardClock,
     },
-    { id: "alergias", name: "Alergias", icon: FishOff },
+    { id: "alertas", name: "Alertas", icon: AlertTriangle },
     { id: "nutricion", name: "Registros Nutricionales", icon: Apple },
     { id: "actividadfiscia", name: "Actividades Fisicas", icon: ActivityIcon },
     { id: "recomendaciones", name: "Recomendaciones", icon: HeartHandshake },
@@ -1409,6 +1411,12 @@ const Dashboard = () => {
     }
     if (activeContent === "usuarios") {
       return <UsuariosTracker darkMode={darkMode} />;
+    }
+    if (activeContent === "historialmedico") {
+      return <MedicalHistoryManager darkMode={darkMode} />;
+    }
+    if (activeContent === "citas") {
+      return <MedicalAppointmentsManager darkMode={darkMode} />;
     }
     return <GenericContent title={getPageTitle()} darkMode={darkMode} />;
   };

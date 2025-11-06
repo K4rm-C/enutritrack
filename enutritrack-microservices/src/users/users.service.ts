@@ -207,7 +207,10 @@ export class UserService {
         `doctor:${doctorId}:patients`,
       );
       if (cachedPatients) {
-        console.log('Pacientes del doctor encontrados en cache');
+        console.log(
+          'Pacientes del doctor encontrados en cache',
+          cachedPatients,
+        );
         return cachedPatients;
       }
     } catch (error) {
@@ -606,9 +609,18 @@ export class UserService {
 
   async remove(id: string): Promise<{ affected: number }> {
     const existingUser = await this.userRepository.findOne({ where: { id } });
-
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['cuenta'],
+    });
+    await this.objetivoUsuarioRepository.delete({ usuario_id: id });
+    await this.historialPesoRepository.delete({ usuario_id: id });
+    await this.cuentaRepository.delete({ id: id });
+    await this.objetivoUsuarioRepository.delete({ usuario_id: id });
     const result = await this.userRepository.delete(id);
-
+    if (user?.cuenta) {
+      await this.cuentaRepository.delete(user.cuenta.id);
+    }
     if (result.affected === 0) {
       throw new NotFoundException('User not found');
     }
