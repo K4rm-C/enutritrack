@@ -11,7 +11,7 @@ export class TipoConsulta {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100, unique: true, nullable: true })
   nombre: string;
 
   @Column({ type: 'text', nullable: true })

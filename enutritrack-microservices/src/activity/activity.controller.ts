@@ -1,18 +1,20 @@
-// src/physical-activity/physical-activity.controller.ts
 import {
   Controller,
   Get,
   Post,
-  Body,
-  Patch,
-  Param,
+  Put,
   Delete,
+  Body,
+  Param,
   Query,
+  HttpCode,
   UseGuards,
 } from '@nestjs/common';
 import { PhysicalActivityService } from './activity.service';
-import { CreatePhysicalActivityDto } from './dto/create-physical-activity.dto';
-import { UpdatePhysicalActivityDto } from './dto/update-physical-activity.dto';
+import {
+  CreatePhysicalActivityDto,
+  UpdatePhysicalActivityDto,
+} from './dto/create-physical-activity.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('physical-activity')
@@ -23,8 +25,8 @@ export class PhysicalActivityController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createPhysicalActivityDto: CreatePhysicalActivityDto) {
-    return this.physicalActivityService.create(createPhysicalActivityDto);
+  create(@Body() createDto: CreatePhysicalActivityDto) {
+    return this.physicalActivityService.create(createDto);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -34,7 +36,7 @@ export class PhysicalActivityController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('weekly-summary/:userId')
+  @Get('user/:userId/weekly-summary')
   getWeeklySummary(
     @Param('userId') userId: string,
     @Query('startDate') startDate: string,
@@ -44,23 +46,45 @@ export class PhysicalActivityController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('user/:userId/monthly-stats')
+  getMonthlyStats(
+    @Param('userId') userId: string,
+    @Query('year') year: number,
+    @Query('month') month: number,
+  ) {
+    return this.physicalActivityService.getMonthlyStats(userId, year, month);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('types')
+  getActivityTypes() {
+    return this.physicalActivityService.getActivityTypes();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.physicalActivityService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id') id: string,
-    @Body() updatePhysicalActivityDto: UpdatePhysicalActivityDto,
+    @Body() updateDto: UpdatePhysicalActivityDto,
   ) {
-    return this.physicalActivityService.update(id, updatePhysicalActivityDto);
+    return this.physicalActivityService.update(id, updateDto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.physicalActivityService.remove(id);
+    return this.physicalActivityService.delete(id);
+  }
+
+  @Get('health/check')
+  @HttpCode(200)
+  healthCheck() {
+    return this.physicalActivityService.healthCheck();
   }
 }

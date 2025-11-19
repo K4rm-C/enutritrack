@@ -43,10 +43,11 @@ import {
 } from "lucide-react";
 import { useUsers } from "../../context/user/user.context";
 import { useAuth } from "../../context/auth/auth.context";
+import { useTheme } from "../../context/dark-mode.context";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const UsersListDashboard = ({ darkMode = false }) => {
+const UsersListDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGender, setFilterGender] = useState("");
   const [filterActivity, setFilterActivity] = useState("");
@@ -74,6 +75,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
     isAuthenticated,
     isLoading: authLoading,
   } = useAuth();
+  const { darkMode } = useTheme();
 
   // Estado actualizado con los nombres correctos de campos
   const [formData, setFormData] = useState({

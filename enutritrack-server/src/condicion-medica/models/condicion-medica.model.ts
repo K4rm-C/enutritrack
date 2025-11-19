@@ -18,7 +18,7 @@ export class CondicionMedica {
   @Column({ type: 'uuid' })
   usuario_id: string;
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ type: 'varchar', length: 200, nullable: true })
   nombre: string;
 
   @Column({

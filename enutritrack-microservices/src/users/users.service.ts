@@ -19,6 +19,7 @@ import { Doctor } from '../doctor/models/doctor.model';
 import { Cuenta } from '../shared/models/cuenta.model';
 import { TipoCuentaEnum } from '../shared/enums';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class UserService {
@@ -35,7 +36,6 @@ export class UserService {
     private objetivoUsuarioRepository: Repository<ObjetivoUsuario>,
     @Inject(CACHE_MANAGER) private cacheManager: cacheManager_1.Cache,
   ) {}
-
   // src/users/users.service.ts
   async findByEmailWithPassword(email: string): Promise<any | null> {
     try {
@@ -615,8 +615,6 @@ export class UserService {
     });
     await this.objetivoUsuarioRepository.delete({ usuario_id: id });
     await this.historialPesoRepository.delete({ usuario_id: id });
-    await this.cuentaRepository.delete({ id: id });
-    await this.objetivoUsuarioRepository.delete({ usuario_id: id });
     const result = await this.userRepository.delete(id);
     if (user?.cuenta) {
       await this.cuentaRepository.delete(user.cuenta.id);
@@ -656,5 +654,19 @@ export class UserService {
       console.error('Error comparing passwords:', error);
       return false;
     }
+  }
+
+  async healthCheck() {
+    const startTime = Date.now();
+
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+
+    return {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      uptime: uptime,
+      service: process.env.SERVICE_NAME || 'Microservicio de usuario',
+      version: process.env.APP_VERSION || '1.1.0',
+    };
   }
 }

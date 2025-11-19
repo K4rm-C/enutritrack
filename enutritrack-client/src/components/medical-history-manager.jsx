@@ -31,9 +31,10 @@ import {
 import { useMedicalHistory } from "../context/history-medical/history-medical.context";
 import { useUsers } from "../context/user/user.context";
 import { useAuth } from "../context/auth/auth.context";
+import { useTheme } from "../context/dark-mode.context";
 import { toast } from "react-toastify";
 
-const MedicalHistoryManager = ({ darkMode = false }) => {
+const MedicalHistoryManager = () => {
   const {
     medicalHistory,
     loading,
@@ -43,6 +44,7 @@ const MedicalHistoryManager = ({ darkMode = false }) => {
     createMedicalHistory,
     clearError,
   } = useMedicalHistory();
+  const { darkMode } = useTheme();
 
   const { getUsersByDoctorId, getUserById } = useUsers();
   const { user } = useAuth();

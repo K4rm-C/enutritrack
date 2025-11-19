@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { xmlParser } from '../middleware/xml-parser.middleware';
 import { XmlInterceptor } from '../interceptor/xml.interceptor';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   // Crear aplicación HTTP
@@ -24,8 +25,23 @@ async function bootstrap() {
     origin: ['http://localhost:5174'],
     credentials: true,
   });
+  const config = new DocumentBuilder()
+    .setTitle('Microservicio de Paciente')
+    .setDescription('API para Pacientes')
+    .setVersion('1.1.0')
+    .addServer(`http://localhost:3001`, 'Paciente')
+    .addTag('Paciente', 'Endpoints de Paciente')
+    .addBearerAuth()
+    .build();
 
-  await app.startAllMicroservices();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'API Paciente - Documentación',
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: true,
+    },
+  });
   await app.listen(3001);
   console.log('User Service running on port 3001 (HTTP) and 3101 (TCP)');
 }

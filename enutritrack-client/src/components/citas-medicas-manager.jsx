@@ -35,13 +35,15 @@ import {
   MessageCircle,
   Mail,
   Map,
+  Info,
 } from "lucide-react";
 import { useAppointments } from "../context/citas-medicas/citas-medicas.context";
 import { useUsers } from "../context/user/user.context";
 import { useAuth } from "../context/auth/auth.context";
+import { useTheme } from "../context/dark-mode.context";
 import { toast } from "react-toastify";
 
-const MedicalAppointmentsManager = ({ darkMode = false }) => {
+const MedicalAppointmentsManager = () => {
   const {
     appointments,
     loading,
@@ -60,6 +62,7 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
 
   const { getUsersByDoctorId, getUserById } = useUsers();
   const { user } = useAuth();
+  const { darkMode } = useTheme();
 
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patients, setPatients] = useState([]);
@@ -73,6 +76,7 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showAllAppointments, setShowAllAppointments] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -83,7 +87,7 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
 
   useEffect(() => {
     loadAppointments();
-  }, [selectedDate, filterStatus]);
+  }, [selectedDate, filterStatus, showAllAppointments]);
 
   const loadInitialData = async () => {
     try {
@@ -115,7 +119,9 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
     try {
       const filters = {};
       if (filterStatus) filters.estadoCitaId = filterStatus;
-      if (selectedDate) {
+
+      // Solo aplicar filtro de fecha si NO estamos mostrando todas las citas
+      if (selectedDate && !showAllAppointments) {
         const startDate = new Date(selectedDate);
         startDate.setHours(0, 0, 0, 0);
         filters.fechaInicio = startDate.toISOString();
@@ -323,7 +329,7 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
       return matchesSearch && matchesStatus;
     }) || [];
 
-  // Estadísticas
+  // Estadísticas actualizadas
   const appointmentStats = {
     total: appointments.total || 0,
     programadas: filteredAppointments.filter(
@@ -335,12 +341,16 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
     completadas: filteredAppointments.filter(
       (a) => a.estadoCita?.nombre === "Completada"
     ).length,
-    hoy: filteredAppointments.filter((a) => {
-      if (!a.fechaHoraProgramada) return false;
-      const appointmentDate = new Date(a.fechaHoraProgramada).toDateString();
-      const today = new Date().toDateString();
-      return appointmentDate === today;
-    }).length,
+    hoy: showAllAppointments
+      ? filteredAppointments.filter((a) => {
+          if (!a.fechaHoraProgramada) return false;
+          const appointmentDate = new Date(
+            a.fechaHoraProgramada
+          ).toDateString();
+          const today = new Date().toDateString();
+          return appointmentDate === today;
+        }).length
+      : filteredAppointments.length, // Si no estamos mostrando todas, todas son de hoy
   };
 
   return (
@@ -591,7 +601,7 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
                     darkMode ? "text-gray-400" : "text-gray-600"
                   }`}
                 >
-                  Hoy
+                  {showAllAppointments ? "Hoy" : "Del Día"}
                 </p>
               </div>
               <Calendar className="h-6 w-6 text-emerald-500" />
@@ -655,7 +665,7 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
           </div>
         </div>
 
-        {/* Filtros y Búsqueda */}
+        {/* Filtros y Búsqueda - MODIFICADO */}
         <div
           className={`p-6 rounded-2xl mb-8 ${
             darkMode
@@ -663,7 +673,7 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
               : "bg-white border border-gray-200/50"
           }`}
         >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <Search
                 className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${
@@ -700,16 +710,44 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
               ))}
             </select>
 
-            <input
-              type="date"
-              value={selectedDate.toISOString().split("T")[0]}
-              onChange={(e) => setSelectedDate(new Date(e.target.value))}
-              className={`px-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
+            {/* Input de fecha solo se muestra cuando NO estamos mostrando todas las citas */}
+            {!showAllAppointments && (
+              <input
+                type="date"
+                value={selectedDate.toISOString().split("T")[0]}
+                onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                className={`px-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
+                  darkMode
+                    ? "border-white/20 bg-white/10 text-white"
+                    : "border-gray-300 bg-white text-gray-900"
+                }`}
+              />
+            )}
+
+            {/* Toggle para mostrar todas las citas */}
+            <div
+              className={`flex items-center space-x-3 px-4 py-3 rounded-xl border transition-all duration-200 ${
                 darkMode
-                  ? "border-white/20 bg-white/10 text-white"
-                  : "border-gray-300 bg-white text-gray-900"
+                  ? "border-white/20 bg-white/10"
+                  : "border-gray-300 bg-white"
               }`}
-            />
+            >
+              <input
+                type="checkbox"
+                id="showAllAppointments"
+                checked={showAllAppointments}
+                onChange={(e) => setShowAllAppointments(e.target.checked)}
+                className="w-4 h-4 text-emerald-500 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+              />
+              <label
+                htmlFor="showAllAppointments"
+                className={`text-sm font-medium ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Mostrar todas
+              </label>
+            </div>
 
             <button
               onClick={loadAppointments}
@@ -718,6 +756,24 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
               <Filter className="h-5 w-5 mr-2" />
               Filtrar
             </button>
+          </div>
+
+          {/* Indicador de qué estamos mostrando */}
+          <div className="mt-3">
+            <div
+              className={`flex items-center space-x-2 ${
+                darkMode ? "text-gray-400" : "text-gray-600"
+              }`}
+            >
+              <Info className="h-4 w-4" />
+              <span className="text-sm">
+                {showAllAppointments
+                  ? "Mostrando todas las citas sin filtrar por fecha"
+                  : `Mostrando citas del ${selectedDate.toLocaleDateString(
+                      "es-ES"
+                    )}`}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -812,7 +868,7 @@ const MedicalAppointmentsManager = ({ darkMode = false }) => {
   );
 };
 
-// Componente para cada fila de cita
+// Componente para cada fila de cita (sin cambios)
 const AppointmentRow = ({
   appointment,
   darkMode,
@@ -1083,9 +1139,7 @@ const AppointmentRow = ({
   );
 };
 
-// Diálogo para editar/crear citas
-// En el componente AppointmentEditDialog, agrega validaciones:
-
+// Diálogo para editar/crear citas (sin cambios)
 const AppointmentEditDialog = ({
   open,
   onClose,
@@ -1442,7 +1496,7 @@ const AppointmentEditDialog = ({
   );
 };
 
-// Diálogo para ver detalles de cita
+// Diálogo para ver detalles de cita (sin cambios)
 const AppointmentViewDialog = ({
   open,
   onClose,

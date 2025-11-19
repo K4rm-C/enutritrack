@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { XmlInterceptor } from '../interceptor/xml.interceptor';
 import { xmlParser } from '../middleware/xml-parser.middleware';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   // Crear aplicación HTTP
@@ -23,9 +24,24 @@ async function bootstrap() {
     origin: ['http://localhost:5174'],
     credentials: true,
   });
+  const config = new DocumentBuilder()
+    .setTitle('Microservicio de Nutricion')
+    .setDescription('API para Nutricion')
+    .setVersion('1.1.0')
+    .addServer(`http://localhost:3003`, 'Nutricion')
+    .addTag('Nutricion', 'Endpoints de Nutricion')
+    .addBearerAuth()
+    .build();
 
-  await app.startAllMicroservices();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'API Nutricion - Documentación',
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: true,
+    },
+  });
   await app.listen(3003);
-  console.log('User Service running on port 3003 (HTTP) and 3103 (TCP)');
+  console.log('Nutrition Service running on port 3003 (HTTP) and 3103 (TCP)');
 }
 bootstrap();
