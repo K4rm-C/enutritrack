@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DoctorModule } from './doctor/doctor.module';
 import { CitasMedicasModule } from './citas/citas-medicas.module';
+import { AlertsModule } from './alertas/alertas.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CitasMedicasModule } from './citas/citas-medicas.module';
     CitasMedicasModule,
     PhysicalActivityModule,
     RecommendationModule,
+    AlertsModule,
   ],
 })
 export class AppModule {}

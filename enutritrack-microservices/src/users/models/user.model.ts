@@ -90,11 +90,14 @@ export class User {
 
   @OneToMany(
     () => PhysicalActivity,
-    (physicalActivity) => physicalActivity.usuario,
+    (physicalActivity) => physicalActivity.usuario_id,
   )
   physicalActivities: PhysicalActivity[];
 
-  @OneToMany(() => Recommendation, (recommendation) => recommendation.usuario)
+  @OneToMany(
+    () => Recommendation,
+    (recommendation) => recommendation.usuario_id,
+  )
   recommendations: Recommendation[];
 
   // Nuevas relaciones para peso y objetivos

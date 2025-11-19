@@ -274,4 +274,18 @@ export class AuthService {
       throw new UnauthorizedException('Token inválido');
     }
   }
+
+  async healthCheck() {
+    const startTime = Date.now();
+
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+
+    return {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      uptime: uptime,
+      service: process.env.SERVICE_NAME || 'Microservicio de Autenticación',
+      version: process.env.APP_VERSION || '1.1.0',
+    };
+  }
 }

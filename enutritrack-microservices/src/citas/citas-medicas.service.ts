@@ -719,4 +719,18 @@ export class CitasMedicasService {
 
     return tipoConsulta;
   }
+
+  async healthCheck() {
+    const startTime = Date.now();
+
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+
+    return {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      uptime: uptime,
+      service: process.env.SERVICE_NAME || 'Microservicio de citas medicas',
+      version: process.env.APP_VERSION || '1.1.0',
+    };
+  }
 }

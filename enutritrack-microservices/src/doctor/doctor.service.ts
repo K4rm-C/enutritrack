@@ -167,8 +167,9 @@ export class DoctorService {
     if ((updateData as any).especialidad_id)
       updateDataForEntity.especialidad_id = (updateData as any).especialidad_id;
     if ((updateData as any).cedula_profesional)
-      updateDataForEntity.cedula_profesional = (updateData as any)
-        .cedula_profesional;
+      updateDataForEntity.cedula_profesional = (
+        updateData as any
+      ).cedula_profesional;
     if ((updateData as any).telefono)
       updateDataForEntity.telefono = (updateData as any).telefono;
 
@@ -205,5 +206,19 @@ export class DoctorService {
       console.error('Error comparing passwords:', error);
       return false;
     }
+  }
+
+  async healthCheck() {
+    const startTime = Date.now();
+
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+
+    return {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      uptime: uptime,
+      service: process.env.SERVICE_NAME || 'Microservicio de doctor',
+      version: process.env.APP_VERSION || '1.1.0',
+    };
   }
 }

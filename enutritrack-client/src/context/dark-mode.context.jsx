@@ -1,95 +1,42 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+// hooks/useTheme.js
+import { useState, useEffect, createContext, useContext } from "react";
 
-// Create Dark Mode Context
-const DarkModeContext = createContext();
+const ThemeContext = createContext();
 
-export const useDarkMode = () => {
-  const context = useContext(DarkModeContext);
-  if (!context) {
-    throw new Error("useDarkMode must be used within DarkModeProvider");
-  }
-  return context;
-};
-
-// Dark Mode Provider Component
-export const DarkModeProvider = ({ children }) => {
-  // Estado para el modo oscuro - por defecto usa el preference del sistema
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Verificar si hay preferencia guardada en localStorage
-    const savedMode = localStorage.getItem("darkMode");
-    if (savedMode !== null) {
-      return JSON.parse(savedMode);
-    }
-
-    // Si no hay preferencia guardada, usar la del sistema
-    if (typeof window !== "undefined" && window.matchMedia) {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
-    }
-
-    // Fallback a modo claro
-    return false;
+export const ThemeProvider = ({ children }) => {
+  const [darkMode, setDarkMode] = useState(() => {
+    // Leer del localStorage al inicializar
+    const saved = localStorage.getItem("darkMode");
+    return saved ? JSON.parse(saved) : false;
   });
 
-  // Función para alternar el modo oscuro
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => {
-      const newMode = !prev;
-      localStorage.setItem("darkMode", JSON.stringify(newMode));
-      return newMode;
-    });
-  };
-
-  // Función para establecer modo específico
-  const setDarkMode = (mode) => {
-    setIsDarkMode(mode);
-    localStorage.setItem("darkMode", JSON.stringify(mode));
-  };
-
-  // Efecto para aplicar/quitar la clase dark del documento
+  // Efecto para guardar en localStorage cuando cambie el tema
   useEffect(() => {
-    const root = document.documentElement;
+    localStorage.setItem("darkMode", JSON.stringify(darkMode));
 
-    if (isDarkMode) {
-      root.classList.add("dark");
+    // Aplicar clase al elemento root para consistencia CSS
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
     } else {
-      root.classList.remove("dark");
+      document.documentElement.classList.remove("dark");
     }
+  }, [darkMode]);
 
-    // Opcional: También puedes aplicar estilos al body
-    document.body.style.backgroundColor = isDarkMode ? "#111827" : "#ffffff";
-    document.body.style.color = isDarkMode ? "#f9fafb" : "#111827";
-  }, [isDarkMode]);
-
-  // Escuchar cambios en las preferencias del sistema
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const handleChange = (e) => {
-      // Solo cambiar automáticamente si no hay preferencia guardada
-      const savedMode = localStorage.getItem("darkMode");
-      if (savedMode === null) {
-        setIsDarkMode(e.matches);
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  // Valor del contexto
-  const contextValue = {
-    isDarkMode,
-    toggleDarkMode,
+  const value = {
+    darkMode,
     setDarkMode,
-    // Funciones de utilidad adicionales
-    enableDarkMode: () => setDarkMode(true),
-    enableLightMode: () => setDarkMode(false),
+    toggleDarkMode: () => setDarkMode((prev) => !prev),
   };
 
   return (
-    <DarkModeContext.Provider value={contextValue}>
-      {children}
-    </DarkModeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
+};
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within ThemeProvider");
+  }
+  return context;
 };

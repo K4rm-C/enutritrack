@@ -214,4 +214,18 @@ export class MedicalHistoryService {
       medicamentos,
     };
   }
+
+  async healthCheck() {
+    const startTime = Date.now();
+
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+
+    return {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      uptime: uptime,
+      service: process.env.SERVICE_NAME || 'Microservicio de historial médico',
+      version: process.env.APP_VERSION || '1.1.0',
+    };
+  }
 }

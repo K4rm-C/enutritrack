@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { XmlInterceptor } from '../interceptor/xml.interceptor';
 import { xmlParser } from '../middleware/xml-parser.middleware';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,15 +14,8 @@ async function bootstrap() {
   app.use('/users', xmlParser);
   app.useGlobalInterceptors(new XmlInterceptor());
   app.enableCors({
-    origin: [
-      'http://localhost:5174', // Frontend web
-      'http://10.0.2.2:3004', // Emulador Android
-      'http://127.0.0.1:3004', // Localhost alternativo
-      /^http:\/\/192\.168\.\d+\.\d+:3004$/, // IPs locales para Android físico
-    ],
+    origin: ['http://localhost:5174'],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // Validación global
@@ -32,7 +26,27 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('Microservicio de Autenticación')
+    .setDescription('API para autenticación de usuarios y doctores')
+    .setVersion('1.1.0')
+    .addServer(`http://localhost:3004`, 'Autenticación')
+    .addTag('Authentication', 'Endpoints de autenticación')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'API Autenticación - Documentación',
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: true,
+    },
+  });
   await app.listen(3004);
-  console.log('User Service running on port 3004 (HTTP) and 3104 (TCP)');
+  console.log(
+    'Authenticated Service running on port 3004 (HTTP) and 3104 (TCP)',
+  );
 }
 bootstrap();
