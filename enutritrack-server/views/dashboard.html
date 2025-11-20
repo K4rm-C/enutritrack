@@ -3443,6 +3443,8 @@
       try {
         console.log('📥 Obteniendo información del admin actual...');
 
+        const stats = await apiCall('/dashboard/stats');
+
         let adminData;
 
         try {
@@ -3492,7 +3494,7 @@
           </div>
           <div class="admin-info-card">
             <div class="admin-info-label">Doctores Creados</div>
-            <div class="admin-info-value">${adminData.total_doctores_creados || adminData.stats?.totalDoctores || 0}</div>
+            <div class="admin-info-value">${stats.resumen.totalDoctores || adminData.stats?.totalDoctores}</div>
           </div>
           <div class="admin-info-card">
             <div class="admin-info-label">Estado</div>
