@@ -1302,6 +1302,94 @@
         gap: 1rem;
       }
     }
+
+    /* Estilos específicos para la vista de administrador */
+    .admin-profile-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .admin-profile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+    }
+
+    .admin-profile-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .admin-profile-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .admin-info-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1.25rem;
+      border-left: 4px solid #10b981;
+      transition: all 0.3s ease;
+    }
+
+    .admin-info-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .admin-info-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .admin-info-value {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .admin-info-description {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 0.5rem;
+    }
+
+    /* Para pantallas más grandes */
+    @media (min-width: 1024px) {
+      .admin-profile-content {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    /* Para pantallas medianas */
+    @media (max-width: 1023px) and (min-width: 768px) {
+      .admin-profile-content {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Para pantallas pequeñas */
+    @media (max-width: 767px) {
+      .admin-profile-content {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-profile-header {
+        flex-direction: column;
+        gap: 1rem;
+      }
+    }
   </style>
 </head>
 
@@ -1926,38 +2014,16 @@
       </div>
 
       <!-- Admins View -->
+      <!-- Admins View -->
       <div id="admins-view" class="view">
-        <div class="chart-container" style="height: 280px;margin-bottom: 10px;">
-          <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: #1f2937">
-            Mi Perfil de Administrador
-          </h3>
-          <div id="current-admin-info" class="detail-grid">
+        <div class="admin-profile-container">
+          <div class="admin-profile-header">
+            <h3 class="admin-profile-title">Mi Perfil de Administrador</h3>
+          </div>
+
+          <div id="current-admin-info" class="admin-profile-content">
             <div class="loading">Cargando información...</div>
           </div>
-        </div>
-
-        <div class="table-container">
-          <div class="table-header">
-            <h3 class="table-title">Otros Administradores</h3>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Doctores Creados</th>
-                <th>Estado</th>
-                <th>Fecha de Registro</th>
-              </tr>
-            </thead>
-            <tbody id="admins-table">
-              <tr>
-                <td colspan="5" class="loading">
-                  Cargando administradores...
-                </td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
 
@@ -3361,18 +3427,15 @@
       try {
         console.log('🔄 Cargando información de administradores...');
 
-        // Cargar información del administrador actual
+        // Solo cargar información del administrador actual
         await loadCurrentAdminInfo();
 
-        // Cargar lista de todos los administradores
-        await loadAllAdmins();
 
       } catch (error) {
         console.error('Error cargando administradores:', error);
         document.getElementById('current-admin-info').innerHTML =
           '<div class="empty-state">Error al cargar información</div>';
-        document.getElementById('admins-table').innerHTML =
-          '<tr><td colspan="5" class="empty-state">Error al cargar administradores</td></tr>';
+        // Eliminamos la línea que hace referencia a admins-table ya que no existe
       }
     }
 
@@ -3408,39 +3471,40 @@
         }
 
         // Mostrar información en el panel principal
-        const adminInfoContainer = document.getElementById('current-admin-info');
-        adminInfoContainer.innerHTML = `
-            <div class="detail-item">
-                <div class="detail-label">Nombre Completo</div>
-                <div class="detail-value">${adminData.nombre || 'Superusuario'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Email</div>
-                <div class="detail-value">${adminData.cuenta?.email || adminData.email || 'admin@enutritrack.com'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Rol</div>
-                <div class="detail-value">
-                    <span class="badge badge-info">Administrador</span>
-                </div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Fecha de Registro</div>
-                <div class="detail-value">${adminData.created_at ? new Date(adminData.created_at).toLocaleDateString('es-MX') : 'N/A'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Estado</div>
-                <div class="detail-value">
-                    <span class="badge ${(adminData.cuenta_activa !== false && adminData.cuenta?.activa !== false) ? 'badge-success' : 'badge-danger'}">
+        const adminInfoHTML = `
+          <div class="admin-info-card">
+            <div class="admin-info-label">Nombre Completo</div>
+            <div class="admin-info-value">${adminData.nombre || 'Superusuario'}</div>
+          </div>
+          <div class="admin-info-card">
+            <div class="admin-info-label">Correo Electrónico</div>
+            <div class="admin-info-value">${adminData.cuenta?.email || adminData.email || 'admin@enutritrack.com'}</div>
+            <div class="admin-info-description">Dirección principal de contacto</div>
+          </div>
+          <div class="admin-info-card">
+            <div class="admin-info-label">Rol</div>
+            <div class="admin-info-value"><span class="badge badge-info">Administrador</span></div>
+            <div class="admin-info-description">Nivel de acceso en el sistema</div>
+          </div>
+          <div class="admin-info-card">
+            <div class="admin-info-label">Fecha de Registro</div>
+            <div class="admin-info-value">${adminData.created_at ? new Date(adminData.created_at).toLocaleDateString('es-MX') : 'N/A'}</div>
+          </div>
+          <div class="admin-info-card">
+            <div class="admin-info-label">Doctores Creados</div>
+            <div class="admin-info-value">${adminData.total_doctores_creados || adminData.stats?.totalDoctores || 0}</div>
+          </div>
+          <div class="admin-info-card">
+            <div class="admin-info-label">Estado</div>
+            <div class="admin-info-value">
+              <span class="badge ${(adminData.cuenta_activa !== false && adminData.cuenta?.activa !== false) ? 'badge-success' : 'badge-danger'}">
                         ${(adminData.cuenta_activa !== false && adminData.cuenta?.activa !== false) ? 'Activo' : 'Inactivo'}
-                    </span>
-                </div>
+              </span>
             </div>
-            <div class="detail-item">
-                <div class="detail-label">Doctores Creados</div>
-                <div class="detail-value">${adminData.total_doctores_creados || adminData.stats?.totalDoctores || 0}</div>
-            </div>
+          </div>
         `;
+
+        document.getElementById('current-admin-info').innerHTML = adminInfoHTML;
 
       } catch (error) {
         console.error('Error cargando información del admin actual:', error);
