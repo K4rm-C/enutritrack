@@ -4,44 +4,51 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  OneToMany,
+  CreateDateColumn,
 } from 'typeorm';
-import { User } from '../../users/models/user.model';
-
-export enum RecommendationType {
-  NUTRITION = 'nutrition',
-  EXERCISE = 'exercise',
-  MEDICAL = 'medical',
-  GENERAL = 'general',
-}
+import { RecommendationData } from './recomendacion_datos';
+import { RecommendationType } from './tipos_recomendacion.model';
 
 @Entity('recomendacion')
 export class Recommendation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.recommendations)
-  @JoinColumn({ name: 'usuario_id' })
-  usuario: User;
+  @Column({ name: 'usuario_id' })
+  usuario_id: string;
 
-  @Column({ type: 'text', name: 'tipo' })
-  tipo: RecommendationType;
+  @Column({ name: 'tipo_recomendacion_id' })
+  tipo_recomendacion_id: string;
 
-  @Column({ type: 'text', name: 'contenido' })
+  @ManyToOne(() => RecommendationType)
+  @JoinColumn({ name: 'tipo_recomendacion_id' })
+  tipo_recomendacion: RecommendationType;
+
+  @Column({ type: 'text' })
   contenido: string;
 
-  @Column({ type: 'jsonb', nullable: true, name: 'datos_entrada' })
-  datosEntrada: any;
+  @CreateDateColumn({ name: 'fecha_generacion' })
+  fecha_generacion: Date;
 
-  @Column({
-    type: 'timestamp',
-    name: 'fecha_generacion',
-    default: () => 'CURRENT_TIMESTAMP',
-  })
-  fechaGeneracion: Date;
+  @Column({ type: 'timestamp', nullable: true, name: 'vigencia_hasta' })
+  vigencia_hasta: Date;
 
-  @Column({ type: 'timestamp', name: 'vigencia_hasta', nullable: true })
-  vigenciaHasta: Date;
-
-  @Column({ type: 'boolean', name: 'activa', default: true })
+  @Column({ type: 'boolean', default: true })
   activa: boolean;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  prioridad: string;
+
+  @Column({ name: 'cita_medica_id', nullable: true })
+  cita_medica_id: string;
+
+  @Column({ name: 'alerta_generadora_id', nullable: true })
+  alerta_generadora_id: string;
+
+  @OneToMany(() => RecommendationData, (data) => data.recomendacion)
+  datos: RecommendationData[];
+
+  @CreateDateColumn({ name: 'created_at' })
+  created_at: Date;
 }

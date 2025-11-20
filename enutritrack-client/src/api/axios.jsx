@@ -7,6 +7,8 @@ const API_BASE_URL_NUTRITION = "http://localhost:3003/";
 const API_BASE_URL_AUTH = "http://localhost:3004/";
 const API_BASE_URL_ACTIVITY = "http://localhost:3005/";
 const API_BASE_URL_RECOMMENDATION = "http://localhost:3006/";
+const API_BASE_URL_CITAS_MEDIAS = "http://localhost:3008/";
+const API_BASE_URL_ALERTAS = "http://localhost:3009/";
 
 const createAxiosInstance = (baseURL) => {
   const instance = axios.create({
@@ -51,9 +53,11 @@ const createAxiosInstance = (baseURL) => {
 
 export const userAPI = createAxiosInstance(API_BASE_URL_USER);
 export const medicalAPI = createAxiosInstance(API_BASE_URL_MEDICAL);
+export const citasAPI = createAxiosInstance(API_BASE_URL_CITAS_MEDIAS);
 export const nutritionAPI = createAxiosInstance(API_BASE_URL_NUTRITION);
 export const authAPI = createAxiosInstance(API_BASE_URL_AUTH);
 export const activityAPI = createAxiosInstance(API_BASE_URL_ACTIVITY);
 export const recommendationAPI = createAxiosInstance(
   API_BASE_URL_RECOMMENDATION
 );
+export const alertasAPI = createAxiosInstance(API_BASE_URL_ALERTAS);

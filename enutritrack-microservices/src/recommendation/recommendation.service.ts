@@ -1,278 +1,325 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Recommendation } from './models/recommendation.model';
+import { RecommendationType } from './models/tipos_recomendacion.model';
+import { RecommendationData } from './models/recomendacion_datos';
 import {
-  Recommendation,
-  RecommendationType,
-} from './models/recommendation.model';
-import { CreateRecommendationDto } from './dto/create-recommendation.dto';
-import { UserService } from '../users/users.service';
+  CreateRecommendationDto,
+  CreateAIRecommendationDto,
+  UpdateRecommendationDto,
+  CreateRecommendationTypeDto,
+  UpdateRecommendationTypeDto,
+} from './dto/create-recommendation.dto';
 
 @Injectable()
-export class RecommendationService {
-  private readonly logger = new Logger(RecommendationService.name);
+export class RecommendationsService {
+  private readonly logger = new Logger(RecommendationsService.name);
   private genAI: GoogleGenerativeAI;
 
   constructor(
     @InjectRepository(Recommendation)
     private recommendationRepository: Repository<Recommendation>,
-    private userService: UserService,
+    @InjectRepository(RecommendationType)
+    private typeRepository: Repository<RecommendationType>,
+    @InjectRepository(RecommendationData)
+    private dataRepository: Repository<RecommendationData>,
   ) {
-    // Inicializar Gemini AI con tu API key (debería estar en variables de entorno)
     this.genAI = new GoogleGenerativeAI(
-      process.env.GEMINI_API_KEY || 'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4',
+      process.env.GEMINI_API_KEY || 'your-api-key',
     );
   }
 
-  async generateRecommendation(
-    createRecommendationDto: CreateRecommendationDto,
+  // ========== TIPOS DE RECOMENDACIÓN ==========
+
+  async createType(
+    createTypeDto: CreateRecommendationTypeDto,
+  ): Promise<RecommendationType> {
+    try {
+      const type = this.typeRepository.create(createTypeDto);
+      return await this.typeRepository.save(type);
+    } catch (error) {
+      this.logger.error(`Error creating recommendation type: ${error.message}`);
+      throw new BadRequestException('Error al crear el tipo de recomendación');
+    }
+  }
+
+  async findAllTypes(): Promise<RecommendationType[]> {
+    return this.typeRepository.find({
+      order: { nombre: 'ASC' },
+    });
+  }
+
+  async findTypeById(id: string): Promise<RecommendationType> {
+    const type = await this.typeRepository.findOne({ where: { id } });
+    if (!type) {
+      throw new NotFoundException('Tipo de recomendación no encontrado');
+    }
+    return type;
+  }
+
+  async updateType(
+    id: string,
+    updateTypeDto: UpdateRecommendationTypeDto,
+  ): Promise<RecommendationType> {
+    const type = await this.findTypeById(id);
+    Object.assign(type, updateTypeDto);
+    return this.typeRepository.save(type);
+  }
+
+  async deleteType(id: string): Promise<void> {
+    const result = await this.typeRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException('Tipo de recomendación no encontrado');
+    }
+  }
+
+  // ========== RECOMENDACIONES ==========
+
+  async create(createDto: CreateRecommendationDto): Promise<Recommendation> {
+    try {
+      const recommendation = this.recommendationRepository.create(createDto);
+      return await this.recommendationRepository.save(recommendation);
+    } catch (error) {
+      this.logger.error(`Error creating recommendation: ${error.message}`);
+      throw new BadRequestException('Error al crear la recomendación');
+    }
+  }
+
+  async createWithAI(
+    createAIDto: CreateAIRecommendationDto,
   ): Promise<Recommendation> {
     try {
-      const user = await this.userService.findById(
-        createRecommendationDto.usuarioId,
-      );
-      if (!user) {
-        throw new NotFoundException('Usuario no encontrado');
+      const userData = await this.getUserDataForAI(createAIDto.usuario_id);
+      const recommendationType = await this.typeRepository.findOne({
+        where: { id: createAIDto.tipo_recomendacion_id },
+      });
+
+      if (!recommendationType) {
+        throw new NotFoundException('Tipo de recomendación no encontrado');
       }
 
-      const userData = await this.getUserData(
-        createRecommendationDto.usuarioId,
-      );
-      const prompt = this.generatePrompt(
-        createRecommendationDto.tipo,
+      const aiContent = await this.generateAIContent(
+        recommendationType,
         userData,
-        createRecommendationDto.datosEntrada,
+        createAIDto.contexto_adicional,
       );
-
-      // Usar la API REST directamente en lugar del SDK
-      const geminiResponse = await this.callGeminiApiDirectly(prompt);
 
       const recommendation = this.recommendationRepository.create({
-        usuario: user,
-        tipo: createRecommendationDto.tipo,
-        contenido: geminiResponse,
-        datosEntrada: createRecommendationDto.datosEntrada,
-        vigenciaHasta: this.calculateExpiryDate(createRecommendationDto.tipo),
+        usuario_id: createAIDto.usuario_id,
+        tipo_recomendacion_id: createAIDto.tipo_recomendacion_id,
+        contenido: aiContent,
+        prioridad: createAIDto.prioridad || 'media',
+        vigencia_hasta:
+          createAIDto.vigencia_hasta ||
+          this.calculateDefaultExpiry(recommendationType.nombre),
         activa: true,
       });
 
-      const savedRecommendation =
-        await this.recommendationRepository.save(recommendation);
-      this.logger.log(
-        `Recommendation created with ID: ${savedRecommendation.id}`,
-      );
-      return savedRecommendation;
+      return await this.recommendationRepository.save(recommendation);
     } catch (error) {
-      this.logger.error(`Error generating recommendation: ${error.message}`);
-      // En caso de error, devolver una recomendación por defecto
-      return this.createFallbackRecommendation(createRecommendationDto);
+      this.logger.error(`Error creating AI recommendation: ${error.message}`);
+      return this.createFallbackRecommendation(createAIDto);
     }
   }
 
-  private async callGeminiApiDirectly(prompt: string): Promise<string> {
+  private async generateAIContent(
+    type: RecommendationType,
+    userData: any,
+    additionalContext?: string,
+  ): Promise<string> {
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY || 'AIzaSyCaPPzZwsbpvwuNMgwBYxQnlR9IDw5NMn4'}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt,
-                  },
-                ],
-              },
-            ],
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Gemini API error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const data = await response.json();
-      return data.candidates[0].content.parts[0].text;
+      const prompt = this.buildAIPrompt(type, userData, additionalContext);
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
     } catch (error) {
-      this.logger.error(`Error calling Gemini API: ${error.message}`);
-      return this.getFallbackResponse();
+      this.logger.warn(
+        `AI generation failed, using fallback: ${error.message}`,
+      );
+      return this.getFallbackContent(type, userData);
     }
   }
 
-  private async createFallbackRecommendation(
-    createRecommendationDto: CreateRecommendationDto,
-  ): Promise<Recommendation> {
-    const user = await this.userService.findById(
-      createRecommendationDto.usuarioId,
-    );
+  private buildAIPrompt(
+    type: RecommendationType,
+    userData: any,
+    additionalContext?: string,
+  ): string {
+    return `
+Eres un asistente médico especializado en ${type.nombre}. 
+Genera una recomendación personalizada en español para el paciente.
 
-    const recommendation = this.recommendationRepository.create({
-      usuario: user,
-      tipo: createRecommendationDto.tipo,
-      contenido: this.getFallbackResponse(),
-      datosEntrada: createRecommendationDto.datosEntrada,
-      vigenciaHasta: this.calculateExpiryDate(createRecommendationDto.tipo),
-      activa: true,
-    });
+Datos del paciente:
+- Nombre: ${userData.nombre}
+- Edad: ${userData.edad}
+- Género: ${userData.genero}
+- Altura: ${userData.altura} cm
+- Peso actual: ${userData.peso_actual} kg
+- Objetivo de peso: ${userData.peso_objetivo} kg
+- Nivel de actividad: ${userData.nivel_actividad}
 
-    return this.recommendationRepository.save(recommendation);
+${additionalContext ? `Contexto adicional: ${additionalContext}` : ''}
+
+La recomendación debe ser práctica, aplicable y basada en evidencia científica.
+`;
   }
 
-  private async getUserData(userId: string): Promise<any> {
-    const user = await this.userService.findById(userId);
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
+  private getFallbackContent(type: RecommendationType, userData: any): string {
+    const fallbacks = {
+      nutrition: `Recomendación nutricional para ${userData.nombre}:\n\nBasado en tu perfil, te recomiendo mantener una dieta equilibrada...`,
+      exercise: `Plan de ejercicio para ${userData.nombre}:\n\nConsiderando tu nivel de actividad, te sugiero...`,
+      medical: `Recomendaciones de salud para ${userData.nombre}:\n\nPara mantener tu bienestar...`,
+    };
+    return fallbacks[type.nombre.toLowerCase()] || fallbacks.medical;
+  }
 
-    // Obtener peso actual del ultimo registro en historial_peso
-    const pesoActual =
-      user.historialPeso && user.historialPeso.length > 0
-        ? user.historialPeso[0].peso
-        : null;
-
-    // Obtener objetivo y nivel de actividad del objetivo mas reciente vigente
-    const objetivoVigente = user.objetivos?.find((obj) => obj.vigente === true);
-    const objetivoPeso = objetivoVigente?.peso_objetivo || null;
-    const nivelActividad = objetivoVigente?.nivel_actividad || null;
-
+  private async getUserDataForAI(userId: string): Promise<any> {
     return {
-      user: {
-        nombre: user.nombre,
-        edad: this.calculateAge(user.fecha_nacimiento),
-        genero: user.genero,
-        altura: user.altura,
-        pesoActual: pesoActual,
-        objetivoPeso: objetivoPeso,
-        nivelActividad: nivelActividad,
-      },
+      nombre: 'Paciente',
+      edad: 35,
+      genero: 'No especificado',
+      altura: 170,
+      peso_actual: 70,
+      peso_objetivo: 65,
+      nivel_actividad: 'moderado',
     };
   }
 
-  private calculateAge(fechaNacimiento: Date): number {
-    const today = new Date();
-    const birthDate = new Date(fechaNacimiento);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
+  private calculateDefaultExpiry(typeName: string): Date {
+    const expiry = new Date();
+    const type = typeName.toLowerCase();
+    if (type.includes('nutrition')) expiry.setDate(expiry.getDate() + 30);
+    else if (type.includes('exercise')) expiry.setDate(expiry.getDate() + 14);
+    else if (type.includes('medical')) expiry.setDate(expiry.getDate() + 90);
+    else expiry.setDate(expiry.getDate() + 7);
+    return expiry;
+  }
 
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
+  private async createFallbackRecommendation(
+    createAIDto: CreateAIRecommendationDto,
+  ): Promise<Recommendation> {
+    const type = await this.typeRepository.findOne({
+      where: { id: createAIDto.tipo_recomendacion_id },
+    });
+
+    if (!type) {
+      throw new NotFoundException('Tipo de recomendación no encontrado');
     }
 
-    return age;
+    const userData = await this.getUserDataForAI(createAIDto.usuario_id);
+    const fallbackContent = this.getFallbackContent(type, userData);
+
+    return this.create({
+      usuario_id: createAIDto.usuario_id,
+      tipo_recomendacion_id: createAIDto.tipo_recomendacion_id,
+      contenido: fallbackContent,
+      vigencia_hasta:
+        createAIDto.vigencia_hasta || this.calculateDefaultExpiry(type.nombre),
+      activa: true,
+    } as CreateRecommendationDto);
   }
 
-  private generatePrompt(
-    tipo: string,
-    userData: any,
-    datosEspecificos: any = {},
-  ): string {
-    const basePrompt = `Eres un asistente de salud especializado en nutrición y actividad física. 
-    Genera una recomendación personalizada en español basada en los siguientes datos del usuario: 
-    ${JSON.stringify(userData, null, 2)}.`;
-
-    switch (tipo) {
-      case 'nutrition':
-        return `${basePrompt}
-        Genera un plan nutricional personalizado para este usuario. Incluye:
-        1. Recomendaciones calóricas diarias
-        2. Distribución de macronutrientes
-        3. Ejemplos de comidas para un día
-        4. Alimentos recomendados y alimentos a evitar
-        5. Consejos específicos basados en su historial médico: ${JSON.stringify(userData.medicalHistory)}`;
-
-      case 'exercise':
-        return `${basePrompt}
-        Genera un plan de ejercicios personalizado para este usuario. Incluye:
-        1. Tipo de ejercicios recomendados
-        2. Frecuencia y duración
-        3. Intensidad recomendada
-        4. Precauciones basadas en su historial médico: ${JSON.stringify(userData.medicalHistory)}
-        5. Objetivos específicos basados en sus metas: ${userData.user.objetivoPeso}`;
-
-      case 'medical':
-        return `${basePrompt}
-        Genera recomendaciones para mejorar su historial médico. Incluye:
-        1. Consejos para manejar sus condiciones: ${JSON.stringify(userData.medicalHistory.condiciones)}
-        2. Precauciones con sus alergias: ${JSON.stringify(userData.medicalHistory.alergias)}
-        3. Recomendaciones sobre sus medicamentos: ${JSON.stringify(userData.medicalHistory.medicamentos)}
-        4. Señales de alerta a observar
-        5. Recomendaciones de seguimiento médico`;
-
-      case 'general':
-      default:
-        return `${basePrompt}
-        Genera una recomendación general de salud y bienestar que integre nutrición, ejercicio y aspectos médicos.
-        Incluye consejos prácticos y realizables para mejorar su calidad de vida.`;
-    }
-  }
-
-  private getFallbackResponse(): string {
-    return `Recomendación de salud personalizada:
-
-Basado en tu perfil, te recomiendo:
-1. Mantener una dieta equilibrada con énfasis en alimentos naturales
-2. Realizar al menos 30 minutos de actividad física moderada diariamente
-3. Mantener una hidratación adecuada (al menos 2 litros de agua al día)
-4. Consultar con tu médico para seguimiento regular de tus condiciones
-
-Para recomendaciones más específicas, por favor contacta a nuestro equipo de especialistas.`;
-  }
-
-  private calculateExpiryDate(tipo: string): Date {
-    const expiryDate = new Date();
-
-    switch (tipo) {
-      case 'nutrition':
-        expiryDate.setDate(expiryDate.getDate() + 30); // 1 mes para nutrición
-        break;
-      case 'exercise':
-        expiryDate.setDate(expiryDate.getDate() + 14); // 2 semanas para ejercicio
-        break;
-      case 'medical':
-        expiryDate.setDate(expiryDate.getDate() + 90); // 3 meses para recomendaciones médicas
-        break;
-      default:
-        expiryDate.setDate(expiryDate.getDate() + 7); // 1 semana para recomendaciones generales
+  async findAllByUser(
+    userId: string,
+    includeInactive: boolean = false,
+  ): Promise<Recommendation[]> {
+    const where: any = { usuario_id: userId };
+    if (!includeInactive) {
+      where.activa = true;
+      where.vigencia_hasta = MoreThan(new Date());
     }
 
-    return expiryDate;
-  }
-
-  async deactivate(id: string): Promise<void> {
-    await this.recommendationRepository.update(id, { activa: false });
-  }
-
-  async findByUser(userId: string): Promise<Recommendation[]> {
     return this.recommendationRepository.find({
-      where: { usuario: { id: userId }, activa: true },
-      relations: ['usuario'],
+      where,
+      relations: ['tipo_recomendacion', 'datos'],
+      order: { fecha_generacion: 'DESC' },
     });
   }
 
-  async findActiveByUserAndType(
-    userId: string,
-    tipo: RecommendationType,
-  ): Promise<Recommendation[]> {
-    const now = new Date();
+  async findActiveByUser(userId: string): Promise<Recommendation[]> {
     return this.recommendationRepository.find({
       where: {
-        usuario: { id: userId },
-        tipo,
+        usuario_id: userId,
         activa: true,
-        vigenciaHasta: MoreThan(now),
+        vigencia_hasta: MoreThan(new Date()),
       },
-      order: { fechaGeneracion: 'DESC' },
+      relations: ['tipo_recomendacion', 'datos'],
+      order: { fecha_generacion: 'DESC' },
     });
+  }
+
+  async findOne(id: string): Promise<Recommendation> {
+    const recommendation = await this.recommendationRepository.findOne({
+      where: { id },
+      relations: ['tipo_recomendacion', 'datos'],
+    });
+
+    if (!recommendation) {
+      throw new NotFoundException('Recomendación no encontrada');
+    }
+
+    return recommendation;
+  }
+
+  async update(
+    id: string,
+    updateDto: UpdateRecommendationDto,
+  ): Promise<Recommendation> {
+    const recommendation = await this.findOne(id);
+    Object.assign(recommendation, updateDto);
+    return this.recommendationRepository.save(recommendation);
+  }
+
+  async deactivate(id: string): Promise<Recommendation> {
+    const recommendation = await this.findOne(id);
+    recommendation.activa = false;
+    return this.recommendationRepository.save(recommendation);
+  }
+
+  async delete(id: string): Promise<void> {
+    const result = await this.recommendationRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException('Recomendación no encontrada');
+    }
+  }
+
+  async getRecommendationTypes(): Promise<RecommendationType[]> {
+    return this.typeRepository.find({ order: { nombre: 'ASC' } });
+  }
+
+  async addRecommendationData(
+    recommendationId: string,
+    clave: string,
+    valor: string,
+    tipo_dato?: string,
+  ): Promise<RecommendationData> {
+    const data = this.dataRepository.create({
+      recomendacion_id: recommendationId,
+      clave,
+      valor,
+      tipo_dato,
+    });
+    return this.dataRepository.save(data);
+  }
+
+  async healthCheck() {
+    const startTime = Date.now();
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+
+    return {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      uptime: uptime,
+      service: process.env.SERVICE_NAME || 'Microservicio de recomendaciones',
+      version: process.env.APP_VERSION || '1.1.0',
+    };
   }
 }

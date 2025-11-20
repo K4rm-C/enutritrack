@@ -1,11 +1,5 @@
 // src/nutrition/dto/create-food-record.dto.ts
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { TipoComidaEnum } from '../../shared/enums';
 import { Transform } from 'class-transformer';
 
@@ -15,23 +9,12 @@ export class CreateFoodRecordDto {
 
   @IsOptional()
   @Transform(({ value }) => new Date(value))
-  fecha: Date;
+  fecha?: Date;
 
   @IsEnum(TipoComidaEnum)
   tipo_comida: TipoComidaEnum;
 
+  @IsOptional()
   @IsString()
-  descripcion: string;
-
-  @IsNumber()
-  calorias: number;
-
-  @IsNumber()
-  proteinas: number;
-
-  @IsNumber()
-  carbohidratos: number;
-
-  @IsNumber()
-  grasas: number;
+  notas?: string;
 }

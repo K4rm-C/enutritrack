@@ -43,10 +43,11 @@ import {
 } from "lucide-react";
 import { useUsers } from "../../context/user/user.context";
 import { useAuth } from "../../context/auth/auth.context";
+import { useTheme } from "../../context/dark-mode.context";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const UsersListDashboard = ({ darkMode = false }) => {
+const UsersListDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGender, setFilterGender] = useState("");
   const [filterActivity, setFilterActivity] = useState("");
@@ -69,15 +70,21 @@ const UsersListDashboard = ({ darkMode = false }) => {
     deleteUser,
     getUserById,
   } = useUsers();
-  const { user } = useAuth();
+  const {
+    user: currentUser,
+    isAuthenticated,
+    isLoading: authLoading,
+  } = useAuth();
+  const { darkMode } = useTheme();
 
+  // Estado actualizado con los nombres correctos de campos
   const [formData, setFormData] = useState({
     nombre: "",
     email: "",
     email_1: "",
     email_2: "",
-    contraseña: "",
-    genero: "",
+    password: "", // Cambiado de 'contraseña'
+    genero_id: "", // Cambiado de 'genero'
     fecha_nacimiento: "",
     altura: "",
     peso_actual: "",
@@ -86,18 +93,8 @@ const UsersListDashboard = ({ darkMode = false }) => {
     telefono: "",
     telefono_1: "",
     telefono_2: "",
-    doctorId: user?.userId || "",
+    doctorId: currentUser?.id || "",
   });
-
-  // Actualizar formData cuando user cambie
-  useEffect(() => {
-    if (user?.userId) {
-      setFormData((prev) => ({
-        ...prev,
-        doctorId: user.userId,
-      }));
-    }
-  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -108,71 +105,68 @@ const UsersListDashboard = ({ darkMode = false }) => {
   };
 
   const handleOpenForm = async (userdata = null) => {
+    const currentDoctorId = currentUser?.id;
+    if (!currentDoctorId) {
+      toast.error("Error: No se pudo identificar al doctor actual");
+      return;
+    }
     if (userdata) {
-      // Verificar que tenemos un ID válido
       if (!userdata.id) {
         console.error("Error: userdata.id es undefined", userdata);
         toast.error("Error: ID de usuario no válido");
         return;
       }
 
-      // Modo edición - obtener datos completos del usuario
       setEditingUser(userdata);
       try {
         const fullUserData = await getUserById(userdata.id);
 
-        // Actualizar editingUser con los datos completos
+        // Asegurar que tenemos el ID correcto
         setEditingUser({ ...fullUserData, id: userdata.id });
 
-        const formDate =
-          fullUserData.fecha_nacimiento instanceof Date
-            ? fullUserData.fecha_nacimiento.toISOString().split("T")[0]
-            : fullUserData.fecha_nacimiento ||
-              fullUserData.fechaNacimiento ||
-              "";
+        // Formatear fecha correctamente
+        const formDate = fullUserData.fecha_nacimiento
+          ? new Date(fullUserData.fecha_nacimiento).toISOString().split("T")[0]
+          : "";
 
         setFormData({
           nombre: fullUserData.nombre || "",
-          email: fullUserData.email || fullUserData.cuenta?.email || "",
-          email_1: fullUserData.email_1 || "",
-          email_2: fullUserData.email_2 || "",
-          contraseña: "",
-          genero: fullUserData.genero_id || fullUserData.genero?.id || "",
+          email: fullUserData.cuenta?.email || fullUserData.email || "",
+          email_1: fullUserData.cuenta?.email_1 || fullUserData.email_1 || "",
+          email_2: fullUserData.cuenta?.email_2 || fullUserData.email_2 || "",
+          password: "", // Siempre vacío en edición
+          genero_id: fullUserData.genero_id || fullUserData.genero?.id || "",
           fecha_nacimiento: formDate,
           altura: fullUserData.altura || "",
-          peso_actual:
-            fullUserData.peso_actual || fullUserData.pesoActual || "",
-          objetivo_peso:
-            fullUserData.objetivo_peso || fullUserData.objetivoPeso || "",
-          nivel_actividad:
-            fullUserData.nivel_actividad || fullUserData.nivelActividad || "",
+          peso_actual: fullUserData.peso_actual || "",
+          objetivo_peso: fullUserData.objetivo_peso || "",
+          nivel_actividad: fullUserData.nivel_actividad || "",
           telefono: fullUserData.telefono || "",
           telefono_1: fullUserData.telefono_1 || "",
           telefono_2: fullUserData.telefono_2 || "",
-          doctorId: user?.userId,
+          doctorId: currentDoctorId,
         });
       } catch (error) {
         console.error("Error obteniendo datos completos del usuario:", error);
         toast.error("Error al cargar los datos del usuario");
-        // Fallback a datos básicos
+
+        // Fallback con datos básicos
         setFormData({
           nombre: userdata.nombre || "",
           email: userdata.email || "",
           email_1: "",
           email_2: "",
-          contraseña: "",
-          genero: userdata.genero_id || userdata.genero?.id || "",
-          fecha_nacimiento:
-            userdata.fecha_nacimiento || userdata.fechaNacimiento || "",
+          password: "",
+          genero_id: userdata.genero_id || "",
+          fecha_nacimiento: userdata.fecha_nacimiento || "",
           altura: userdata.altura || "",
-          peso_actual: userdata.peso_actual || userdata.pesoActual || "",
-          objetivo_peso: userdata.objetivo_peso || userdata.objetivoPeso || "",
-          nivel_actividad:
-            userdata.nivel_actividad || userdata.nivelActividad || "",
+          peso_actual: userdata.peso_actual || "",
+          objetivo_peso: userdata.objetivo_peso || "",
+          nivel_actividad: userdata.nivel_actividad || "",
           telefono: userdata.telefono || "",
           telefono_1: userdata.telefono_1 || "",
           telefono_2: userdata.telefono_2 || "",
-          doctorId: user?.doctorId || "",
+          doctorId: currentDoctorId,
         });
       }
     } else {
@@ -183,8 +177,8 @@ const UsersListDashboard = ({ darkMode = false }) => {
         email: "",
         email_1: "",
         email_2: "",
-        contraseña: "",
-        genero: "",
+        password: "",
+        genero_id: "",
         fecha_nacimiento: "",
         altura: "",
         peso_actual: "",
@@ -193,7 +187,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
         telefono: "",
         telefono_1: "",
         telefono_2: "",
-        doctorId: user?.userId || "",
+        doctorId: currentUser?.id || "",
       });
     }
     setShowFormModal(true);
@@ -324,32 +318,93 @@ const UsersListDashboard = ({ darkMode = false }) => {
     return { estado: "Obesidad", color: "red" };
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Preparar datos para el backend
+      const submitData = {
+        ...formData,
+        // Asegurar que los campos numéricos sean números
+        altura: formData.altura ? parseFloat(formData.altura) : undefined,
+        peso_actual: formData.peso_actual
+          ? parseFloat(formData.peso_actual)
+          : undefined,
+        objetivo_peso: formData.objetivo_peso
+          ? parseFloat(formData.objetivo_peso)
+          : undefined,
+        // Si no hay password en edición, no enviarlo
+        password:
+          editingUser && !formData.password ? undefined : formData.password,
+      };
+      // Eliminar campos undefined para evitar problemas con el backend
+      Object.keys(submitData).forEach((key) => {
+        if (submitData[key] === undefined) {
+          delete submitData[key];
+        }
+      });
+
+      if (editingUser) {
+        if (!editingUser.id) {
+          console.error("Error: editingUser.id es undefined", editingUser);
+          toast.error("Error: ID de usuario no válido para actualización");
+          return;
+        }
+
+        console.log("🔄 Actualizando usuario con ID:", editingUser.id);
+        const updatedUser = await updateUser(editingUser.id, submitData);
+        console.log("✅ Usuario actualizado:", updatedUser);
+
+        // Recargar la lista completa de usuarios desde el backend
+        const refreshedUsers = await getUsersByDoctorId(currentUser?.id);
+        setUsers(Array.isArray(refreshedUsers) ? refreshedUsers : []);
+
+        toast.success("Usuario actualizado correctamente");
+      } else {
+        const newUser = await createUser(submitData);
+        console.log("✅ Usuario creado:", newUser);
+
+        // Recargar la lista completa de usuarios desde el backend
+        const refreshedUsers = await getUsersByDoctorId(currentUser?.id);
+        setUsers(Array.isArray(refreshedUsers) ? refreshedUsers : []);
+
+        toast.success("Usuario creado correctamente");
+      }
+      setShowFormModal(false);
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Error al guardar usuario:", error);
+      toast.error(error.message || "Error al guardar el usuario");
+    }
+  };
+
   useEffect(() => {
     const loadUsers = async () => {
-      if (!user?.id) {
-        console.log("No hay usuario logueado");
+      if (authLoading) return;
+      // Usar currentUser.id (o currentUser.userId, pero elige uno)
+      if (!currentUser?.id) {
+        console.log(
+          "❌ No hay usuario logueado o id es undefined",
+          currentUser
+        );
         return;
       }
 
       setIsLoading(true);
       try {
-        console.log("Cargando pacientes del doctor:", user.id);
-
-        // Usar el endpoint optimizado para obtener solo los pacientes de este doctor
-        const usersData = await getUsersByDoctorId(user.id);
-        console.log("Pacientes recibidos del doctor:", usersData);
-
+        console.log("🔄 Cargando pacientes del doctor:", currentUser.id);
+        const usersData = await getUsersByDoctorId(currentUser.id);
         setUsers(Array.isArray(usersData) ? usersData : []);
       } catch (error) {
-        console.error("Error cargando pacientes del doctor:", error);
+        console.error("❌ Error cargando pacientes del doctor:", error);
         toast.error("Error al cargar los pacientes");
         setUsers([]);
       } finally {
         setIsLoading(false);
       }
     };
+
     loadUsers();
-  }, [user?.id]);
+  }, [currentUser?.id, authLoading, getUsersByDoctorId]); // Usar id
 
   // Filtrar y ordenar usuarios
   const filteredUsers = users.filter((user) => {
@@ -357,24 +412,38 @@ const UsersListDashboard = ({ darkMode = false }) => {
       user.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Corregir filtro de género
+    // Filtro de género actualizado
     const matchesGender =
       !filterGender ||
       (() => {
-        const genero = user.genero?.nombre || user.genero;
+        const generoId = user.genero_id;
+        const generoNombre = user.genero?.nombre;
+
         if (filterGender === "M") {
-          return genero === "Masculino" || genero === "M";
+          return (
+            generoId === "a1b2c3d4-e5f6-7890-abcd-ef1234567890" ||
+            generoNombre === "Masculino" ||
+            generoNombre === "M"
+          );
         }
         if (filterGender === "F") {
-          return genero === "Femenino" || genero === "F";
+          return (
+            generoId === "b2c3d4e5-f6a7-8901-bcde-f12345678901" ||
+            generoNombre === "Femenino" ||
+            generoNombre === "F"
+          );
         }
         if (filterGender === "O") {
-          return genero === "Otro" || genero === "O";
+          return (
+            generoId === "c3d4e5f6-a7b8-9012-cdef-123456789012" ||
+            generoNombre === "Otro" ||
+            generoNombre === "O"
+          );
         }
         return false;
       })();
 
-    // Corregir filtro de actividad
+    // Filtro de actividad
     const matchesActivity =
       !filterActivity ||
       user.nivelActividad === filterActivity ||
@@ -407,19 +476,29 @@ const UsersListDashboard = ({ darkMode = false }) => {
   // Paginación
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const u = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const currentUsers = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
 
-  // Estadísticas generales - usar todos los usuarios, no solo los paginados
+  // Estadísticas generales actualizadas
   const stats = {
     total: users.length,
     hombres: users.filter((user) => {
-      const genero = user.genero?.nombre || user.genero;
-      return genero === "Masculino" || genero === "M";
+      const generoId = user.genero_id;
+      const generoNombre = user.genero?.nombre;
+      return (
+        generoId === "a1b2c3d4-e5f6-7890-abcd-ef1234567890" ||
+        generoNombre === "Masculino" ||
+        generoNombre === "M"
+      );
     }).length,
     mujeres: users.filter((user) => {
-      const genero = user.genero?.nombre || user.genero;
-      return genero === "Femenino" || genero === "F";
+      const generoId = user.genero_id;
+      const generoNombre = user.genero?.nombre;
+      return (
+        generoId === "b2c3d4e5-f6a7-8901-bcde-f12345678901" ||
+        generoNombre === "Femenino" ||
+        generoNombre === "F"
+      );
     }).length,
     edadPromedio:
       users.length > 0
@@ -438,6 +517,14 @@ const UsersListDashboard = ({ darkMode = false }) => {
   };
 
   const handleDeleteUser = async (userId) => {
+    // Validar el ID antes de mostrar el toast
+    if (!userId || userId === "undefined" || userId === "null") {
+      toast.error("ID de usuario no válido");
+      return;
+    }
+
+    console.log("🗑️ Preparando eliminación para ID:", userId);
+
     // Mostrar toast de confirmación
     toast.info(
       <div>
@@ -452,14 +539,37 @@ const UsersListDashboard = ({ darkMode = false }) => {
           <button
             onClick={async () => {
               try {
+                console.log("🗑️ Ejecutando eliminación para ID:", userId);
+
                 await deleteUser(userId);
-                setUsers(u.filter((user) => user.id !== userId));
+
+                // Recargar la lista completa desde el backend
+                console.log("🔄 Recargando lista de usuarios...");
+                const refreshedUsers = await getUsersByDoctorId(user.userId);
+                setUsers(Array.isArray(refreshedUsers) ? refreshedUsers : []);
+                console.log("✅ Lista actualizada:", refreshedUsers);
+
                 toast.success("Usuario eliminado correctamente");
               } catch (error) {
-                console.error("Error eliminando usuario:", error);
-                toast.error("Error al eliminar el usuario");
+                console.error("💥 Error en handleDeleteUser:", error);
+
+                let errorMessage = "Error al eliminar el usuario";
+
+                if (error.response?.status === 500) {
+                  errorMessage =
+                    "Error del servidor. El usuario podría tener datos relacionados que impiden su eliminación.";
+                } else if (error.response?.status === 404) {
+                  errorMessage = "Usuario no encontrado";
+                } else if (error.response?.status === 400) {
+                  errorMessage = "Solicitud incorrecta";
+                } else if (error.message) {
+                  errorMessage = error.message;
+                }
+
+                toast.error(errorMessage);
+              } finally {
+                toast.dismiss();
               }
-              toast.dismiss();
             }}
             style={{
               padding: "5px 15px",
@@ -496,7 +606,6 @@ const UsersListDashboard = ({ darkMode = false }) => {
       }
     );
   };
-
   const handleViewDetails = async (userId) => {
     setLoadingUserDetails(true);
     try {
@@ -626,7 +735,14 @@ const UsersListDashboard = ({ darkMode = false }) => {
               Género
             </span>
             <span className={darkMode ? "text-white" : "text-gray-900"}>
-              {user.genero?.nombre || user.genero || user.género || "N/A"}
+              {user.genero?.nombre ||
+                (user.genero_id === "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  ? "Masculino"
+                  : user.genero_id === "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                  ? "Femenino"
+                  : user.genero_id === "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  ? "Otro"
+                  : "N/A")}
             </span>
           </div>
 
@@ -872,7 +988,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
       { id: "nutrition", label: "Nutrición", icon: Apple },
       { id: "activity", label: "Actividad", icon: Activity },
       { id: "ai", label: "IA Recomendaciones", icon: Brain },
-      { id: "medical", label: "Historial", icon: File },
+      { id: "medical", label: "Historial", icon: FileText },
     ];
 
     // Componentes para cada pestaña
@@ -906,9 +1022,16 @@ const UsersListDashboard = ({ darkMode = false }) => {
               label="Género"
               value={
                 selectedUser.genero?.nombre ||
-                selectedUser.genero ||
-                selectedUser.género ||
-                "No especificado"
+                (selectedUser.genero_id ===
+                "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  ? "Masculino"
+                  : selectedUser.genero_id ===
+                    "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                  ? "Femenino"
+                  : selectedUser.genero_id ===
+                    "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  ? "Otro"
+                  : "No especificado")
               }
               color="emerald"
             />
@@ -1754,31 +1877,15 @@ const UsersListDashboard = ({ darkMode = false }) => {
             }`}
           >
             <div className="flex overflow-x-auto px-6">
-              {[
-                { id: "personal", label: "Personal", icon: User },
-                { id: "nutrition", label: "Nutrición", icon: Utensils },
-                { id: "activity", label: "Actividad", icon: HeartPulse },
-                { id: "ai", label: "Recomendaciones IA", icon: Brain },
-                { id: "medical", label: "Historial Médico", icon: History },
-              ].map((tab) => (
-                <button
+              {tabs.map((tab) => (
+                <TabButton
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? darkMode
-                        ? "border-emerald-400 text-emerald-400"
-                        : "border-emerald-600 text-emerald-600"
-                      : `border-transparent ${
-                          darkMode
-                            ? "text-gray-400 hover:text-gray-300"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4" />
-                  <span className="whitespace-nowrap">{tab.label}</span>
-                </button>
+                  id={tab.id}
+                  label={tab.label}
+                  icon={tab.icon}
+                  isActive={activeTab === tab.id}
+                  onClick={setActiveTab}
+                />
               ))}
             </div>
           </div>
@@ -2053,7 +2160,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
 
         {/* Lista de usuarios */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          {u.map((user) => (
+          {currentUsers.map((user) => (
             <UserCard key={user.id} user={user} />
           ))}
         </div>
@@ -2159,7 +2266,7 @@ const UsersListDashboard = ({ darkMode = false }) => {
         {/* Modal de detalles del usuario */}
         {showUserModal && <UserModal />}
 
-        {/* Modal de formulario (se mantiene igual) */}
+        {/* Modal de formulario */}
         {showFormModal && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
             <div
@@ -2340,8 +2447,8 @@ const UsersListDashboard = ({ darkMode = false }) => {
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input
                           type="password"
-                          name="contraseña"
-                          value={formData.contraseña}
+                          name="password"
+                          value={formData.password}
                           onChange={handleInputChange}
                           required={!editingUser}
                           className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 ${
@@ -2369,8 +2476,8 @@ const UsersListDashboard = ({ darkMode = false }) => {
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <select
-                          name="genero"
-                          value={formData.genero}
+                          name="genero_id"
+                          value={formData.genero_id}
                           onChange={handleInputChange}
                           className={`w-full pl-10 pr-10 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 appearance-none ${
                             darkMode

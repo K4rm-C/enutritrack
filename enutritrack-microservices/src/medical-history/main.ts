@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { XmlInterceptor } from '../interceptor/xml.interceptor';
 import { xmlParser } from '../middleware/xml-parser.middleware';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   // Crear aplicación HTTP
@@ -24,8 +25,25 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.startAllMicroservices();
+  const config = new DocumentBuilder()
+    .setTitle('Microservicio de Historial medico')
+    .setDescription('API para Historial medico')
+    .setVersion('1.1.0')
+    .addServer(`http://localhost:3002`, 'Historial medico')
+    .addTag('Historial medico', 'Endpoints de Historial medico')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'API Historial medico - Documentación',
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: true,
+    },
+  });
+
   await app.listen(3002);
-  console.log('User Service running on port 3002 (HTTP) and 3102 (TCP)');
+  console.log('Medical Service running on port 3002 (HTTP) and 3102 (TCP)');
 }
 bootstrap();

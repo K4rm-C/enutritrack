@@ -23,16 +23,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  // Swagger documentation
-  const config = new DocumentBuilder()
-    .setTitle('Enutritrack Microservices API')
-    .setDescription('API para el sistema de nutrición preventiva')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-
   await app.listen(3000);
 }
 bootstrap();

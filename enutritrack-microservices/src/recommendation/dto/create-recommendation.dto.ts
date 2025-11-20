@@ -1,37 +1,122 @@
-// src/recommendation/dto/create-recommendation.dto.ts
 import {
-  IsEnum,
-  IsUUID,
-  IsObject,
+  IsString,
+  IsNumber,
   IsOptional,
-  IsDateString,
+  IsDate,
+  IsNotEmpty,
+  IsBoolean,
+  IsEnum,
 } from 'class-validator';
-import { RecommendationType } from '../models/recommendation.model';
+import { Type } from 'class-transformer';
 
 export class CreateRecommendationDto {
-  @IsUUID()
-  usuarioId: string;
+  @IsNotEmpty()
+  @IsString()
+  usuario_id: string;
 
-  @IsEnum(RecommendationType)
-  tipo: RecommendationType;
+  @IsNotEmpty()
+  @IsString()
+  tipo_recomendacion_id: string;
 
-  @IsObject()
+  @IsNotEmpty()
+  @IsString()
+  contenido: string;
+
   @IsOptional()
-  datosEntrada?: any;
+  @IsString()
+  @IsEnum(['baja', 'media', 'alta'])
+  prioridad?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  vigencia_hasta?: Date;
+
+  @IsOptional()
+  @IsBoolean()
+  activa?: boolean;
+
+  @IsOptional()
+  @IsString()
+  cita_medica_id?: string;
+
+  @IsOptional()
+  @IsString()
+  alerta_generadora_id?: string;
 }
 
-// src/recommendation/dto/gemini-request.dto.ts
-export class GeminiRequestDto {
-  @IsUUID()
-  usuarioId: string;
+export class CreateAIRecommendationDto {
+  @IsNotEmpty()
+  @IsString()
+  usuario_id: string;
 
-  @IsEnum(RecommendationType)
-  tipo: RecommendationType;
+  @IsNotEmpty()
+  @IsString()
+  tipo_recomendacion_id: string;
 
-  @IsObject()
-  datosUsuario: any;
-
-  @IsObject()
   @IsOptional()
-  datosEspecificos?: any;
+  @IsString()
+  @IsEnum(['baja', 'media', 'alta'])
+  prioridad?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  vigencia_hasta?: Date;
+
+  @IsOptional()
+  @IsString()
+  contexto_adicional?: string;
+}
+
+export class UpdateRecommendationDto {
+  @IsOptional()
+  @IsString()
+  tipo_recomendacion_id?: string;
+
+  @IsOptional()
+  @IsString()
+  contenido?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsEnum(['baja', 'media', 'alta'])
+  prioridad?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  vigencia_hasta?: Date;
+
+  @IsOptional()
+  @IsBoolean()
+  activa?: boolean;
+}
+
+export class CreateRecommendationTypeDto {
+  @IsNotEmpty()
+  @IsString()
+  nombre: string;
+
+  @IsOptional()
+  @IsString()
+  descripcion?: string;
+
+  @IsOptional()
+  @IsString()
+  categoria?: string;
+}
+
+export class UpdateRecommendationTypeDto {
+  @IsOptional()
+  @IsString()
+  nombre?: string;
+
+  @IsOptional()
+  @IsString()
+  descripcion?: string;
+
+  @IsOptional()
+  @IsString()
+  categoria?: string;
 }

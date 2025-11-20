@@ -1,5 +1,12 @@
 // src/medical-history/entities/medical-history.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../users/models/user.model';
 
 @Entity('historial_medico')
@@ -8,16 +15,11 @@ export class MedicalHistory {
   id: string;
 
   @ManyToOne(() => User, (user) => user.medicalHistories)
+  @JoinColumn({ name: 'usuario_id' })
   usuario: User;
 
-  @Column({ type: 'jsonb', nullable: true })
-  condiciones: string[];
-
-  @Column({ type: 'jsonb', nullable: true })
-  alergias: string[];
-
-  @Column({ type: 'jsonb', nullable: true })
-  medicamentos: string[];
+  @Column({ name: 'usuario_id' })
+  usuarioId: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

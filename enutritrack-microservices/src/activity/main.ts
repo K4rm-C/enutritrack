@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { XmlInterceptor } from '../interceptor/xml.interceptor';
 import { xmlParser } from '../middleware/xml-parser.middleware';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   // Crear aplicación HTTP
@@ -24,8 +25,25 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.startAllMicroservices();
+  const config = new DocumentBuilder()
+    .setTitle('Microservicio de Actividad Fisica')
+    .setDescription('API para Actividad Fisica')
+    .setVersion('1.1.0')
+    .addServer(`http://localhost:3005`, 'Actividad Fisica')
+    .addTag('Actividad Fisica', 'Endpoints de Actividad Fisica')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'API Actividad Fisica - Documentación',
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: true,
+    },
+  });
+
   await app.listen(3005);
-  console.log('User Service running on port 3005 (HTTP) and 3105 (TCP)');
+  console.log('Activity Service running on port 3005 (HTTP) and 3105 (TCP)');
 }
 bootstrap();

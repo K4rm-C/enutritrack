@@ -254,14 +254,14 @@ export class AuthService {
       console.log(
         `✅ ${payload.userType === 'user' ? 'Usuario' : 'Doctor'} obtenido del token: ${user.cuenta.email}`,
       );
-      
+
       // Eliminar datos sensibles antes de devolver
       const result = { ...user };
       if (result.cuenta) {
         const { password_hash, ...cuentaSinPassword } = result.cuenta;
         result.cuenta = cuentaSinPassword;
       }
-      
+
       return {
         ...result,
         userType: payload.userType,
@@ -273,5 +273,19 @@ export class AuthService {
       console.error('💥 Error en getUserFromToken:', error);
       throw new UnauthorizedException('Token inválido');
     }
+  }
+
+  async healthCheck() {
+    const startTime = Date.now();
+
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+
+    return {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      uptime: uptime,
+      service: process.env.SERVICE_NAME || 'Microservicio de Autenticación',
+      version: process.env.APP_VERSION || '1.1.0',
+    };
   }
 }

@@ -19,12 +19,14 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useAuth } from "../context/auth/auth.context";
+import { useTheme } from "../context/dark-mode.context";
 
-const ProfileDashboard = ({ darkMode = false }) => {
+const ProfileDashboard = () => {
   const [activeTab, setActiveTab] = useState("perfil");
   const [editingProfile, setEditingProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { user, updateProfile } = useAuth();
+  const { darkMode } = useTheme();
 
   const [profileData, setProfileData] = useState({
     nombre: "",

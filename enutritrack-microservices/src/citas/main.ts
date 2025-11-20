@@ -1,0 +1,49 @@
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from '../app.module';
+import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
+import { XmlInterceptor } from '../interceptor/xml.interceptor';
+import { xmlParser } from '../middleware/xml-parser.middleware';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
+async function bootstrap() {
+  // Crear aplicación HTTP
+  const app = await NestFactory.create(AppModule);
+  app.use(cookieParser());
+  app.use('/citas', xmlParser);
+  app.useGlobalInterceptors(new XmlInterceptor());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  app.enableCors({
+    origin: ['http://localhost:5174'],
+    credentials: true,
+  });
+
+  const config = new DocumentBuilder()
+    .setTitle('Microservicio de citas')
+    .setDescription('API para citas de usuarios y doctores')
+    .setVersion('1.1.0')
+    .addServer(`http://localhost:3008`, 'citas')
+    .addTag('Citas', 'Endpoints de citas')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'API citas - Documentación',
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: true,
+    },
+  });
+
+  await app.listen(3008);
+  console.log('Citas Service running on port 3008 (HTTP) and 3108 (TCP)');
+}
+bootstrap();
