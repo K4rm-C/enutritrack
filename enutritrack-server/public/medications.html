@@ -863,11 +863,33 @@
                 }
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Error en la solicitud');
+                    const errorText = await response.text();
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.message || errorMessage;
+                    } catch {
+                        // Si no es JSON, usar el texto plano
+                        errorMessage = errorText || errorMessage;
+                    }
+
+                    throw new Error(errorMessage);
                 }
 
-                return await response.json();
+                // Para respuestas DELETE que pueden estar vacías (204 No Content)
+                if (response.status === 204 || response.headers.get('content-length') === '0') {
+                    return null;
+                }
+
+                // Solo intentar parsear JSON si hay contenido
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return await response.json();
+                } else {
+                    return await response.text();
+                }
+
             } catch (error) {
                 console.error('API Error:', error);
                 alert(error.message || 'Error al conectar con el servidor');
@@ -921,7 +943,7 @@
                         <div class="patient-avatar">${getInitials(medicamento.usuario?.nombre || 'NN')}</div>
                         <div class="patient-info">
                             <h4>${medicamento.usuario?.nombre || 'N/A'}</h4>
-                            <p>${medicamento.usuario?.email || 'N/A'}</p>
+                            
                         </div>
                     </div>
                 </td>
@@ -1056,19 +1078,25 @@
                     return;
                 }
 
+                // Convertir strings a objetos Date
+                const fechaInicioDate = new Date(fechaInicio);
+                const fechaFinDate = fechaFin ? new Date(fechaFin) : null;
+
                 const medicamentoData = {
                     usuario_id: document.getElementById('medicamento-usuario').value,
                     nombre: document.getElementById('medicamento-nombre').value,
                     dosis: document.getElementById('medicamento-dosis').value || null,
                     frecuencia: document.getElementById('medicamento-frecuencia').value || null,
-                    // Enviar como strings en formato YYYY-MM-DD sin la parte de hora
-                    fecha_inicio: fechaInicio,
-                    fecha_fin: fechaFin || null,
+                    // Enviar como objetos Date
+                    fecha_inicio: fechaInicioDate,
+                    fecha_fin: fechaFinDate,
                     notas: document.getElementById('medicamento-notas').value || null,
                     activo: document.getElementById('medicamento-activo').checked
                 };
 
                 console.log('📤 Datos a enviar:', medicamentoData);
+                console.log('📅 Tipo de fecha_inicio:', typeof medicamentoData.fecha_inicio);
+                console.log('📅 Tipo de fecha_fin:', typeof medicamentoData.fecha_fin);
 
                 const endpoint = currentMedicamentoId
                     ? `/medicamentos/${currentMedicamentoId}`
@@ -1088,6 +1116,47 @@
             } catch (error) {
                 console.error('Error saving medicamento:', error);
                 alert('Error al guardar el medicamento: ' + (error.message || 'Error desconocido'));
+            }
+        }
+
+        // Delete medicamento function (versión simple)
+        async function deleteMedicamento(medicamentoId) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este medicamento? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    window.location.href = '/auth/login';
+                    return;
+                }
+
+                const response = await fetch(`/medicamentos/${medicamentoId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    window.location.href = '/auth/login';
+                    return;
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `Error ${response.status}`);
+                }
+
+                alert('Medicamento eliminado exitosamente');
+                loadMedicamentos(); // Recargar la lista
+
+            } catch (error) {
+                console.error('Error deleting medicamento:', error);
+                alert('Error al eliminar el medicamento: ' + (error.message || 'Error desconocido'));
             }
         }
 

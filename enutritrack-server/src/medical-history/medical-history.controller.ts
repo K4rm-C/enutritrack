@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../couchbase/auth/guards/jwt-auth.guard';
 
 @Controller('medical-history')
 export class MedicalHistoryController {
-  constructor(private readonly medicalHistoryService: MedicalHistoryService) {}
+  constructor(private readonly medicalHistoryService: MedicalHistoryService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -37,12 +37,11 @@ export class MedicalHistoryController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':userId')
-  async findByUser(@Req() req: express.Request) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
+  async findByUser(
+    @Param('userId') userId: string,
+    @Req() req: express.Request
+  ) {
+    // Ahora userId viene del parámetro de ruta
     return this.medicalHistoryService.findByUser(userId);
   }
 

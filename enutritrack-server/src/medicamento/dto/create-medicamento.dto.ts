@@ -1,10 +1,4 @@
-import {
-  IsUUID,
-  IsString,
-  IsDate,
-  IsOptional,
-  IsBoolean,
-} from 'class-validator';
+import { IsUUID, IsString, IsNumber, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateMedicamentoDto {
   @IsUUID()
@@ -21,12 +15,12 @@ export class CreateMedicamentoDto {
   @IsOptional()
   frecuencia?: string;
 
-  @IsDate()
-  fecha_inicio: Date;
+  @IsString() // Cambiar a IsNumber para aceptar timestamps
+  fecha_inicio: string;
 
-  @IsDate()
+  @IsString()
   @IsOptional()
-  fecha_fin?: Date;
+  fecha_fin?: string;
 
   @IsString()
   @IsOptional()
