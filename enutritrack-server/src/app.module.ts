@@ -32,6 +32,7 @@ import { AlertasModule } from './alertas/alertas.module';
 import { AlertasAccionesModule } from './alertas-acciones/alertas-acciones.module';
 import { ConfiguracionAlertasAutomaticasModule } from './configuracion-alertas-automaticas/configuracion-alertas-automaticas.module';
 import { CouchbaseAlertsCitasModule } from './couchbase-alerts-citas/couchbase-alerts-citas.module';
+import { MedicalHistoryModule } from './medical-history/medical-history.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { CouchbaseAlertsCitasModule } from './couchbase-alerts-citas/couchbase-a
     CondicionesMedicasModule,
     AlergiasModule,
     MedicamentosModule,
+    MedicalHistoryModule,
     PhysicalActivityModule,
     RegistroComidaModule,
     RegistroComidaItemsModule,
