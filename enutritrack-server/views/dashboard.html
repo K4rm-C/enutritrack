@@ -140,6 +140,23 @@
       margin-right: 0.75rem;
     }
 
+    /* Subtítulos del sidebar */
+    .sidebar-subtitle {
+      padding: 1rem 1rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .sidebar-subtitle:first-child {
+      border-top: none;
+      margin-top: 0;
+    }
+
     /* Doctor Profile */
     .doctor-profile {
       padding: 1rem;
@@ -1327,6 +1344,7 @@
       </div>
 
       <ul class="nav-menu">
+        <!-- Sección: Dashboard -->
         <li class="nav-item">
           <a class="nav-link active" data-view="dashboard">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1336,15 +1354,10 @@
             Dashboard
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" data-view="search">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            Búsqueda Avanzada
-          </a>
-        </li>
+
+        <!-- Sección: Gestión de Usuarios -->
+        <li class="sidebar-subtitle">Gestión de Usuarios</li>
+
         <li class="nav-item">
           <a class="nav-link" data-view="admins">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1352,15 +1365,6 @@
                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-6 0H5m2 0h4M9 7h6m-6 4h6m-6 4h6" />
             </svg>
             Administradores
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-view="specialties">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-6 0H5m2 0h4M9 7h6m-6 4h6m-6 4h6" />
-            </svg>
-            Especialidades
           </a>
         </li>
         <li class="nav-item">
@@ -1381,112 +1385,124 @@
             Pacientes
           </a>
         </li>
+
+        <!-- Sección: Catálogos del Sistema -->
+        <li class="sidebar-subtitle">Catálogos del Sistema</li>
+
         <li class="nav-item">
-          <a class="nav-link" data-view="medicines">
+          <a class="nav-link" data-view="specialties">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-6 0H5m2 0h4M9 7h6m-6 4h6m-6 4h6" />
+            </svg>
+            Especialidades
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-view="medications">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-6 0H5m2 0h4M9 7h6m-6 4h6m-6 4h6" />
             </svg>
             Medicamentos
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-view="medicines">
+          <a class="nav-link" data-view="allergies">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-6 0H5m2 0h4M9 7h6m-6 4h6m-6 4h6" />
             </svg>
             Alergias
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-view="medicines">
+          <a class="nav-link" data-view="food">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
             </svg>
             Alimentos
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-view="medicines">
+          <a class="nav-link" data-view="states">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Citas Médicas
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-view="medicines">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Historiales
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-view="medicines">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Actividad Fisica
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-view="medicines">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Alertas
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-view="analytics">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Estados
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-view="analytics">
+          <a class="nav-link" data-view="gender">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>
-            Generos
+            Géneros
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-view="medicines">
+          <a class="nav-link" data-view="physical-activity">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            Microservicios
+            Actividad Física
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-view="analytics">
+          <a class="nav-link" data-view="types">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            Análisis y Reportes
+            Tipos
+          </a>
+        </li>
+
+        <!-- Sección: Gestión Clínica -->
+        <li class="sidebar-subtitle">Gestión Clínica</li>
+
+        <li class="nav-item">
+          <a class="nav-link" data-view="appointments">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Citas Médicas
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/api/docs" target="_blank">
+          <a class="nav-link" data-view="history-medical">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Documentación API
+            Historiales Médicos
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-view="alerts">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            Alertas
+          </a>
+        </li>
+
+        <!-- Sección: Sistema -->
+        <li class="sidebar-subtitle">Sistema</li>
+
+        <li class="nav-item">
+          <a class="nav-link" data-view="health">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            Microservicios
           </a>
         </li>
       </ul>
@@ -1911,7 +1927,7 @@
 
       <!-- Admins View -->
       <div id="admins-view" class="view">
-        <div class="chart-container">
+        <div class="chart-container" style="height: 200px;margin-bottom: 10px;">
           <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: #1f2937">
             Mi Perfil de Administrador
           </h3>
@@ -1978,6 +1994,129 @@
             " title="Gestión de Pacientes"></iframe>
       </div>
 
+      <!-- Medications View -->
+      <div id="medications-view" class="view">
+        <iframe src="/medications.html" id="medications-crud-frame" style="
+          width: 100%;
+          height: calc(100vh - 120px);
+          border: none;
+          background: white;
+          border-radius: 0 0 16px 16px;
+          display: block; /* Asegurar que sea block */
+      " title="Gestión de Medicamentos"></iframe>
+          
+      </div>
+
+      <!-- Allergies View -->
+      <div id="allergies-view" class="view">
+        <iframe src="/allergies.html" id="allergies-crud-frame" style="
+        width: 100%;
+        height: calc(100vh - 120px);
+        border: none;
+        background: white;
+        border-radius: 0 0 16px 16px;
+    " title="Gestión de Alergias"></iframe>
+      </div>
+
+      <!-- Food View -->
+      <div id="food-view" class="view">
+        <iframe src="/food.html" id="food-crud-frame" style="
+        width: 100%;
+        height: calc(100vh - 120px);
+        border: none;
+        background: white;
+        border-radius: 0 0 16px 16px;
+    " title="Gestión de Alimentos"></iframe>
+      </div>
+
+      <!-- Appointments View -->
+      <div id="appointments-view" class="view">
+        <iframe src="/appointments.html" id="appointments-crud-frame" style="
+        width: 100%;
+        height: calc(100vh - 120px);
+        border: none;
+        background: white;
+        border-radius: 0 0 16px 16px;
+    " title="Gestión de Citas Médicas"></iframe>
+      </div>
+
+      <!-- History Medical View -->
+      <div id="history-medical-view" class="view">
+        <iframe src="/history-medical.html" id="history-medical-crud-frame" style="
+        width: 100%;
+        height: calc(100vh - 120px);
+        border: none;
+        background: white;
+        border-radius: 0 0 16px 16px;
+    " title="Gestión de Historial Médico"></iframe>
+      </div>
+
+      <!-- Physical Activity View -->
+      <div id="physical-activity-view" class="view">
+        <iframe src="/physical-activity.html" id="physical-activity-crud-frame" style="
+        width: 100%;
+        height: calc(100vh - 120px);
+        border: none;
+        background: white;
+        border-radius: 0 0 16px 16px;
+    " title="Gestión de Tipos de Actividad Física"></iframe>
+      </div>
+
+      <!-- Alerts View -->
+      <div id="alerts-view" class="view">
+        <iframe src="/alerts.html" id="alerts-crud-frame" style="
+        width: 100%;
+        height: calc(100vh - 120px);
+        border: none;
+        background: white;
+        border-radius: 0 0 16px 16px;
+    " title="Gestión de Alertas"></iframe>
+      </div>
+
+      <!-- States View -->
+      <div id="states-view" class="view">
+        <iframe src="/states.html" id="states-crud-frame" style="
+        width: 100%;
+        height: calc(100vh - 120px);
+        border: none;
+        background: white;
+        border-radius: 0 0 16px 16px;
+    " title="Gestión de Estados"></iframe>
+      </div>
+
+      <!-- Gender View -->
+      <div id="gender-view" class="view">
+        <iframe src="/gender.html" id="gender-crud-frame" style="
+        width: 100%;
+        height: calc(100vh - 120px);
+        border: none;
+        background: white;
+        border-radius: 0 0 16px 16px;
+    " title="Gestión de Géneros"></iframe>
+      </div>
+
+      <!-- Health View -->
+      <div id="health-view" class="view">
+        <iframe src="/health.html" id="health-frame" style="
+      width: 100%;
+      height: calc(100vh - 120px);
+      border: none;
+      background: white;
+      border-radius: 0 0 16px 16px;
+  " title="Monitoreo de Microservicios"></iframe>
+      </div>
+
+      <!-- Types View -->
+      <div id="types-view" class="view">
+        <iframe src="/types.html" id="types-frame" style="
+      width: 100%;
+      height: calc(100vh - 120px);
+      border: none;
+      background: white;
+      border-radius: 0 0 16px 16px;
+  " title="Gestión de Tipos"></iframe>
+      </div>
+
       <!-- Analytics View -->
       <div id="analytics-view" class="view">
         <div class="info-cards">
@@ -2042,131 +2181,6 @@
           <div id="general-stats-content">
             <div class="loading">Cargando estadísticas...</div>
           </div>
-        </div>
-      </div>
-
-      <!-- Search View -->
-      <div id="search-view" class="view">
-        <div class="chart-container">
-          <h3 class="chart-title" style="margin-bottom: 1.5rem">
-            Búsqueda Avanzada de Pacientes
-          </h3>
-
-          <div class="tabs">
-            <button class="tab active" onclick="switchTab('profile-search')">
-              Por Perfil
-            </button>
-            <button class="tab" onclick="switchTab('medical-search')">
-              Por Patrón Médico
-            </button>
-            <button class="tab" onclick="switchTab('staff-search')">
-              Personal Médico
-            </button>
-          </div>
-
-          <!-- Profile Search Tab -->
-          <div id="profile-search-tab" class="tab-content active">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Rango de Edad</label>
-                <div style="display: flex; gap: 0.5rem">
-                  <input type="number" class="form-control" id="age-min" placeholder="Mín" />
-                  <input type="number" class="form-control" id="age-max" placeholder="Máx" />
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Género</label>
-                <select class="form-control" id="gender-filter">
-                  <option value="">Todos</option>
-                  <option value="M">Masculino</option>
-                  <option value="F">Femenino</option>
-                  <option value="O">Otro</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Nivel de Actividad</label>
-                <select class="form-control" id="activity-filter">
-                  <option value="">Todos</option>
-                  <option value="sedentario">Sedentario</option>
-                  <option value="ligero">Ligero</option>
-                  <option value="moderado">Moderado</option>
-                  <option value="activo">Activo</option>
-                  <option value="muy_activo">Muy Activo</option>
-                </select>
-              </div>
-            </div>
-            <button class="btn btn-primary" onclick="searchByProfile()">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              Buscar
-            </button>
-          </div>
-
-          <!-- Medical Pattern Search Tab -->
-          <div id="medical-search-tab" class="tab-content">
-            <div class="form-group">
-              <label class="form-label">Condición Médica</label>
-              <input type="text" class="form-control" id="medical-condition" placeholder="Ej: diabetes, hipertensión" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Alergia</label>
-              <input type="text" class="form-control" id="allergy-search" placeholder="Ej: lactosa, gluten" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Medicamento</label>
-              <input type="text" class="form-control" id="medication-search" placeholder="Ej: metformina, insulina" />
-            </div>
-            <button class="btn btn-primary" onclick="searchByMedicalPattern()">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              Buscar
-            </button>
-          </div>
-
-          <!-- Staff Search Tab -->
-          <div id="staff-search-tab" class="tab-content">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Nombre</label>
-                <input type="text" class="form-control" id="staff-name" placeholder="Buscar por nombre" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Especialidad</label>
-                <input type="text" class="form-control" id="staff-specialty"
-                  placeholder="Ej: Nutrición, Endocrinología" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Tipo</label>
-                <select class="form-control" id="staff-type">
-                  <option value="">Todos</option>
-                  <option value="doctor">Doctores</option>
-                  <option value="admin">Administradores</option>
-                </select>
-              </div>
-            </div>
-            <button class="btn btn-primary" onclick="searchStaff()">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              Buscar
-            </button>
-          </div>
-        </div>
-
-        <!-- Search Results -->
-        <div id="search-results" class="table-container" style="display: none; margin-top: 1.5rem">
-          <div class="table-header">
-            <h3 class="table-title" id="search-results-title">
-              Resultados de Búsqueda
-            </h3>
-            <span id="search-results-count" style="color: #6b7280; font-size: 0.875rem"></span>
-          </div>
-          <div id="search-results-content"></div>
         </div>
       </div>
     </main>
@@ -2858,9 +2872,19 @@
       if (view === 'specialties') loadSpecialties();
       if (view === 'doctors') loadDoctors();
       if (view === 'patients') loadPatients();
+      if (view === 'medications') loadMedications();
       if (view === 'medicines') loadMedicines();
+      if (view === 'allergies') loadAllergies();
+      if (view === 'food') loadFood();
+      if (view === 'appointments') loadAppointments();
+      if (view === 'history-medical') loadHistoryMedical();
+      if (view === 'physical-activity') loadPhysicalActivity();
+      if (view === 'alerts') loadAlerts();
+      if (view === 'states') loadStates();
+      if (view === 'gender') loadGender();
+      if (view === 'health') loadHealth();
+      if (view === 'types') loadTypes();
       if (view === 'analytics') loadAnalytics();
-      if (view === 'search') loadSearchView();
     }
 
     function updateDateTime() {
@@ -3332,6 +3356,361 @@
       }
     }
 
+    // Admins View
+    async function loadAdmins() {
+      try {
+        console.log('🔄 Cargando información de administradores...');
+
+        // Cargar información del administrador actual
+        await loadCurrentAdminInfo();
+
+        // Cargar lista de todos los administradores
+        await loadAllAdmins();
+
+      } catch (error) {
+        console.error('Error cargando administradores:', error);
+        document.getElementById('current-admin-info').innerHTML =
+          '<div class="empty-state">Error al cargar información</div>';
+        document.getElementById('admins-table').innerHTML =
+          '<tr><td colspan="5" class="empty-state">Error al cargar administradores</td></tr>';
+      }
+    }
+
+    async function loadCurrentAdminInfo() {
+      try {
+        console.log('📥 Obteniendo información del admin actual...');
+
+        let adminData;
+
+        try {
+          // Intenta con el nuevo endpoint
+          adminData = await apiCall('/admins/profile/current');
+          console.log('✅ Información del admin actual:', adminData);
+        } catch (error) {
+          console.log('❌ Endpoint /admins/profile/current no disponible, usando alternativa...', error);
+          // Fallback: obtener todos y usar el primero
+          const allAdmins = await apiCall('/admins');
+          adminData = allAdmins[0] || {};
+        }
+
+        currentAdminInfo = adminData;
+
+        // Actualizar sidebar
+        if (adminData.nombre) {
+          document.getElementById('admin-name').textContent = adminData.nombre;
+          document.getElementById('admin-avatar').textContent = getInitials(adminData.nombre);
+          // Actualizar saludo en el header
+          const greetingElement = document.getElementById('greeting');
+          if (greetingElement) {
+            const firstName = adminData.nombre.split(' ')[0];
+            greetingElement.textContent = `${getGreeting()}, ${firstName}`;
+          }
+        }
+
+        // Mostrar información en el panel principal
+        const adminInfoContainer = document.getElementById('current-admin-info');
+        adminInfoContainer.innerHTML = `
+            <div class="detail-item">
+                <div class="detail-label">Nombre Completo</div>
+                <div class="detail-value">${adminData.nombre || 'Superusuario'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Email</div>
+                <div class="detail-value">${adminData.cuenta?.email || adminData.email || 'admin@enutritrack.com'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Rol</div>
+                <div class="detail-value">
+                    <span class="badge badge-info">Administrador</span>
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Fecha de Registro</div>
+                <div class="detail-value">${adminData.created_at ? new Date(adminData.created_at).toLocaleDateString('es-MX') : 'N/A'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Estado</div>
+                <div class="detail-value">
+                    <span class="badge ${(adminData.cuenta_activa !== false && adminData.cuenta?.activa !== false) ? 'badge-success' : 'badge-danger'}">
+                        ${(adminData.cuenta_activa !== false && adminData.cuenta?.activa !== false) ? 'Activo' : 'Inactivo'}
+                    </span>
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Doctores Creados</div>
+                <div class="detail-value">${adminData.total_doctores_creados || adminData.stats?.totalDoctores || 0}</div>
+            </div>
+        `;
+
+      } catch (error) {
+        console.error('Error cargando información del admin actual:', error);
+        // Información por defecto en caso de error
+        document.getElementById('current-admin-info').innerHTML = `
+            <div class="detail-item">
+                <div class="detail-label">Nombre Completo</div>
+                <div class="detail-value">Superusuario</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Email</div>
+                <div class="detail-value">admin@enutritrack.com</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Rol</div>
+                <div class="detail-value">
+                    <span class="badge badge-info">Administrador</span>
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Estado</div>
+                <div class="detail-value">
+                    <span class="badge badge-success">Activo</span>
+                </div>
+            </div>
+        `;
+      }
+    }
+
+    async function loadAllAdmins() {
+      try {
+        console.log('📥 Obteniendo lista de administradores...');
+        const admins = await apiCall('/admins');
+        allAdmins = admins || [];
+        console.log(`✅ ${admins.length} administradores cargados:`, admins);
+
+        renderAdminsTable(admins);
+
+      } catch (error) {
+        console.error('Error cargando lista de administradores:', error);
+        // Datos de ejemplo para desarrollo
+        const sampleAdmins = [
+          {
+            id: '1',
+            nombre: 'Ana López',
+            email: 'ana.lopez@enutritrack.com',
+            cuenta: { activa: true },
+            cuenta_activa: true,
+            created_at: new Date().toISOString(),
+            total_doctores_creados: 5
+          },
+          {
+            id: '2',
+            nombre: 'Carlos Rodríguez',
+            email: 'carlos.rodriguez@enutritrack.com',
+            cuenta: { activa: true },
+            cuenta_activa: true,
+            created_at: new Date().toISOString(),
+            total_doctores_creados: 3
+          }
+        ];
+
+        renderAdminsTable(sampleAdmins);
+      }
+    }
+
+    function renderAdminsTable(admins) {
+      const tbody = document.getElementById('admins-table');
+
+      if (!admins || admins.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty-state">
+                    No hay administradores registrados
+                </td>
+            </tr>
+        `;
+        return;
+      }
+
+      // Filtrar el admin actual si está disponible
+      const otherAdmins = currentAdminInfo ?
+        admins.filter(admin => admin.id !== currentAdminInfo.id) :
+        admins;
+
+      if (otherAdmins.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty-state">
+                    No hay otros administradores registrados
+                </td>
+            </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = otherAdmins.map(admin => `
+        <tr>
+            <td>
+                <div class="patient-card">
+                    <div class="patient-avatar">${getInitials(admin.nombre)}</div>
+                    <div class="patient-info">
+                        <h4>${admin.nombre || 'Administrador'}</h4>
+                        <p>${admin.cuenta?.email || admin.email || 'N/A'}</p>
+                    </div>
+                </div>
+            </td>
+            <td>${admin.cuenta?.email || admin.email || 'N/A'}</td>
+            <td>
+                <div style="font-weight: 600; color: #1f2937;">
+                    ${admin.total_doctores_creados || admin.stats?.totalDoctores || 0}
+                </div>
+                <div style="font-size: 0.75rem; color: #6b7280;">
+                    doctores creados
+                </div>
+            </td>
+            <td>
+                <span class="badge ${(admin.cuenta_activa !== false && admin.cuenta?.activa !== false) ? 'badge-success' : 'badge-danger'}">
+                    ${(admin.cuenta_activa !== false && admin.cuenta?.activa !== false) ? 'Activo' : 'Inactivo'}
+                </span>
+            </td>
+            <td>${admin.created_at ? new Date(admin.created_at).toLocaleDateString('es-MX') : 'N/A'}</td>
+        </tr>
+    `).join('');
+    }
+
+    // Medicines View (placeholder)
+    async function loadMedicines() {
+      console.log('Cargando vista de medicamentos...');
+      // Esta vista se manejará con iframe como las otras
+    }
+
+    // Analytics View
+    async function loadAnalytics() {
+      try {
+        console.log('Cargando análisis y reportes...');
+
+        // Aquí puedes cargar estadísticas avanzadas
+        const stats = await apiCall('/dashboard/advanced-stats');
+
+        let content = `
+            <div class="info-cards">
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <div class="info-card-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                        </div>
+                        <span class="info-card-title">Análisis de Progreso</span>
+                    </div>
+                    <p class="info-card-content">
+                        Monitorea el progreso de peso y medidas de tus pacientes a lo largo del tiempo.
+                    </p>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <div class="info-card-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <span class="info-card-title">Reporte de Consumo</span>
+                    </div>
+                    <p class="info-card-content">
+                        Análisis detallado del consumo nutricional mensual de cada paciente.
+                    </p>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <div class="info-card-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <span class="info-card-title">Historial Médico</span>
+                    </div>
+                    <p class="info-card-content">
+                        Accede al historial médico completo incluyendo alergias y condiciones.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">Estadísticas Generales</h3>
+                    <select class="filter-dropdown" id="stats-period-filter">
+                        <option value="week">Esta semana</option>
+                        <option value="month">Este mes</option>
+                        <option value="year">Este año</option>
+                    </select>
+                </div>
+                <div id="general-stats-content">
+                    <div class="loading">Cargando estadísticas avanzadas...</div>
+                </div>
+            </div>
+        `;
+
+        // Actualizar el contenido
+        const analyticsView = document.getElementById('analytics-view');
+        analyticsView.innerHTML = content;
+
+        // Cargar estadísticas específicas
+        await loadAdvancedStats();
+
+      } catch (error) {
+        console.error('Error cargando análisis:', error);
+        document.getElementById('analytics-view').innerHTML = `
+            <div class="empty-state">
+                Error al cargar los análisis y reportes
+            </div>
+        `;
+      }
+    }
+
+    async function loadAdvancedStats() {
+      try {
+        const stats = await apiCall('/dashboard/advanced-stats');
+
+        let statsContent = `
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Pacientes con Progreso Positivo</div>
+                    <div class="detail-value">${stats.progreso_positivo || 0}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Promedio Pérdida de Peso</div>
+                    <div class="detail-value">${stats.promedio_perdida_peso || 'N/A'} kg</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Recomendaciones Generadas</div>
+                    <div class="detail-value">${stats.recomendaciones_generadas || 0}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Tasa de Retención</div>
+                    <div class="detail-value">${stats.tasa_retencion || 'N/A'}%</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Consultas este Mes</div>
+                    <div class="detail-value">${stats.consultas_mes || 0}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Satisfacción Promedio</div>
+                    <div class="detail-value">${stats.satisfaccion_promedio || 'N/A'}/5</div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('general-stats-content').innerHTML = statsContent;
+
+      } catch (error) {
+        console.error('Error cargando estadísticas avanzadas:', error);
+        document.getElementById('general-stats-content').innerHTML = `
+            <div class="empty-state">
+                Error al cargar estadísticas avanzadas
+            </div>
+        `;
+      }
+    }
+
+    // Función auxiliar para saludo
+    function getGreeting() {
+      const hours = new Date().getHours();
+      if (hours < 12) return 'Buenos días';
+      if (hours < 19) return 'Buenas tardes';
+      return 'Buenas noches';
+    }
+
     // Specialties
     async function loadSpecialties() {
       try {
@@ -3515,6 +3894,8 @@
         alert('Error al cargar doctores de la especialidad');
       }
     }
+
+
 
     // Doctors
     async function loadDoctors() {
@@ -4066,209 +4447,6 @@
         document.getElementById('general-stats-content').innerHTML =
           '<div class="empty-state">Error al cargar estadísticas</div>';
       }
-    }
-
-    // Search functionality
-    function loadSearchView() {
-      // Initialize search view if needed
-    }
-
-    function switchTab(tabId) {
-      document
-        .querySelectorAll('#search-view .tab')
-        .forEach((t) => t.classList.remove('active'));
-      event.target.classList.add('active');
-
-      document
-        .querySelectorAll('#search-view .tab-content')
-        .forEach((c) => c.classList.remove('active'));
-      document.getElementById(`${tabId}-tab`).classList.add('active');
-    }
-
-    async function searchByProfile() {
-      try {
-        const ageMin = document.getElementById('age-min').value;
-        const ageMax = document.getElementById('age-max').value;
-        const gender = document.getElementById('gender-filter').value;
-        const activity = document.getElementById('activity-filter').value;
-
-        const queryParams = new URLSearchParams();
-        if (ageMin) queryParams.append('edad_min', ageMin);
-        if (ageMax) queryParams.append('edad_max', ageMax);
-        if (gender) queryParams.append('genero', gender);
-        if (activity) queryParams.append('nivel_actividad', activity);
-
-        const results = await apiCall(
-          `/api/buscar-usuarios-perfil?${queryParams}`,
-        );
-        displaySearchResults(results, 'Búsqueda por Perfil');
-      } catch (error) {
-        alert('Error en la búsqueda');
-      }
-    }
-
-    async function searchByMedicalPattern() {
-      try {
-        const condition = document.getElementById('medical-condition').value;
-        const allergy = document.getElementById('allergy-search').value;
-        const medication = document.getElementById('medication-search').value;
-
-        const queryParams = new URLSearchParams();
-        if (condition) queryParams.append('condicion', condition);
-        if (allergy) queryParams.append('alergia', allergy);
-        if (medication) queryParams.append('medicamento', medication);
-
-        const results = await apiCall(
-          `/api/buscar-usuarios-medico?${queryParams}`,
-        );
-        displaySearchResults(results, 'Búsqueda por Patrón Médico');
-      } catch (error) {
-        alert('Error en la búsqueda');
-      }
-    }
-
-    async function searchStaff() {
-      try {
-        const name = document.getElementById('staff-name').value;
-        const specialty = document.getElementById('staff-specialty').value;
-        const type = document.getElementById('staff-type').value;
-
-        const queryParams = new URLSearchParams();
-        if (name) queryParams.append('nombre', name);
-        if (specialty) queryParams.append('especialidad', specialty);
-        if (type) queryParams.append('tipo', type);
-
-        const results = await apiCall(`/api/buscar-staff?${queryParams}`);
-        displayStaffResults(results, 'Búsqueda de Personal Médico');
-      } catch (error) {
-        alert('Error en la búsqueda');
-      }
-    }
-
-    function displaySearchResults(results, title) {
-      const container = document.getElementById('search-results');
-      const titleEl = document.getElementById('search-results-title');
-      const countEl = document.getElementById('search-results-count');
-      const contentEl = document.getElementById('search-results-content');
-
-      titleEl.textContent = title;
-      countEl.textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''} encontrado${results.length !== 1 ? 's' : ''}`;
-
-      if (results.length === 0) {
-        contentEl.innerHTML =
-          '<div class="empty-state">No se encontraron resultados</div>';
-      } else {
-        contentEl.innerHTML = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Paciente</th>
-                                <th>Género</th>
-                                <th>Edad</th>
-                                <th>Nivel Actividad</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${results
-            .map(
-              (r) => `
-                                <tr>
-                                    <td>
-                                        <div class="patient-card">
-                                            <div class="patient-avatar">${getInitials(r.nombre)}</div>
-                                            <div class="patient-info">
-                                                <h4>${r.nombre}</h4>
-                                                <p>${r.email}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>${getGenderLabel(r.genero)}</td>
-                                    <td>${r.edad} años</td>
-                                    <td>${r.nivel_actividad || 'N/A'}</td>
-                                    <td>
-                                        <span class="badge ${r.cuenta_activa ? 'badge-success' : 'badge-danger'}">
-                                            ${r.cuenta_activa ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" onclick="showPatientDetails('${r.id}')">
-                                            Ver Detalles
-                                        </button>
-                                    </td>
-                                </tr>
-                            `,
-            )
-            .join('')}
-                        </tbody>
-                    </table>
-                `;
-      }
-
-      container.style.display = 'block';
-    }
-
-    function displayStaffResults(results, title) {
-      const container = document.getElementById('search-results');
-      const titleEl = document.getElementById('search-results-title');
-      const countEl = document.getElementById('search-results-count');
-      const contentEl = document.getElementById('search-results-content');
-
-      titleEl.textContent = title;
-      countEl.textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''} encontrado${results.length !== 1 ? 's' : ''}`;
-
-      if (results.length === 0) {
-        contentEl.innerHTML =
-          '<div class="empty-state">No se encontraron resultados</div>';
-      } else {
-        contentEl.innerHTML = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Email</th>
-                                <th>Rol</th>
-                                <th>Especialidad</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${results
-            .map(
-              (r) => `
-                                <tr>
-                                    <td>
-                                        <div class="patient-card">
-                                            <div class="patient-avatar">${getInitials(r.nombre)}</div>
-                                            <div class="patient-info">
-                                                <h4>${r.nombre}</h4>
-                                                <p>${r.tipo}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>${r.email}</td>
-                                    <td>
-                                        <span class="badge ${r.tipo === 'Doctor' ? 'badge-success' : 'badge-info'}">
-                                            ${r.tipo}
-                                        </span>
-                                    </td>
-                                    <td>${r.especialidad || 'N/A'}</td>
-                                    <td>
-                                        <span class="badge ${r.cuenta_activa ? 'badge-success' : 'badge-danger'}">
-                                            ${r.cuenta_activa ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            `,
-            )
-            .join('')}
-                        </tbody>
-                    </table>
-                `;
-      }
-
-      container.style.display = 'block';
     }
 
     // Utility functions

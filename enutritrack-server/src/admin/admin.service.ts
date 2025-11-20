@@ -18,7 +18,7 @@ export class PerfilAdminService {
     @InjectRepository(PerfilAdmin)
     private readonly perfilAdminRepository: Repository<PerfilAdmin>,
     private readonly cuentasService: CuentasService,
-  ) {}
+  ) { }
 
   async create(
     createPerfilAdminDto: CreatePerfilAdminDto,

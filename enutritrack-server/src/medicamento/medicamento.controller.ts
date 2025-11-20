@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @Controller('medicamentos')
 @UseGuards(JwtAuthGuard)
 export class MedicamentosController {
-  constructor(private readonly medicamentosService: MedicamentosService) {}
+  constructor(private readonly medicamentosService: MedicamentosService) { }
 
   @Post()
   create(@Body() createMedicamentoDto: CreateMedicamentoDto) {
