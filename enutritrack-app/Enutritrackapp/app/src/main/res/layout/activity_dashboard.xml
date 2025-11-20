@@ -66,42 +66,205 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Mensaje de Mock -->
-            <androidx.cardview.widget.CardView
+            <!-- KPIs Principales -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Resumen del Día"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/gray_900"
+                android:layout_marginBottom="16dp" />
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/blue_50"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- KPI: Peso Actual -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp"
-                    android:gravity="center">
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    app:cardBackgroundColor="@color/emerald_50"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="📊 Dashboard Mock"
-                        android:textSize="24sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray_900"
-                        android:layout_marginBottom="16dp"
-                        android:gravity="center" />
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚖️ Peso Actual"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray_600"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/currentWeightKPI"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-- kg"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_900" />
+
+                        <TextView
+                            android:id="@+id/weightTrendKPI"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=""
+                            android:textSize="10sp"
+                            android:textColor="@color/gray_600"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- KPI: Calorías del Día -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:cardBackgroundColor="@color/amber_50"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Esta es una versión de demostración del dashboard.\nLas funcionalidades completas estarán disponibles próximamente."
-                        android:textSize="16sp"
-                        android:textColor="@color/gray_600"
-                        android:gravity="center"
-                        android:lineSpacingExtra="4dp" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔥 Calorías"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray_600"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/dailyCaloriesKPI"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 / 2000"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_900" />
+
+                        <ProgressBar
+                            android:id="@+id/caloriesProgressBar"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="4dp"
+                            android:layout_marginTop="8dp"
+                            android:max="100"
+                            android:progress="0"
+                            android:progressTint="@color/amber_600" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp">
+
+                <!-- KPI: Actividad Semanal -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    app:cardBackgroundColor="@color/blue_50"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🏃 Actividad"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray_600"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/weeklyActivityKPI"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 min"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_900" />
+
+                        <TextView
+                            android:id="@+id/activeDaysKPI"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0/7 días"
+                            android:textSize="10sp"
+                            android:textColor="@color/gray_600"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- KPI: Racha de Días -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:cardBackgroundColor="@color/purple_50"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔥 Racha"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray_600"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/consecutiveDaysKPI"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 días"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_900" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="consecutivos"
+                            android:textSize="10sp"
+                            android:textColor="@color/gray_600"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
 
             <!-- Navegación Rápida -->
             <TextView
@@ -471,28 +634,16 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="📈 Timeline de Registros (Últimos 7 días)"
+                        android:text="📈 Evolución de Peso (Últimos 30 días)"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/gray_900"
                         android:layout_marginBottom="16dp" />
 
-                    <FrameLayout
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/weightEvolutionChart"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
-                        android:background="@drawable/bg_chart_placeholder"
-                        android:padding="16dp"
-                        android:gravity="center">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Gráfica Mock\nLínea Temporal"
-                            android:textSize="14sp"
-                            android:textColor="@color/gray_600"
-                            android:gravity="center"
-                            android:layout_gravity="center" />
-                    </FrameLayout>
+                        android:layout_height="250dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -514,27 +665,16 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🥗 Distribución por Tipo de Comida"
+                        android:text="🥗 Distribución de Comidas por Tipo"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/gray_900"
                         android:layout_marginBottom="16dp" />
 
-                    <FrameLayout
+                    <com.github.mikephil.charting.charts.PieChart
+                        android:id="@+id/mealDistributionChart"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
-                        android:background="@drawable/bg_chart_placeholder"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Gráfica Mock\nPie/Donut Chart"
-                            android:textSize="14sp"
-                            android:textColor="@color/gray_600"
-                            android:gravity="center"
-                            android:layout_gravity="center" />
-                    </FrameLayout>
+                        android:layout_height="250dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -556,27 +696,16 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🏃 Actividad Semanal"
+                        android:text="🏃 Actividad Física Semanal"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/gray_900"
                         android:layout_marginBottom="16dp" />
 
-                    <FrameLayout
+                    <com.github.mikephil.charting.charts.BarChart
+                        android:id="@+id/weeklyActivityChart"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
-                        android:background="@drawable/bg_chart_placeholder"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Gráfica Mock\nBar Chart"
-                            android:textSize="14sp"
-                            android:textColor="@color/gray_600"
-                            android:gravity="center"
-                            android:layout_gravity="center" />
-                    </FrameLayout>
+                        android:layout_height="250dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -598,73 +727,20 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="📊 Comparativa Mensual (Este vs Anterior)"
+                        android:text="📊 Balance Calórico Semanal"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/gray_900"
                         android:layout_marginBottom="16dp" />
 
-                    <FrameLayout
+                    <com.github.mikephil.charting.charts.BarChart
+                        android:id="@+id/weeklyBalanceChart"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
-                        android:background="@drawable/bg_chart_placeholder"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Gráfica Mock\nGrouped Bar Chart"
-                            android:textSize="14sp"
-                            android:textColor="@color/gray_600"
-                            android:gravity="center"
-                            android:layout_gravity="center" />
-                    </FrameLayout>
+                        android:layout_height="250dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Gráfica 5: Estado de Sincronización -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🔄 Estado de Sincronización"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray_900"
-                        android:layout_marginBottom="16dp" />
-
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="200dp"
-                        android:background="@drawable/bg_chart_placeholder"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Gráfica Mock\nGauge/Progress"
-                            android:textSize="14sp"
-                            android:textColor="@color/gray_600"
-                            android:gravity="center"
-                            android:layout_gravity="center" />
-                    </FrameLayout>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Gráfica 6: Evolución de Macronutrientes -->
+            <!-- Gráfica 5: Resumen Nutricional Diario -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -682,27 +758,117 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🍎 Evolución de Macronutrientes"
+                        android:text="🍎 Resumen Nutricional del Día"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/gray_900"
                         android:layout_marginBottom="16dp" />
 
-                    <FrameLayout
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
-                        android:background="@drawable/bg_chart_placeholder"
-                        android:padding="16dp">
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="16dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <!-- Calorías -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Gráfica Mock\nStacked Area/Bar"
-                            android:textSize="14sp"
-                            android:textColor="@color/gray_600"
-                            android:gravity="center"
-                            android:layout_gravity="center" />
-                    </FrameLayout>
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="12dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Calorías"
+                                android:textSize="14sp"
+                                android:textColor="@color/gray_700" />
+
+                            <TextView
+                                android:id="@+id/dailyCaloriesText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 / 2000 kcal"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/gray_900" />
+                        </LinearLayout>
+
+                        <!-- Proteínas -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="12dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Proteínas"
+                                android:textSize="14sp"
+                                android:textColor="@color/gray_700" />
+
+                            <TextView
+                                android:id="@+id/dailyProteinText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 g"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/gray_900" />
+                        </LinearLayout>
+
+                        <!-- Carbohidratos -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="12dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Carbohidratos"
+                                android:textSize="14sp"
+                                android:textColor="@color/gray_700" />
+
+                            <TextView
+                                android:id="@+id/dailyCarbsText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 g"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/gray_900" />
+                        </LinearLayout>
+
+                        <!-- Grasas -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Grasas"
+                                android:textSize="14sp"
+                                android:textColor="@color/gray_700" />
+
+                            <TextView
+                                android:id="@+id/dailyFatText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 g"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/gray_900" />
+                        </LinearLayout>
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

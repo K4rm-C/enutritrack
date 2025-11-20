@@ -17,8 +17,9 @@ export class RegistroComida {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', name: 'usuarioId' })
-  usuario_id: string;
+  @ManyToOne(() => PerfilUsuario, (usuario) => usuario.id)
+  @JoinColumn({ name: 'usuario_id' })
+  usuario: PerfilUsuario;
 
   @Column({ type: 'timestamp', default: () => 'now()' })
   fecha: Date;
@@ -30,18 +31,14 @@ export class RegistroComida {
   })
   tipo_comida: TipoComidaEnum;
 
-  @Column({ type: 'text', nullable: true, name: 'descripcion' })
-  notas: string; // Mapeado a 'descripcion' en la BD
+  @Column({ type: 'text', nullable: true, name: 'notas' })
+  notas: string;
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 
   @UpdateDateColumn({ type: 'timestamp' })
   updated_at: Date;
-
-  @ManyToOne(() => PerfilUsuario, (usuario) => usuario.id)
-  @JoinColumn({ name: 'usuarioId' })
-  usuario: PerfilUsuario;
 
   @OneToMany(
     () => RegistroComidaItem,

@@ -90,6 +90,9 @@ dependencies {
     // Gson para Type Converters
     implementation("com.google.code.gson:gson:2.10.1")
     
+    // Charts
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

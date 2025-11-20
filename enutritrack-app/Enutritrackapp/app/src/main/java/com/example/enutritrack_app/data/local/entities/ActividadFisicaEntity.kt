@@ -30,6 +30,10 @@ data class ActividadFisicaEntity(
     
     val calorias_quemadas: Double, // Calorías quemadas
     
+    val intensidad: String? = null, // Intensidad de la actividad (opcional)
+    
+    val notas: String? = null, // Notas adicionales (opcional)
+    
     val fecha: Long, // timestamp en millis
     
     /**

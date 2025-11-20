@@ -984,6 +984,8 @@ class HealthRepository(
                             tipo_actividad_id = serverEntity.tipo_actividad_id,
                             duracion_min = serverEntity.duracion_min,
                             calorias_quemadas = serverEntity.calorias_quemadas,
+                            intensidad = serverEntity.intensidad,
+                            notas = serverEntity.notas,
                             fecha = serverEntity.fecha,
                             syncStatus = SyncStatus.SYNCED,
                             serverId = serverEntity.serverId

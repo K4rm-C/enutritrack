@@ -182,7 +182,7 @@ export class NutritionService {
       });
 
       // Contar comidas por tipo
-      const tipo = record.tipo_comida;
+      const tipo = String(record.tipo_comida); // Convertir enum a string explícitamente
       summary.comidas_por_tipo[tipo] =
         (summary.comidas_por_tipo[tipo] || 0) + 1;
     });

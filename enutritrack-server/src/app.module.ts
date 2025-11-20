@@ -46,7 +46,7 @@ import { CouchbaseAlertsCitasModule } from './couchbase-alerts-citas/couchbase-a
       password: '1234',
       database: 'enutritrack',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
+      synchronize: false, // Deshabilitado para evitar conflictos con funciones almacenadas y datos existentes
       autoLoadEntities: true,
     }),
     AuthModule,
