@@ -753,38 +753,75 @@
             updateStats();
         }
 
-        // Cargar actividades
+        // Cargar actividades - CORREGIDO
         async function loadActividades() {
             try {
-                const response = await fetch('/tipos-actividad');
+                const token = localStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch('/tipos-actividad', {
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
                 allData.actividades = await response.json();
                 renderActividades(allData.actividades);
                 populateCategoriaFilter('actividades', allData.actividades);
             } catch (error) {
                 console.error('Error cargando actividades:', error);
                 document.getElementById('actividades-table').innerHTML = 
-                    '<tr><td colspan="6" class="empty-state">Error al cargar actividades</td></tr>';
+                    '<tr><td colspan="6" class="empty-state">Error al cargar actividades: ' + error.message + '</td></tr>';
             }
         }
 
-        // Cargar recomendaciones
+        // Cargar recomendaciones - CORREGIDO
         async function loadRecomendaciones() {
             try {
-                const response = await fetch('/tipos-recomendacion');
+                const token = localStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch('/tipos-recomendacion', {
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
                 allData.recomendaciones = await response.json();
                 renderRecomendaciones(allData.recomendaciones);
                 populateCategoriaFilter('recomendaciones', allData.recomendaciones);
             } catch (error) {
                 console.error('Error cargando recomendaciones:', error);
                 document.getElementById('recomendaciones-table').innerHTML = 
-                    '<tr><td colspan="4" class="empty-state">Error al cargar recomendaciones</td></tr>';
+                    '<tr><td colspan="4" class="empty-state">Error al cargar recomendaciones: ' + error.message + '</td></tr>';
             }
         }
 
-        // Cargar alertas
+        // Cargar alertas - SIN CAMBIOS (ya funciona)
         async function loadAlertas() {
             try {
                 const response = await fetch('/tipos-alerta');
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                
                 allData.alertas = await response.json();
                 renderAlertas(allData.alertas);
             } catch (error) {
@@ -794,10 +831,15 @@
             }
         }
 
-        // Cargar consultas
+        // Cargar consultas - SIN CAMBIOS (ya funciona)
         async function loadConsultas() {
             try {
                 const response = await fetch('/tipos-consulta');
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                
                 allData.consultas = await response.json();
                 renderConsultas(allData.consultas);
             } catch (error) {
@@ -857,7 +899,7 @@
             `).join('');
         }
 
-        // Renderizar alertas
+        // Renderizar alertas - SIN CAMBIOS
         function renderAlertas(alertas) {
             const tbody = document.getElementById('alertas-table');
             
@@ -882,7 +924,7 @@
             `).join('');
         }
 
-        // Renderizar consultas
+        // Renderizar consultas - SIN CAMBIOS
         function renderConsultas(consultas) {
             const tbody = document.getElementById('consultas-table');
             
@@ -975,11 +1017,33 @@
             openModal();
         }
 
-        // Editar ítem
+        // Editar ítem - CORREGIDO para actividades y recomendaciones
+        // También necesitamos corregir la función de edición para alertas
         async function editItem(type, itemId) {
             try {
-                const endpoint = getEndpoint(type, itemId);
-                const response = await fetch(endpoint);
+                let endpoint;
+                let headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                const token = localStorage.getItem('access_token');
+                if (token && (type === 'actividades' || type === 'recomendaciones')) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                switch(type) {
+                    case 'actividades': endpoint = `/tipos-actividad/${itemId}`; break;
+                    case 'recomendaciones': endpoint = `/tipos-recomendacion/${itemId}`; break;
+                    case 'alertas': endpoint = `/tipos-alerta/${itemId}`; break;
+                    case 'consultas': endpoint = `/tipos-consulta/${itemId}`; break;
+                }
+
+                const response = await fetch(endpoint, { headers: headers });
+
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
                 const item = await response.json();
                 
                 currentType = type;
@@ -992,7 +1056,7 @@
                 openModal();
             } catch (error) {
                 console.error('Error cargando datos:', error);
-                alert('Error al cargar los datos para edición');
+                alert('Error al cargar los datos para edición: ' + error.message);
             }
         }
 
@@ -1099,23 +1163,28 @@
             `;
         }
 
-        // Obtener formulario para alertas
+    // Y también corregir el formulario de alertas para mostrar mejor el campo categoria_id
         function getAlertaForm(item) {
             return `
                 <div class="form-group">
                     <label class="form-label">Nombre de la Alerta *</label>
                     <input type="text" class="form-control" id="nombre" maxlength="100" placeholder="Ej: Alerta de hidratación" required>
+                    <small class="form-text text-muted">Máximo 100 caracteres</small>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Descripción</label>
                     <textarea class="form-control form-textarea" id="descripcion" 
-                              placeholder="Describe el propósito de la alerta..."></textarea>
+                            placeholder="Describe el propósito de la alerta..."></textarea>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">ID de Categoría *</label>
-                    <input type="text" class="form-control" id="categoria_id" placeholder="UUID de la categoría" required>
+                    <input type="text" class="form-control" id="categoria_id" 
+                        placeholder="Ej: 123e4567-e89b-12d3-a456-426614174000" 
+                        pattern="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}" 
+                        required>
+                    <small class="form-text text-muted">Debe ser un UUID válido</small>
                 </div>
 
                 <div class="form-group">
@@ -1129,7 +1198,8 @@
                 <div class="form-group">
                     <label class="form-label">Configuración de Validación (JSON)</label>
                     <textarea class="form-control form-textarea" id="config_validacion" 
-                              placeholder='{"parametro": "valor"}'></textarea>
+                            placeholder='{"parametro": "valor"}'></textarea>
+                    <small class="form-text text-muted">Opcional - Debe ser un objeto JSON válido</small>
                 </div>
             `;
         }
@@ -1155,82 +1225,248 @@
             `;
         }
 
-        // Guardar tipo
-        async function saveType() {
-            const form = document.getElementById('type-form');
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
+        // Guardar tipo - CORREGIDO según los DTOs
+            async function saveType() {
+                const form = document.getElementById('type-form');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
 
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-            const type = document.getElementById('type-category').value;
+                const type = document.getElementById('type-category').value;
+                const itemId = document.getElementById('type-id').value;
 
-            // Procesar datos según el tipo
-            if (type === 'actividades') {
-                data.met_value = parseFloat(data.met_value);
-            } else if (type === 'alertas') {
-                data.es_automatica = data.es_automatica === 'true';
-                if (data.config_validacion) {
-                    try {
-                        data.config_validacion = JSON.parse(data.config_validacion);
-                    } catch (e) {
-                        alert('Error: La configuración debe ser un JSON válido');
+                // Construir datos según el tipo con validación específica
+                let data = {};
+                let isValid = true;
+                let errorMessage = '';
+
+                try {
+                    switch(type) {
+                        case 'actividades':
+                            const nombreActividad = document.getElementById('nombre').value.trim();
+                            const metValue = parseFloat(document.getElementById('met_value').value);
+                            
+                            if (!nombreActividad) {
+                                isValid = false;
+                                errorMessage = 'El nombre de la actividad es requerido';
+                                break;
+                            }
+                            if (isNaN(metValue) || metValue <= 0) {
+                                isValid = false;
+                                errorMessage = 'El valor MET debe ser un número mayor a 0';
+                                break;
+                            }
+
+                            data = {
+                                nombre: nombreActividad,
+                                met_value: metValue
+                            };
+
+                            // Campos opcionales
+                            const categoriaActividad = document.getElementById('categoria').value.trim();
+                            const descripcionActividad = document.getElementById('descripcion').value.trim();
+                            
+                            if (categoriaActividad) data.categoria = categoriaActividad;
+                            if (descripcionActividad) data.descripcion = descripcionActividad;
+                            break;
+
+                        case 'recomendaciones':
+                            const nombreRecomendacion = document.getElementById('nombre').value.trim();
+                            
+                            if (!nombreRecomendacion) {
+                                isValid = false;
+                                errorMessage = 'El nombre de la recomendación es requerido';
+                                break;
+                            }
+
+                            data = {
+                                nombre: nombreRecomendacion
+                            };
+
+                            // Campos opcionales
+                            const categoriaRecomendacion = document.getElementById('categoria').value.trim();
+                            const descripcionRecomendacion = document.getElementById('descripcion').value.trim();
+                            
+                            if (categoriaRecomendacion) data.categoria = categoriaRecomendacion;
+                            if (descripcionRecomendacion) data.descripcion = descripcionRecomendacion;
+                            break;
+
+                        case 'alertas':
+                            const nombreAlerta = document.getElementById('nombre').value.trim();
+                            const categoriaIdAlerta = document.getElementById('categoria_id').value.trim();
+                            
+                            if (!nombreAlerta) {
+                                isValid = false;
+                                errorMessage = 'El nombre de la alerta es requerido';
+                                break;
+                            }
+                            if (nombreAlerta.length > 100) {
+                                isValid = false;
+                                errorMessage = 'El nombre de la alerta no puede tener más de 100 caracteres';
+                                break;
+                            }
+                            if (!categoriaIdAlerta) {
+                                isValid = false;
+                                errorMessage = 'El ID de categoría es requerido';
+                                break;
+                            }
+                            // Validación básica de UUID
+                            if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoriaIdAlerta)) {
+                                isValid = false;
+                                errorMessage = 'El ID de categoría debe ser un UUID válido';
+                                break;
+                            }
+
+                            data = {
+                                nombre: nombreAlerta,
+                                categoria_id: categoriaIdAlerta
+                            };
+
+                            // Campos opcionales
+                            const descripcionAlerta = document.getElementById('descripcion').value.trim();
+                            const esAutomatica = document.getElementById('es_automatica').value === 'true';
+                            const configValidacion = document.getElementById('config_validacion').value.trim();
+                            
+                            if (descripcionAlerta) data.descripcion = descripcionAlerta;
+                            data.es_automatica = esAutomatica;
+                            
+                            if (configValidacion) {
+                                try {
+                                    data.config_validacion = JSON.parse(configValidacion);
+                                } catch (e) {
+                                    isValid = false;
+                                    errorMessage = 'La configuración de validación debe ser un JSON válido';
+                                    break;
+                                }
+                            }
+                            break;
+
+                        case 'consultas':
+                            const nombreConsulta = document.getElementById('nombre').value.trim();
+                            
+                            if (!nombreConsulta) {
+                                isValid = false;
+                                errorMessage = 'El nombre de la consulta es requerido';
+                                break;
+                            }
+                            if (nombreConsulta.length > 100) {
+                                isValid = false;
+                                errorMessage = 'El nombre de la consulta no puede tener más de 100 caracteres';
+                                break;
+                            }
+
+                            data = {
+                                nombre: nombreConsulta
+                            };
+
+                            // Campos opcionales
+                            const descripcionConsulta = document.getElementById('descripcion').value.trim();
+                            const duracionMinutos = parseInt(document.getElementById('duracion_minutos').value);
+                            
+                            if (descripcionConsulta) data.descripcion = descripcionConsulta;
+                            if (!isNaN(duracionMinutos) && duracionMinutos >= 1) {
+                                data.duracion_minutos = duracionMinutos;
+                            }
+                            break;
+
+                        default:
+                            isValid = false;
+                            errorMessage = 'Tipo no válido';
+                    }
+
+                    if (!isValid) {
+                        alert('Error de validación: ' + errorMessage);
                         return;
                     }
-                }
-            } else if (type === 'consultas') {
-                data.duracion_minutos = parseInt(data.duracion_minutos);
-            }
 
-            // Eliminar campos vacíos
-            Object.keys(data).forEach(key => {
-                if (data[key] === '' || data[key] === null) {
-                    delete data[key];
-                }
-            });
-
-            try {
-                const itemId = document.getElementById('type-id').value;
-                const endpoint = getEndpoint(type, itemId);
-                const method = itemId ? 'PATCH' : 'POST';
-
-                const response = await fetch(endpoint, {
-                    method: method,
-                    headers: {
+                    // Determinar endpoint y método
+                    let endpoint;
+                    let method = itemId ? 'PATCH' : 'POST';
+                    let headers = {
                         'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
+                    };
 
-                if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
+                    const token = localStorage.getItem('access_token');
+                    if (token && (type === 'actividades' || type === 'recomendaciones')) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    switch(type) {
+                        case 'actividades': 
+                            endpoint = itemId ? `/tipos-actividad/${itemId}` : '/tipos-actividad';
+                            break;
+                        case 'recomendaciones': 
+                            endpoint = itemId ? `/tipos-recomendacion/${itemId}` : '/tipos-recomendacion';
+                            break;
+                        case 'alertas': 
+                            endpoint = itemId ? `/tipos-alerta/${itemId}` : '/tipos-alerta';
+                            break;
+                        case 'consultas': 
+                            endpoint = itemId ? `/tipos-consulta/${itemId}` : '/tipos-consulta';
+                            break;
+                    }
+
+                    console.log('Enviando datos:', data); // Para debugging
+                    console.log('Endpoint:', endpoint); // Para debugging
+                    console.log('Método:', method); // Para debugging
+
+                    const response = await fetch(endpoint, {
+                        method: method,
+                        headers: headers,
+                        body: JSON.stringify(data)
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Error response:', errorText);
+                        throw new Error(`Error ${response.status}: ${response.statusText}. ${errorText}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('Respuesta del servidor:', result);
+
+                    alert(itemId ? 'Tipo actualizado exitosamente' : 'Tipo creado exitosamente');
+                    closeModal();
+                    loadAllData();
+
+                } catch (error) {
+                    console.error('Error guardando tipo:', error);
+                    alert('Error al guardar: ' + error.message);
                 }
-
-                alert(itemId ? 'Tipo actualizado exitosamente' : 'Tipo creado exitosamente');
-                closeModal();
-                loadAllData();
-            } catch (error) {
-                console.error('Error guardando tipo:', error);
-                alert('Error al guardar: ' + error.message);
             }
-        }
 
-        // Eliminar ítem
+        // Eliminar ítem - CORREGIDO para actividades y recomendaciones
         async function deleteItem(type, itemId) {
             if (!confirm('¿Está seguro de que desea eliminar este tipo? Esta acción no se puede deshacer.')) {
                 return;
             }
 
             try {
-                const endpoint = getEndpoint(type, itemId);
+                let endpoint;
+                let headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                const token = localStorage.getItem('access_token');
+                if (token && (type === 'actividades' || type === 'recomendaciones')) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                switch(type) {
+                    case 'actividades': endpoint = `/tipos-actividad/${itemId}`; break;
+                    case 'recomendaciones': endpoint = `/tipos-recomendacion/${itemId}`; break;
+                    case 'alertas': endpoint = `/tipos-alerta/${itemId}`; break;
+                    case 'consultas': endpoint = `/tipos-consulta/${itemId}`; break;
+                }
+
                 const response = await fetch(endpoint, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: headers
                 });
 
                 if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
                 }
 
                 alert('Tipo eliminado exitosamente');
@@ -1242,16 +1478,6 @@
         }
 
         // Funciones de utilidad
-        function getEndpoint(type, itemId = '') {
-            const endpoints = {
-                actividades: '/tipos-actividad',
-                recomendaciones: '/tipos-recomendacion',
-                alertas: '/tipos-alerta',
-                consultas: '/tipos-consulta'
-            };
-            return itemId ? `${endpoints[type]}/${itemId}` : endpoints[type];
-        }
-
         function getTypeName(type) {
             const names = {
                 actividades: 'Tipo de Actividad',
