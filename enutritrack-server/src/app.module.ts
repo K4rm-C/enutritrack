@@ -43,7 +43,7 @@ import { CouchbaseAlertsCitasModule } from './couchbase-alerts-citas/couchbase-a
       host: 'localhost',
       port: 5433,
       username: 'postgres',
-      password: '1234',
+      password: 'juanjose10',
       database: 'enutritrack',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,

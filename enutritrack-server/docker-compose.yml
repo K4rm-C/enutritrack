@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: enutritrack
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 4ndr3$G22004
+      POSTGRES_PASSWORD: juanjose10
     ports:
       - '5433:5432'
     volumes:
