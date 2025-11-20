@@ -14,4 +14,4 @@ import { CouchbaseModule } from '../couchbase/couchbase.module';
   providers: [MedicalHistoryService],
   exports: [MedicalHistoryService],
 })
-export class MedicalHistoryModule {}
+export class MedicalHistoryModule { }

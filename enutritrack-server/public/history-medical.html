@@ -425,6 +425,32 @@
             height: 18px;
             color: #9ca3af;
         }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1100;
+            transition: all 0.3s ease;
+        }
+
+        .notification.success {
+            background: #10b981;
+        }
+
+        .notification.error {
+            background: #ef4444;
+        }
+
+        .notification.hidden {
+            transform: translateX(100%);
+            opacity: 0;
+        }
     </style>
 </head>
 
@@ -638,6 +664,8 @@
         </div>
     </div>
 
+    <div id="notification" class="notification hidden"></div>
+
     <script>
         let allPatients = [];
         let currentPatientId = null;
@@ -667,9 +695,12 @@
                 if (response.ok) {
                     allPatients = await response.json();
                     populatePatientSelect();
+                } else {
+                    showNotification('Error al cargar pacientes', 'error');
                 }
             } catch (error) {
                 console.error('Error al cargar pacientes:', error);
+                showNotification('Error al cargar pacientes', 'error');
             }
         }
 
@@ -738,6 +769,7 @@
                     medicamentos: []
                 };
                 displayMedicalHistory(currentMedicalHistory);
+                showNotification('Error al cargar historial médico', 'error');
             }
         }
 
@@ -772,13 +804,7 @@
                         <div class="item-name">${item}</div>
                         <div class="item-meta">${getTypeLabel(type)}</div>
                     </div>
-                    <div class="item-actions">
-                        <button class="btn btn-danger btn-sm" onclick="removeItemFromHistory('${type}', '${item}')">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
+                    
                 </div>
             `).join('');
         }
@@ -810,7 +836,7 @@
         // Mostrar modal de edición
         function showEditHistoryModal() {
             if (!currentPatientId) {
-                alert('Por favor, seleccione un paciente primero');
+                showNotification('Por favor, seleccione un paciente primero', 'error');
                 return;
             }
 
@@ -831,7 +857,7 @@
             const value = input.value.trim();
 
             if (!value) {
-                alert(`Por favor, ingrese un valor para ${getTypeLabel(type)}`);
+                showNotification(`Por favor, ingrese un valor para ${getTypeLabel(type)}`, 'error');
                 return;
             }
 
@@ -841,51 +867,65 @@
                 updatePreviewLists();
                 input.value = '';
             } else {
-                alert(`Esta ${getTypeLabel(type)} ya existe en la lista`);
+                showNotification(`Esta ${getTypeLabel(type)} ya existe en la lista`, 'error');
             }
         }
 
         // Remover item durante edición
         function removeEditingItem(type, item) {
+            console.log(`Eliminando ${item} de ${type}`); // Para debug
+
             const editingArray = getEditingArray(type);
             const index = editingArray.indexOf(item);
+
             if (index > -1) {
                 editingArray.splice(index, 1);
                 updatePreviewLists();
+                showNotification(`${getTypeLabel(type)} eliminada: ${item}`, 'success');
+            }
+        }
+
+        function getEditingArray(type) {
+            switch (type) {
+                case 'condiciones': return editingCondiciones;
+                case 'alergias': return editingAlergias;
+                case 'medicamentos': return editingMedicamentos;
+                default: return [];
             }
         }
 
         // Remover item del historial existente
-        async function removeItemFromHistory(type, item) {
-            if (!confirm(`¿Está seguro de que desea eliminar "${item}" del historial?`)) {
-                return;
-            }
+        // async function removeItemFromHistory(type, item) {
+        //     if (!confirm(`¿Está seguro de que desea eliminar "${item}" del historial?`)) {
+        //         return;
+        //     }
 
-            try {
-                const token = localStorage.getItem('access_token');
-                const updateData = {};
-                updateData[type] = (currentMedicalHistory[type] || []).filter(i => i !== item);
+        //     try {
+        //         const token = localStorage.getItem('access_token');
+        //         const updateData = {};
+        //         updateData[type] = (currentMedicalHistory[type] || []).filter(i => i !== item);
 
-                const response = await fetch(`/medical-history/${currentPatientId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updateData)
-                });
+        //         const response = await fetch(`/medical-history/${currentPatientId}`, {
+        //             method: 'PATCH',
+        //             headers: {
+        //                 'Authorization': `Bearer ${token}`,
+        //                 'Content-Type': 'application/json'
+        //             },
+        //             body: JSON.stringify(updateData)
+        //         });
 
-                if (response.ok) {
-                    alert('Item eliminado exitosamente');
-                    loadPatientHistory(); // Recargar el historial
-                } else {
-                    throw new Error('Error al eliminar item');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al eliminar el item: ' + error.message);
-            }
-        }
+        //         if (response.ok) {
+        //             showNotification('Item eliminado exitosamente', 'success');
+        //             loadPatientHistory(); // Recargar el historial
+        //         } else {
+        //             throw new Error('Error al eliminar item');
+        //         }
+        //     } catch (error) {
+        //         console.error('Error:', error);
+        //         showNotification('Error al eliminar el item: ' + error.message, 'error');
+        //     }
+        // }
+
 
         // Actualizar listas de preview en el modal
         function updatePreviewLists() {
@@ -903,21 +943,21 @@
             }
 
             previewElement.innerHTML = items.map(item => `
-                <div class="preview-item">
-                    <span>${item}</span>
-                    <button onclick="removeEditingItem('${type}', '${item}')">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-            `).join('');
+        <div class="preview-item">
+            <span>${item}</span>
+            <button type="button" class="remove-item-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `).join('');
         }
 
         // Guardar historial médico
         async function saveMedicalHistory() {
             if (!currentPatientId) {
-                alert('No hay paciente seleccionado');
+                showNotification('No hay paciente seleccionado', 'error');
                 return;
             }
 
@@ -940,7 +980,7 @@
                 });
 
                 if (response.ok) {
-                    alert('Historial médico guardado exitosamente');
+                    showNotification('Historial médico guardado exitosamente', 'success');
                     closeModal('edit-history-modal');
                     loadPatientHistory(); // Recargar el historial
                 } else {
@@ -948,7 +988,7 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al guardar el historial médico: ' + error.message);
+                showNotification('Error al guardar el historial médico: ' + error.message, 'error');
             }
         }
 
@@ -986,6 +1026,18 @@
             document.getElementById(modalId).classList.remove('active');
         }
 
+        // Mostrar notificaciones
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.remove('hidden');
+
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
         // Cerrar modal al hacer clic fuera
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
@@ -993,6 +1045,18 @@
                     modal.classList.remove('active');
                 }
             });
+        });
+
+        // Event delegation para los botones de eliminar
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.remove-item-btn')) {
+                const button = e.target.closest('.remove-item-btn');
+                const previewItem = button.closest('.preview-item');
+                const itemText = previewItem.querySelector('span').textContent;
+                const type = button.closest('.items-list-preview').id.replace('-preview', '');
+
+                removeEditingItem(type, itemText);
+            }
         });
     </script>
 </body>

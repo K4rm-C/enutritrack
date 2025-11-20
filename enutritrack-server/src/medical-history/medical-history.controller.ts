@@ -20,20 +20,18 @@ export class MedicalHistoryController {
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(
-    @Req() req: express.Request,
     @Body() createMedicalHistoryDto: any,
   ) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    // El usuarioId ahora viene directamente del DTO del frontend
+    const { usuarioId } = createMedicalHistoryDto;
 
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-    const dtoWithUserId = {
-      ...createMedicalHistoryDto,
-      usuarioId: userId,
-    };
-    return this.medicalHistoryService.create(dtoWithUserId);
+    if (!usuarioId) {
+      throw new Error('Patient ID (usuarioId) is required');
+    }
+
+    return this.medicalHistoryService.create(createMedicalHistoryDto);
   }
+
 
   @UseGuards(JwtAuthGuard)
   @Get(':userId')
@@ -51,7 +49,7 @@ export class MedicalHistoryController {
     @Req() req: express.Request,
     @Body() updateMedicalHistoryDto: any,
   ) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const { usuarioId } = updateMedicalHistoryDto;
     const authToken =
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');
@@ -60,6 +58,6 @@ export class MedicalHistoryController {
       throw new Error('Authentication token not found');
     }
 
-    return this.medicalHistoryService.update(userId, updateMedicalHistoryDto);
+    return this.medicalHistoryService.update(usuarioId, updateMedicalHistoryDto);
   }
 }

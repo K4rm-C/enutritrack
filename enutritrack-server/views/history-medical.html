@@ -425,6 +425,32 @@
             height: 18px;
             color: #9ca3af;
         }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1100;
+            transition: all 0.3s ease;
+        }
+
+        .notification.success {
+            background: #10b981;
+        }
+
+        .notification.error {
+            background: #ef4444;
+        }
+
+        .notification.hidden {
+            transform: translateX(100%);
+            opacity: 0;
+        }
     </style>
 </head>
 
@@ -638,6 +664,8 @@
         </div>
     </div>
 
+    <div id="notification" class="notification hidden"></div>
+
     <script>
         let allPatients = [];
         let currentPatientId = null;
@@ -667,9 +695,12 @@
                 if (response.ok) {
                     allPatients = await response.json();
                     populatePatientSelect();
+                } else {
+                    showNotification('Error al cargar pacientes', 'error');
                 }
             } catch (error) {
                 console.error('Error al cargar pacientes:', error);
+                showNotification('Error al cargar pacientes', 'error');
             }
         }
 
@@ -738,6 +769,7 @@
                     medicamentos: []
                 };
                 displayMedicalHistory(currentMedicalHistory);
+                showNotification('Error al cargar historial médico', 'error');
             }
         }
 
@@ -772,13 +804,7 @@
                         <div class="item-name">${item}</div>
                         <div class="item-meta">${getTypeLabel(type)}</div>
                     </div>
-                    <div class="item-actions">
-                        <button class="btn btn-danger btn-sm" onclick="removeItemFromHistory('${type}', '${item}')">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
+                    
                 </div>
             `).join('');
         }
@@ -810,7 +836,7 @@
         // Mostrar modal de edición
         function showEditHistoryModal() {
             if (!currentPatientId) {
-                alert('Por favor, seleccione un paciente primero');
+                showNotification('Por favor, seleccione un paciente primero', 'error');
                 return;
             }
 
@@ -831,7 +857,7 @@
             const value = input.value.trim();
 
             if (!value) {
-                alert(`Por favor, ingrese un valor para ${getTypeLabel(type)}`);
+                showNotification(`Por favor, ingrese un valor para ${getTypeLabel(type)}`, 'error');
                 return;
             }
 
@@ -841,7 +867,7 @@
                 updatePreviewLists();
                 input.value = '';
             } else {
-                alert(`Esta ${getTypeLabel(type)} ya existe en la lista`);
+                showNotification(`Esta ${getTypeLabel(type)} ya existe en la lista`, 'error');
             }
         }
 
@@ -876,14 +902,14 @@
                 });
 
                 if (response.ok) {
-                    alert('Item eliminado exitosamente');
+                    showNotification('Item eliminado exitosamente', 'success');
                     loadPatientHistory(); // Recargar el historial
                 } else {
                     throw new Error('Error al eliminar item');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al eliminar el item: ' + error.message);
+                showNotification('Error al eliminar el item: ' + error.message, 'error');
             }
         }
 
@@ -917,7 +943,7 @@
         // Guardar historial médico
         async function saveMedicalHistory() {
             if (!currentPatientId) {
-                alert('No hay paciente seleccionado');
+                showNotification('No hay paciente seleccionado', 'error');
                 return;
             }
 
@@ -940,7 +966,7 @@
                 });
 
                 if (response.ok) {
-                    alert('Historial médico guardado exitosamente');
+                    showNotification('Historial médico guardado exitosamente', 'success');
                     closeModal('edit-history-modal');
                     loadPatientHistory(); // Recargar el historial
                 } else {
@@ -948,7 +974,7 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al guardar el historial médico: ' + error.message);
+                showNotification('Error al guardar el historial médico: ' + error.message, 'error');
             }
         }
 
@@ -984,6 +1010,18 @@
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Mostrar notificaciones
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.remove('hidden');
+
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
         }
 
         // Cerrar modal al hacer clic fuera
