@@ -1,19 +1,27 @@
 // src/medical-history/dto/create-medical-history.dto.ts
-import { IsUUID, IsArray, IsOptional } from 'class-validator';
+import { IsUUID, IsArray, IsOptional, IsString } from 'class-validator';
 
 export class CreateMedicalHistoryDto {
   @IsUUID()
   usuarioId: string;
 
-  @IsArray()
   @IsOptional()
   condiciones?: string[];
 
-  @IsArray()
   @IsOptional()
   alergias?: string[];
 
-  @IsArray()
+  @IsOptional()
+  medicamentos?: string[];
+}
+
+export class UpdateMedicalHistoryDto {
+  @IsOptional()
+  condiciones?: string[];
+
+  @IsOptional()
+  alergias?: string[];
+
   @IsOptional()
   medicamentos?: string[];
 }

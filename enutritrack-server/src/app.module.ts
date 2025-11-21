@@ -44,10 +44,11 @@ import { MedicalHistoryModule } from './medical-history/medical-history.module';
       host: 'localhost',
       port: 5433,
       username: 'postgres',
-      password: '4ndr3$G22004',
+      password: '1234',
       database: 'enutritrack',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
+      synchronize: false, // Usar migraciones en lugar de sync
+      migrations: ['src/migration/*.ts'],
       autoLoadEntities: true,
     }),
     AuthModule,
@@ -84,4 +85,4 @@ import { MedicalHistoryModule } from './medical-history/medical-history.module';
     CouchbaseAlertsCitasModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}
