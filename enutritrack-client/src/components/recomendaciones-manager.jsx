@@ -29,6 +29,7 @@ import {
   Sparkles,
   Tag,
   Layers,
+  Zap,
 } from "lucide-react";
 import { useRecommendations } from "../context/recommendation/recommendation.context";
 import { useUsers } from "../context/user/user.context";
@@ -41,8 +42,10 @@ const RecommendationsManager = () => {
     recommendations,
     loading,
     error,
+    aiLoading,
     getRecommendationsByUser,
     createRecommendation,
+    createAIRecommendation,
     updateRecommendation,
     deleteRecommendation,
     clearError,
@@ -77,6 +80,15 @@ const RecommendationsManager = () => {
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [currentTypeEdit, setCurrentTypeEdit] = useState(null);
   const [searchTypeTerm, setSearchTypeTerm] = useState("");
+
+  // Nuevo estado para el modal de IA
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiFormData, setAiFormData] = useState({
+    tipo_recomendacion_id: "",
+    prioridad: "media",
+    vigencia_hasta: "",
+    contexto_adicional: "",
+  });
 
   // Cargar pacientes y tipos de recomendación al montar el componente
   useEffect(() => {
@@ -173,6 +185,56 @@ const RecommendationsManager = () => {
       activa: true,
     });
     setEditDialogOpen(true);
+  };
+
+  // Función para abrir el modal de IA
+  const handleOpenAIRecommendation = () => {
+    if (!selectedPatient) {
+      toast.error("Por favor seleccione un paciente primero");
+      return;
+    }
+    setAiFormData({
+      tipo_recomendacion_id: "",
+      prioridad: "media",
+      vigencia_hasta: "",
+      contexto_adicional: "",
+    });
+    setAiDialogOpen(true);
+  };
+
+  // Función para crear recomendación con IA
+  const handleCreateAIRecommendation = async () => {
+    try {
+      if (!aiFormData.tipo_recomendacion_id) {
+        toast.error("El tipo de recomendación es requerido");
+        return;
+      }
+
+      const aiRecommendationData = {
+        usuario_id: selectedPatient.id,
+        tipo_recomendacion_id: aiFormData.tipo_recomendacion_id,
+        prioridad: aiFormData.prioridad,
+        vigencia_hasta: aiFormData.vigencia_hasta
+          ? new Date(aiFormData.vigencia_hasta).toISOString()
+          : undefined,
+        contexto_adicional: aiFormData.contexto_adicional || undefined,
+      };
+
+      await createAIRecommendation(aiRecommendationData);
+      toast.success("Recomendación generada con IA exitosamente");
+      setAiDialogOpen(false);
+    } catch (error) {
+      console.error("Error creating AI recommendation:", error);
+      toast.error("Error al generar la recomendación con IA");
+    }
+  };
+
+  // Función para actualizar el formulario de IA
+  const handleAIFormChange = (field, value) => {
+    setAiFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleEdit = (recommendation) => {
@@ -391,6 +453,12 @@ const RecommendationsManager = () => {
         icon: <Calendar className="h-4 w-4" />,
         text: "Generada en cita",
       };
+    } else if (recommendation.is_ai_generated) {
+      return {
+        type: "ai",
+        icon: <Bot className="h-4 w-4" />,
+        text: "Generada por IA",
+      };
     } else {
       return {
         type: "doctor",
@@ -475,6 +543,7 @@ const RecommendationsManager = () => {
     expiradas:
       recommendations?.filter((rec) => isExpired(rec.vigencia_hasta)).length ||
       0,
+    ai: recommendations?.filter((rec) => rec.is_ai_generated).length || 0,
   };
 
   if (patientsLoading) {
@@ -682,14 +751,24 @@ const RecommendationsManager = () => {
           </div>
 
           {activeSection === "recommendations" && (
-            <button
-              onClick={handleAddNew}
-              disabled={!selectedPatient}
-              className="flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Nueva Recomendación
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleOpenAIRecommendation}
+                disabled={!selectedPatient}
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Zap className="h-5 w-5 mr-2" />
+                IA
+              </button>
+              <button
+                onClick={handleAddNew}
+                disabled={!selectedPatient}
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Manual
+              </button>
+            </div>
           )}
 
           {activeSection === "types" && (
@@ -906,16 +985,14 @@ const RecommendationsManager = () => {
                     darkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
-                  {recommendations?.filter(
-                    (rec) => getRecommendationSource(rec).type === "doctor"
-                  ).length || 0}
+                  {recommendationStats.ai}
                 </p>
                 <p
                   className={`text-sm ${
                     darkMode ? "text-gray-400" : "text-gray-600"
                   }`}
                 >
-                  Creadas por Doctor
+                  Generadas por IA
                 </p>
               </div>
             </div>
@@ -1078,14 +1155,23 @@ const RecommendationsManager = () => {
                   <option value="baja">Baja</option>
                 </select>
 
-                {/* Add New Button */}
-                <button
-                  onClick={handleAddNew}
-                  className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 font-medium"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Nueva Recomendación
-                </button>
+                {/* Add New Buttons */}
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleOpenAIRecommendation}
+                    className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-medium flex-1"
+                  >
+                    <Zap className="h-5 w-5 mr-2" />
+                    IA
+                  </button>
+                  <button
+                    onClick={handleAddNew}
+                    className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 font-medium flex-1"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Manual
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1139,19 +1225,29 @@ const RecommendationsManager = () => {
                           >
                             <FileText className="h-12 w-12 mb-2 opacity-50" />
                             <p>No hay recomendaciones para este paciente</p>
-                            <button
-                              onClick={handleAddNew}
-                              className="mt-2 text-emerald-600 hover:text-emerald-700 font-medium"
-                            >
-                              Crear la primera recomendación
-                            </button>
+                            <div className="flex space-x-3 mt-3">
+                              <button
+                                onClick={handleOpenAIRecommendation}
+                                className="text-purple-600 hover:text-purple-700 font-medium"
+                              >
+                                Generar con IA
+                              </button>
+                              <span className="text-gray-400">|</span>
+                              <button
+                                onClick={handleAddNew}
+                                className="text-emerald-600 hover:text-emerald-700 font-medium"
+                              >
+                                Crear manualmente
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
                     ) : (
                       filteredRecommendations.map((recommendation) => {
                         const source = getRecommendationSource(recommendation);
-                        const isEditable = source.type === "doctor";
+                        const isEditable =
+                          source.type === "doctor" || source.type === "ai";
                         const isExpiredRec = isExpired(
                           recommendation.vigencia_hasta
                         );
@@ -1268,7 +1364,11 @@ const RecommendationsManager = () => {
                               <div className="flex items-center space-x-2">
                                 <div
                                   className={`p-1 rounded ${
-                                    darkMode ? "bg-gray-700" : "bg-gray-200"
+                                    source.type === "ai"
+                                      ? "bg-purple-500/20"
+                                      : darkMode
+                                      ? "bg-gray-700"
+                                      : "bg-gray-200"
                                   }`}
                                 >
                                   {source.icon}
@@ -1504,6 +1604,20 @@ const RecommendationsManager = () => {
           </div>
         )}
 
+        {/* Modal para Recomendación con IA */}
+        {aiDialogOpen && (
+          <AIRecommendationDialog
+            open={aiDialogOpen}
+            onClose={() => setAiDialogOpen(false)}
+            onSave={handleCreateAIRecommendation}
+            formData={aiFormData}
+            onChange={handleAIFormChange}
+            recommendationTypes={recommendationTypes}
+            darkMode={darkMode}
+            loading={aiLoading}
+          />
+        )}
+
         {/* Edit Dialog para recomendaciones */}
         {editDialogOpen && (
           <EditRecommendationDialog
@@ -1540,6 +1654,24 @@ const RecommendationsManager = () => {
     </div>
   );
 };
+
+{
+  /* Modal para Recomendación con IA */
+}
+{
+  aiDialogOpen && (
+    <AIRecommendationDialog
+      open={aiDialogOpen}
+      onClose={() => setAiDialogOpen(false)}
+      onSave={handleCreateAIRecommendation}
+      formData={aiFormData}
+      onChange={handleAIFormChange}
+      recommendationTypes={recommendationTypes}
+      darkMode={darkMode}
+      loading={aiLoading}
+    />
+  );
+}
 
 // Componente para editar/crear recomendaciones
 const EditRecommendationDialog = ({
@@ -1806,7 +1938,7 @@ const EditRecommendationDialog = ({
   );
 };
 
-// Componente para visualizar recomendaciones
+// Componente para visualizar recomendaciones - CON FORMATO MEJORADO
 const ViewRecommendationDialog = ({
   open,
   onClose,
@@ -1827,20 +1959,191 @@ const ViewRecommendationDialog = ({
         icon: <Calendar className="h-5 w-5" />,
         text: "Generada en cita médica",
       }
+    : recommendation.is_ai_generated
+    ? {
+        type: "ai",
+        icon: <Bot className="h-5 w-5" />,
+        text: "Generada por IA",
+      }
     : {
         type: "doctor",
         icon: <UserCheck className="h-5 w-5" />,
         text: "Creada manualmente por el doctor",
       };
 
+  // Funciones de utilidad
+  const getPriorityColor = (prioridad) => {
+    switch (prioridad) {
+      case "alta":
+        return "red";
+      case "media":
+        return "yellow";
+      case "baja":
+        return "green";
+      default:
+        return "gray";
+    }
+  };
+
+  const getPriorityIcon = (prioridad) => {
+    switch (prioridad) {
+      case "alta":
+        return <AlertTriangle className="h-4 w-4" />;
+      case "media":
+        return <AlertCircle className="h-4 w-4" />;
+      case "baja":
+        return <CheckCircle className="h-4 w-4" />;
+      default:
+        return <CheckCircle className="h-4 w-4" />;
+    }
+  };
+
   const isExpiredRec =
     recommendation.vigencia_hasta &&
     new Date(recommendation.vigencia_hasta) < new Date();
 
+  // Función mejorada para formatear el contenido de la recomendación
+  const formatContent = (content) => {
+    if (!content) return [];
+
+    // Dividir en secciones basadas en patrones comunes
+    const sections = content
+      .split(/(?=\n\s*(?:### |\*\*|🔸|📋|🏃|💊|⚠️|🎯|📊|🚨|🔍))/)
+      .filter((section) => section.trim());
+
+    return sections.map((section, index) => {
+      const trimmedSection = section.trim();
+
+      // Detectar si es un título principal
+      if (
+        trimmedSection.match(/^[🔸📋🏃💊⚠️🎯📊🚨🔍]/) ||
+        trimmedSection.match(/^#{1,3}\s/)
+      ) {
+        return (
+          <div key={index} className="mb-6">
+            <h3
+              className={`text-lg font-bold mb-3 ${
+                darkMode ? "text-white" : "text-gray-900"
+              } border-b ${
+                darkMode ? "border-gray-600" : "border-gray-300"
+              } pb-2`}
+            >
+              {trimmedSection.replace(/^#{1,3}\s*/, "").replace(/\*\*/g, "")}
+            </h3>
+          </div>
+        );
+      }
+
+      // Detectar si es un subtítulo
+      if (
+        trimmedSection.match(/^[•\-]\s*\*\*/) ||
+        trimmedSection.match(/^\d+\.\s*\*\*/)
+      ) {
+        return (
+          <div key={index} className="mb-4">
+            <h4
+              className={`font-semibold mb-2 ${
+                darkMode ? "text-gray-200" : "text-gray-800"
+              }`}
+            >
+              {trimmedSection
+                .replace(/^[•\-\d+\.]\s*/, "")
+                .replace(/\*\*/g, "")}
+            </h4>
+          </div>
+        );
+      }
+
+      // Procesar el contenido de la sección
+      const lines = trimmedSection.split("\n").filter((line) => line.trim());
+
+      return (
+        <div key={index} className="mb-4">
+          {lines.map((line, lineIndex) => {
+            const trimmedLine = line.trim();
+
+            // Saltos de línea simples
+            if (!trimmedLine) {
+              return <br key={lineIndex} />;
+            }
+
+            // Listas con viñetas
+            if (trimmedLine.match(/^[•\-]\s/)) {
+              return (
+                <div key={lineIndex} className="flex items-start mb-1">
+                  <span
+                    className={`mr-2 mt-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    •
+                  </span>
+                  <span
+                    className={darkMode ? "text-gray-200" : "text-gray-800"}
+                  >
+                    {trimmedLine.replace(/^[•\-]\s*/, "")}
+                  </span>
+                </div>
+              );
+            }
+
+            // Listas numeradas
+            if (trimmedLine.match(/^\d+\.\s/)) {
+              const number = trimmedLine.match(/^\d+/)[0];
+              return (
+                <div key={lineIndex} className="flex items-start mb-1">
+                  <span
+                    className={`mr-2 mt-1 font-medium ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {number}.
+                  </span>
+                  <span
+                    className={darkMode ? "text-gray-200" : "text-gray-800"}
+                  >
+                    {trimmedLine.replace(/^\d+\.\s*/, "")}
+                  </span>
+                </div>
+              );
+            }
+
+            // Texto en negrita
+            if (trimmedLine.match(/\*\*.+\*\*/)) {
+              const boldText = trimmedLine.replace(/\*\*/g, "");
+              return (
+                <p
+                  key={lineIndex}
+                  className={`font-semibold mb-2 ${
+                    darkMode ? "text-gray-200" : "text-gray-800"
+                  }`}
+                >
+                  {boldText}
+                </p>
+              );
+            }
+
+            // Texto normal
+            return (
+              <p
+                key={lineIndex}
+                className={`mb-2 leading-relaxed ${
+                  darkMode ? "text-gray-200" : "text-gray-800"
+                }`}
+              >
+                {trimmedLine}
+              </p>
+            );
+          })}
+        </div>
+      );
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div
-        className={`max-w-2xl w-full rounded-2xl overflow-hidden shadow-2xl ${
+        className={`max-w-4xl w-full rounded-2xl overflow-hidden shadow-2xl ${
           darkMode
             ? "bg-gradient-to-b from-gray-800 to-gray-900"
             : "bg-gradient-to-b from-white to-gray-50"
@@ -1895,77 +2198,95 @@ const ViewRecommendationDialog = ({
           </button>
         </div>
 
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
+        <div className="p-6 max-h-[80vh] overflow-y-auto">
           <div className="space-y-6">
-            {/* Contenido */}
-            <div>
-              <label
-                className={`block text-sm font-medium mb-3 ${
-                  darkMode ? "text-gray-300" : "text-gray-700"
-                }`}
-              >
-                Recomendación
-              </label>
+            {/* Información del header */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div
                 className={`p-4 rounded-xl ${
                   darkMode ? "bg-gray-700/50" : "bg-gray-50"
-                }`}
+                } border ${darkMode ? "border-gray-600" : "border-gray-200"}`}
               >
-                <p className={darkMode ? "text-gray-200" : "text-gray-800"}>
-                  {recommendation.contenido}
-                </p>
-              </div>
-            </div>
-
-            {/* Información detallada */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  Tipo de Recomendación
-                </label>
-                <p className={darkMode ? "text-gray-200" : "text-gray-800"}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Tag
+                    className={`h-4 w-4 ${
+                      darkMode ? "text-blue-400" : "text-blue-600"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Tipo
+                  </span>
+                </div>
+                <p className={darkMode ? "text-white" : "text-gray-900"}>
                   {recommendation.tipo_recomendacion?.nombre ||
                     "No especificado"}
                 </p>
               </div>
 
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  Prioridad
-                </label>
-                <div className="flex items-center space-x-2">
-                  {recommendation.prioridad === "alta" ? (
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                  ) : recommendation.prioridad === "media" ? (
-                    <AlertCircle className="h-4 w-4 text-yellow-500" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  )}
+              <div
+                className={`p-4 rounded-xl ${
+                  darkMode ? "bg-gray-700/50" : "bg-gray-50"
+                } border ${darkMode ? "border-gray-600" : "border-gray-200"}`}
+              >
+                <div className="flex items-center space-x-2 mb-2">
+                  {source.icon}
                   <span
-                    className={darkMode ? "text-gray-200" : "text-gray-800"}
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
                   >
-                    {recommendation.prioridad || "media"}
+                    Origen
                   </span>
                 </div>
+                <p className={darkMode ? "text-white" : "text-gray-900"}>
+                  {source.text}
+                </p>
               </div>
 
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
+              <div
+                className={`p-4 rounded-xl ${
+                  darkMode ? "bg-gray-700/50" : "bg-gray-50"
+                } border ${darkMode ? "border-gray-600" : "border-gray-200"}`}
+              >
+                <div className="flex items-center space-x-2 mb-2">
+                  {getPriorityIcon(recommendation.prioridad)}
+                  <span
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Prioridad
+                  </span>
+                </div>
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${
+                    getPriorityColor(recommendation.prioridad) === "red"
+                      ? darkMode
+                        ? "bg-red-900/50 text-red-300"
+                        : "bg-red-100 text-red-800"
+                      : getPriorityColor(recommendation.prioridad) === "yellow"
+                      ? darkMode
+                        ? "bg-yellow-900/50 text-yellow-300"
+                        : "bg-yellow-100 text-yellow-800"
+                      : darkMode
+                      ? "bg-green-900/50 text-green-300"
+                      : "bg-green-100 text-green-800"
                   }`}
                 >
-                  Estado
-                </label>
-                <div className="flex items-center space-x-2">
+                  {recommendation.prioridad || "media"}
+                </span>
+              </div>
+
+              <div
+                className={`p-4 rounded-xl ${
+                  darkMode ? "bg-gray-700/50" : "bg-gray-50"
+                } border ${darkMode ? "border-gray-600" : "border-gray-200"}`}
+              >
+                <div className="flex items-center space-x-2 mb-2">
                   <div
                     className={`w-2 h-2 rounded-full ${
                       recommendation.activa && !isExpiredRec
@@ -1974,34 +2295,66 @@ const ViewRecommendationDialog = ({
                     }`}
                   />
                   <span
-                    className={darkMode ? "text-gray-200" : "text-gray-800"}
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
                   >
-                    {recommendation.activa && !isExpiredRec
-                      ? "Activa"
-                      : "Inactiva"}
-                    {isExpiredRec && " (Expirada)"}
+                    Estado
                   </span>
                 </div>
+                <p className={darkMode ? "text-white" : "text-gray-900"}>
+                  {recommendation.activa && !isExpiredRec
+                    ? "Activa"
+                    : "Inactiva"}
+                  {isExpiredRec && " (Expirada)"}
+                </p>
               </div>
+            </div>
 
-              <div>
+            {/* Contenido de la recomendación */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
                 <label
-                  className={`block text-sm font-medium mb-2 ${
+                  className={`block text-sm font-medium ${
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
-                  Origen
+                  Contenido de la Recomendación
                 </label>
-                <div className="flex items-center space-x-2">
-                  {source.icon}
-                  <span
-                    className={darkMode ? "text-gray-200" : "text-gray-800"}
+                {recommendation.is_ai_generated && (
+                  <div className="flex items-center space-x-2 text-xs">
+                    <Bot className="h-3 w-3 text-purple-500" />
+                    <span
+                      className={
+                        darkMode ? "text-purple-400" : "text-purple-600"
+                      }
+                    >
+                      Generado por IA
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div
+                className={`p-6 rounded-xl max-h-96 overflow-y-auto ${
+                  darkMode
+                    ? "bg-gray-800/30 border border-gray-700"
+                    : "bg-white border border-gray-200"
+                }`}
+              >
+                <div className="prose prose-sm max-w-none">
+                  <div
+                    className={`leading-relaxed ${
+                      darkMode ? "text-gray-200" : "text-gray-800"
+                    }`}
                   >
-                    {source.text}
-                  </span>
+                    {formatContent(recommendation.contenido)}
+                  </div>
                 </div>
               </div>
+            </div>
 
+            {/* Información adicional */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 ${
@@ -2064,7 +2417,9 @@ const ViewRecommendationDialog = ({
                   </label>
                   <div
                     className={`p-4 rounded-xl ${
-                      darkMode ? "bg-gray-700/50" : "bg-gray-50"
+                      darkMode
+                        ? "bg-gray-700/30 border border-gray-600"
+                        : "bg-gray-50 border border-gray-200"
                     }`}
                   >
                     {recommendation.recomendacion_datos.map((dato, index) => (
