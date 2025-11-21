@@ -18,8 +18,10 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { MedicalHistoryService } from './medical-history.service';
-import { CreateMedicalHistoryDto } from './dto/create-medical-history.dto';
-import { UpdateMedicalHistoryDto } from './dto/update-medical-history.dto';
+import {
+  CreateMedicalHistoryDto,
+  UpdateMedicalHistoryDto,
+} from './dto/create-medical-history.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import express from 'express';
 
@@ -192,10 +194,8 @@ export class MedicalHistoryController {
     @Req() req: express.Request,
     @Body() createMedicalHistoryDto: any,
   ) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
     const dtoWithUserId = {
       ...createMedicalHistoryDto,
-      usuarioId: userId,
     };
     return this.medicalHistoryService.create(dtoWithUserId);
   }

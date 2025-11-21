@@ -86,7 +86,7 @@ const RecommendationsManager = () => {
   const [aiFormData, setAiFormData] = useState({
     tipo_recomendacion_id: "",
     prioridad: "media",
-    vigencia_hasta: "",
+    vigencia_hasta: Date,
     contexto_adicional: "",
   });
 
@@ -1655,23 +1655,375 @@ const RecommendationsManager = () => {
   );
 };
 
-{
-  /* Modal para Recomendación con IA */
-}
-{
-  aiDialogOpen && (
-    <AIRecommendationDialog
-      open={aiDialogOpen}
-      onClose={() => setAiDialogOpen(false)}
-      onSave={handleCreateAIRecommendation}
-      formData={aiFormData}
-      onChange={handleAIFormChange}
-      recommendationTypes={recommendationTypes}
-      darkMode={darkMode}
-      loading={aiLoading}
-    />
+// Componente para el modal de IA - VERSIÓN CORREGIDA
+const AIRecommendationDialog = ({
+  open,
+  onClose,
+  onSave,
+  formData,
+  onChange,
+  recommendationTypes,
+  darkMode,
+  loading,
+}) => {
+  const [generationStep, setGenerationStep] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
+
+  // Efecto para simular el progreso de generación
+  useEffect(() => {
+    if (loading) {
+      setShowProgress(true);
+      const steps = [
+        "Analizando datos del paciente...",
+        "Consultando bases médicas...",
+        "Generando recomendaciones personalizadas...",
+        "Revisando contenido...",
+        "Finalizando...",
+      ];
+
+      let currentStep = 0;
+      const interval = setInterval(() => {
+        if (currentStep < steps.length - 1) {
+          currentStep++;
+          setGenerationStep(currentStep);
+        }
+      }, 1500);
+
+      return () => {
+        clearInterval(interval);
+        setGenerationStep(0);
+        setShowProgress(false);
+      };
+    }
+  }, [loading]);
+
+  const handleSave = () => {
+    onSave();
+  };
+
+  // Asegurarnos de que el modal no se renderice si no está abierto
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div
+        className={`max-w-2xl w-full rounded-2xl overflow-hidden shadow-2xl ${
+          darkMode
+            ? "bg-gradient-to-b from-gray-800 to-gray-900"
+            : "bg-gradient-to-b from-white to-gray-50"
+        } border ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+      >
+        {/* Header del modal */}
+        <div
+          className={`px-6 py-4 border-b ${
+            darkMode
+              ? "border-gray-700 bg-gray-800"
+              : "border-gray-200 bg-gray-50"
+          } flex items-center justify-between`}
+        >
+          <div className="flex items-center space-x-3">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                darkMode ? "bg-purple-700" : "bg-purple-100"
+              }`}
+            >
+              <Bot
+                className={`h-6 w-6 ${
+                  darkMode ? "text-purple-200" : "text-purple-700"
+                }`}
+              />
+            </div>
+            <div>
+              <h2
+                className={`text-xl font-bold ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {loading
+                  ? "Generando Recomendación"
+                  : "Generar Recomendación con IA"}
+              </h2>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {loading
+                  ? "La IA está creando una recomendación personalizada..."
+                  : "La IA generará una recomendación personalizada basada en los datos del paciente"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className={`p-2 rounded-full transition-colors ${
+              darkMode
+                ? "hover:bg-gray-700 text-gray-400 hover:text-white"
+                : "hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+            } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="p-6 max-h-[70vh] overflow-y-auto">
+          {loading ? (
+            // ESTADO DE CARGA
+            <div className="py-8">
+              <div className="text-center mb-6">
+                <div className="relative inline-block">
+                  <div className="w-20 h-20 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin mb-4"></div>
+                  <Sparkles className="w-8 h-8 text-purple-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                </div>
+                <h3
+                  className={`text-lg font-semibold mb-2 ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Asistente IA Trabajando
+                </h3>
+                <p
+                  className={`text-sm ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  Esto puede tomar unos segundos...
+                </p>
+              </div>
+
+              {/* Barra de progreso animada */}
+              <div className="mb-6">
+                <div
+                  className={`w-full bg-gray-200 rounded-full h-2 ${
+                    darkMode ? "bg-gray-700" : ""
+                  }`}
+                >
+                  <div
+                    className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: `${((generationStep + 1) / 5) * 100}%`,
+                      transition: "width 1.5s ease-in-out",
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Pasos de generación */}
+              <div className="space-y-3">
+                {[
+                  "Analizando datos del paciente...",
+                  "Consultando bases médicas...",
+                  "Generando recomendaciones personalizadas...",
+                  "Revisando contenido...",
+                  "Finalizando...",
+                ].map((step, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        index <= generationStep
+                          ? "bg-green-500"
+                          : darkMode
+                          ? "bg-gray-700"
+                          : "bg-gray-200"
+                      }`}
+                    >
+                      {index <= generationStep && (
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                    <span
+                      className={`text-sm ${
+                        index <= generationStep
+                          ? darkMode
+                            ? "text-green-400"
+                            : "text-green-600"
+                          : darkMode
+                          ? "text-gray-500"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {step}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // FORMULARIO NORMAL (cuando no está cargando)
+            <div className="space-y-6">
+              {/* Información de IA */}
+              <div
+                className={`p-4 rounded-xl ${
+                  darkMode
+                    ? "bg-blue-900/20 border border-blue-800"
+                    : "bg-blue-50 border border-blue-200"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <Sparkles className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <h3
+                      className={`font-medium ${
+                        darkMode ? "text-blue-300" : "text-blue-700"
+                      }`}
+                    >
+                      Asistente de IA Médica
+                    </h3>
+                    <p
+                      className={`text-sm mt-1 ${
+                        darkMode ? "text-blue-400" : "text-blue-600"
+                      }`}
+                    >
+                      La inteligencia artificial generará recomendaciones
+                      personalizadas basadas en mejores prácticas médicas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tipo de Recomendación */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Tipo de Recomendación *
+                </label>
+                <select
+                  value={formData.tipo_recomendacion_id || ""}
+                  onChange={(e) =>
+                    onChange("tipo_recomendacion_id", e.target.value)
+                  }
+                  disabled={loading}
+                  className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 ${
+                    darkMode
+                      ? "border-gray-700 bg-gray-800 text-white"
+                      : "border-gray-300 bg-white text-gray-900"
+                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <option value="">Seleccionar tipo...</option>
+                  {recommendationTypes?.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Contexto Adicional */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Contexto Adicional (Opcional)
+                </label>
+                <textarea
+                  value={formData.contexto_adicional || ""}
+                  onChange={(e) =>
+                    onChange("contexto_adicional", e.target.value)
+                  }
+                  rows={3}
+                  disabled={loading}
+                  className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 ${
+                    darkMode
+                      ? "border-gray-700 bg-gray-800 text-white placeholder-gray-500"
+                      : "border-gray-300 bg-white text-gray-900 placeholder-gray-400"
+                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  placeholder="Proporcione información adicional sobre el paciente, condiciones específicas, o contexto particular para la recomendación..."
+                />
+                <p
+                  className={`text-xs mt-1 ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  Ej: "Paciente con diabetes tipo 2, necesita recomendaciones
+                  para control glucémico"
+                </p>
+              </div>
+
+              {/* Prioridad y Vigencia */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Prioridad
+                  </label>
+                  <select
+                    value={formData.prioridad || "media"}
+                    onChange={(e) => onChange("prioridad", e.target.value)}
+                    disabled={loading}
+                    className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 ${
+                      darkMode
+                        ? "border-gray-700 bg-gray-800 text-white"
+                        : "border-gray-300 bg-white text-gray-900"
+                    } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Fecha de Vencimiento (Opcional)
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.vigencia_hasta || ""}
+                    onChange={(e) => onChange("vigencia_hasta", e.target.value)}
+                    disabled={loading}
+                    className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 ${
+                      darkMode
+                        ? "border-gray-700 bg-gray-800 text-white"
+                        : "border-gray-300 bg-white text-gray-900"
+                    } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Botones de acción - SOLO VISIBLE CUANDO NO ESTÁ CARGANDO */}
+          {!loading && (
+            <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                  darkMode
+                    ? "bg-gray-700 text-white hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!formData.tipo_recomendacion_id || loading}
+                className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Generar con IA
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
-}
+};
 
 // Componente para editar/crear recomendaciones
 const EditRecommendationDialog = ({

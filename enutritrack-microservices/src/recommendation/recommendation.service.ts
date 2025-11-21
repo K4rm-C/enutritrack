@@ -32,7 +32,7 @@ export class RecommendationsService {
     @InjectRepository(RecommendationData)
     private dataRepository: Repository<RecommendationData>,
   ) {
-    const apiKey = 'AIzaSyB7YLSU7l-AwR4Zh-82aQ7oppO8RxDPZg4';
+    const apiKey = 'AIzaSyDLlWwK-6h36QBsnDrkipml89VspYDGALg';
     if (apiKey) {
       this.ai = new GoogleGenAI({ apiKey });
       this.aiEnabled = true;
