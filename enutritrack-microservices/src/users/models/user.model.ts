@@ -85,9 +85,6 @@ export class User {
   @OneToMany(() => FoodRecord, (foodRecord) => foodRecord.usuario)
   foodRecords: FoodRecord[];
 
-  @OneToMany(() => MedicalHistory, (medicalHistory) => medicalHistory.usuario)
-  medicalHistories: MedicalHistory[];
-
   @OneToMany(
     () => PhysicalActivity,
     (physicalActivity) => physicalActivity.usuario_id,

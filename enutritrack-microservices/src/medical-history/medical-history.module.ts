@@ -1,26 +1,15 @@
 // src/medical-history/medical-history.module.ts
+// NOTA: Este modulo usa Couchbase para almacenar resumen de historial medico
+// No requiere TypeORM porque no almacena en PostgreSQL
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
 import { MedicalHistoryService } from './medical-history.service';
 import { MedicalHistoryController } from './medical-history.controller';
-import { MedicalHistory } from './model/medical-history.model';
-import { Alergia } from './model/alergia.model';
-import { CondicionMedica } from './model/condicion-medica.model';
-import { Medicamento } from './model/medicamento.model';
-import { User } from '../users/models/user.model';
-import { AuthModule } from '../auth/auth.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { CouchbaseModule } from '../couchbase/couchbase.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      MedicalHistory,
-      Alergia,
-      CondicionMedica,
-      Medicamento,
-      User,
-    ]),
-    AuthModule,
-  ],
+  imports: [CacheModule.register(), HttpModule, CouchbaseModule],
   controllers: [MedicalHistoryController],
   providers: [MedicalHistoryService],
   exports: [MedicalHistoryService],

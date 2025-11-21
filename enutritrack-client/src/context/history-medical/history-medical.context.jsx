@@ -1,4 +1,3 @@
-// contexts/MedicalHistoryContext.js
 import { createContext, useContext, useState, useCallback } from "react";
 import {
   createMedicalHistoryRequest,
@@ -22,28 +21,29 @@ export function MedicalHistoryProvider({ children }) {
   const [medicalHistory, setMedicalHistory] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [currentPatient, setCurrentPatient] = useState(null);
 
   const clearError = () => {
     setError(null);
-  };
-
-  const setPatient = (patient) => {
-    setCurrentPatient(patient);
   };
 
   const createMedicalHistory = async (medicalHistoryData) => {
     try {
       setLoading(true);
       setError(null);
+      console.log("Enviando datos al backend:", medicalHistoryData);
+
       const res = await createMedicalHistoryRequest(medicalHistoryData);
+      console.log("Respuesta del backend:", res.data);
+
       setMedicalHistory(res.data);
       return res.data;
     } catch (error) {
       console.error("Error creating medical history:", error);
-      setError(
-        error.response?.data?.message || "Error al crear historial médico"
-      );
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Error al crear historial médico";
+      setError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -54,13 +54,27 @@ export function MedicalHistoryProvider({ children }) {
     try {
       setLoading(true);
       setError(null);
+      console.log("Buscando historial médico para usuario:", userId);
+
       const res = await getMedicalHistoryByUserRequest(userId);
+      console.log("Historial médico encontrado:", res.data);
+
       setMedicalHistory(res.data);
       return res.data;
     } catch (error) {
       console.log("Error fetching medical history:", error);
+
+      // Si es error 404, no es un error real - simplemente no hay historial
+      if (error.response?.status === 404) {
+        console.log("No se encontró historial médico para este usuario");
+        setMedicalHistory(null);
+        return null;
+      }
+
       const errorMessage =
-        error.response?.data?.message || "Error al cargar historial médico";
+        error.response?.data?.message ||
+        error.message ||
+        "Error al cargar historial médico";
       setError(errorMessage);
       throw error;
     } finally {
@@ -72,32 +86,23 @@ export function MedicalHistoryProvider({ children }) {
     try {
       setLoading(true);
       setError(null);
+      console.log(
+        "Actualizando historial médico para:",
+        userId,
+        medicalHistoryData
+      );
+
       const res = await updateMedicalHistoryRequest(userId, medicalHistoryData);
+      console.log("Historial médico actualizado:", res.data);
+
       setMedicalHistory(res.data);
       return res.data;
     } catch (error) {
       console.error("Error updating medical history:", error);
       const errorMessage =
-        error.response?.data?.message || "Error al actualizar historial médico";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getPatientMedicalHistory = async (patientId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await getMedicalHistoryByUserRequest(patientId);
-      setMedicalHistory(res.data);
-      return res.data;
-    } catch (error) {
-      console.log("Error fetching patient medical history:", error);
-      const errorMessage =
         error.response?.data?.message ||
-        "Error al cargar historial médico del paciente";
+        error.message ||
+        "Error al actualizar historial médico";
       setError(errorMessage);
       throw error;
     } finally {
@@ -105,31 +110,8 @@ export function MedicalHistoryProvider({ children }) {
     }
   };
 
-  const updatePatientMedicalHistory = async (patientId, medicalHistoryData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await updateMedicalHistoryRequest(
-        patientId,
-        medicalHistoryData
-      );
-      setMedicalHistory(res.data);
-      return res.data;
-    } catch (error) {
-      console.error("Error updating patient medical history:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        "Error al actualizar historial médico del paciente";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const clearMedicalHistory = useCallback(() => {
     setMedicalHistory(null);
-    setCurrentPatient(null);
     setError(null);
   }, []);
 
@@ -139,14 +121,10 @@ export function MedicalHistoryProvider({ children }) {
         medicalHistory,
         loading,
         error,
-        currentPatient,
         createMedicalHistory,
-        getMedicalHistoryByUser: getPatientMedicalHistory,
-        updateMedicalHistory: updatePatientMedicalHistory,
         getMedicalHistoryByUser,
         updateMedicalHistory,
         clearError,
-        setPatient,
         clearMedicalHistory,
       }}
     >

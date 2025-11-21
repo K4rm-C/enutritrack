@@ -91,15 +91,46 @@ const MedicalHistoryManager = () => {
 
   useEffect(() => {
     if (medicalHistory) {
-      // Adaptar la respuesta del backend a nuestro estado local
+      console.log("Medical History recibido:", medicalHistory);
+
+      // Convertir strings del backend a arrays para la UI
       const adaptedData = {
-        condiciones: medicalHistory.condiciones || [],
-        alergias: medicalHistory.alergias || [],
-        medicamentos: medicalHistory.medicamentos || [],
+        condiciones: convertStringToArray(medicalHistory.condiciones),
+        alergias: convertStringToArray(medicalHistory.alergias),
+        medicamentos: convertStringToArray(medicalHistory.medicamentos),
       };
+
+      console.log("Datos adaptados:", adaptedData);
       setMedicalData(adaptedData);
     }
   }, [medicalHistory]);
+
+  // Función para convertir string a array
+  const convertStringToArray = (str) => {
+    if (!str || str.trim() === "") return [];
+
+    // Dividir por saltos de línea y filtrar líneas vacías
+    return str
+      .split("\n")
+      .filter((line) => line.trim() !== "")
+      .map((line) => ({
+        id: generateId(),
+        nombre: line.trim(),
+        activo: true,
+        activa: true,
+      }));
+  };
+
+  // Función para convertir array a string
+  const convertArrayToString = (arr) => {
+    if (!arr || arr.length === 0) return "";
+    return arr.map((item) => item.nombre).join("\n");
+  };
+
+  // Generar ID único para items
+  const generateId = () => {
+    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  };
 
   const loadPatients = async () => {
     try {
@@ -246,10 +277,10 @@ const MedicalHistoryManager = () => {
     const newItems = [...medicalData[type]];
 
     if (index === -1) {
-      // Nuevo item - asegurar que tenga el usuario_id del paciente
+      // Nuevo item
       newItems.push({
         ...itemData,
-        pacienteId: selectedPatient.id,
+        id: generateId(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -284,22 +315,24 @@ const MedicalHistoryManager = () => {
     }
 
     try {
+      // Convertir arrays a strings para el backend
       const medicalHistoryData = {
-        pacienteId: selectedPatient.id,
-        condiciones: medicalData.condiciones,
-        alergias: medicalData.alergias,
-        medicamentos: medicalData.medicamentos,
+        condiciones: convertArrayToString(medicalData.condiciones),
+        alergias: convertArrayToString(medicalData.alergias),
+        medicamentos: convertArrayToString(medicalData.medicamentos),
       };
 
-      if (
-        medicalHistory &&
-        medicalHistory.medicalHistories &&
-        medicalHistory.medicalHistories.length > 0
-      ) {
+      console.log("Enviando datos al backend:", medicalHistoryData);
+
+      if (medicalHistory && medicalHistory.id) {
+        // UPDATE - NO incluir pacienteId
         await updateMedicalHistory(selectedPatient.id, medicalHistoryData);
       } else {
-        console.log("Creando nuevo historial médico:", medicalHistoryData);
-        await createMedicalHistory(medicalHistoryData);
+        // CREATE - incluir pacienteId
+        await createMedicalHistory({
+          ...medicalHistoryData,
+          pacienteId: selectedPatient.id,
+        });
       }
 
       toast.success("Historial médico del paciente guardado correctamente");
@@ -357,22 +390,31 @@ const MedicalHistoryManager = () => {
     );
   });
 
-  // Filtrar datos médicos basados en búsqueda y filtros
-  const filteredData = medicalData[activeTab]?.filter((item) => {
-    const itemName = item.nombre ? item.nombre.toLowerCase() : "";
-    const itemNotes = item.notas ? item.notas.toLowerCase() : "";
-    const searchTermLower = searchTerm.toLowerCase();
+  // Filtrar datos médicos basados en búsqueda
+  const filteredData =
+    medicalData[activeTab]?.filter((item) => {
+      if (!item) return false;
 
-    const matchesSearch =
-      itemName.includes(searchTermLower) || itemNotes.includes(searchTermLower);
+      const itemName = item.nombre ? item.nombre.toLowerCase() : "";
+      const itemNotes = item.notas ? item.notas.toLowerCase() : "";
+      const searchTermLower = searchTerm.toLowerCase();
 
-    const matchesStatus =
-      !filterStatus ||
-      (item.activa !== undefined ? item.activa : item.activo) ===
-        (filterStatus === "active");
+      const matchesSearch =
+        itemName.includes(searchTermLower) ||
+        itemNotes.includes(searchTermLower);
 
-    return matchesSearch && matchesStatus;
-  });
+      // Filtro simple por estado
+      let matchesStatus = true;
+      if (filterStatus) {
+        if (activeTab === "medicamentos") {
+          matchesStatus = item.activo === (filterStatus === "active");
+        } else {
+          matchesStatus = item.activa === (filterStatus === "active");
+        }
+      }
+
+      return matchesSearch && matchesStatus;
+    }) || [];
 
   // Estadísticas para el dashboard del paciente
   const patientStats = {
@@ -1491,7 +1533,7 @@ const MedicalHistoryManager = () => {
   );
 };
 
-// Componente EditItemDialog (se mantiene igual que en versiones anteriores)
+// Componente EditItemDialog (se mantiene igual)
 const EditItemDialog = ({ open, onClose, onSave, currentEdit, darkMode }) => {
   const [formData, setFormData] = useState({});
 
