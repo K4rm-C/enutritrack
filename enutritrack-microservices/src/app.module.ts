@@ -20,7 +20,7 @@ import { AlertsModule } from './alertas/alertas.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
-      port: 5432,
+      port: 5433,
       username: 'enutritrack',
       password: 'enutritrack2024',
       database: 'enutritrack',

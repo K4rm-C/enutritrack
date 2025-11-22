@@ -60,7 +60,7 @@ else
     fi
 fi
 
-# 4. Instalar PostgreSQL
+# 4. Instalar PostgreSQL (pero lo deshabilitaremos porque usaremos Docker)
 echo "📦 Instalando PostgreSQL..."
 if ! command_exists psql; then
     sudo dnf install -y postgresql-server postgresql-contrib
@@ -71,6 +71,12 @@ if ! command_exists psql; then
 else
     echo "✅ PostgreSQL ya está instalado"
 fi
+
+# 4.5 Deshabilitar PostgreSQL nativo (usaremos solo Docker)
+echo "📦 Deshabilitando PostgreSQL nativo..."
+sudo systemctl stop postgresql
+sudo systemctl disable postgresql
+echo "✅ PostgreSQL nativo deshabilitado (usando solo Docker)"
 
 # 5. Instalar Nginx
 echo "📦 Instalando Nginx..."
@@ -145,31 +151,16 @@ cd enutritrack-microservices
 npm install
 cd ..
 
-# 10. Configurar PostgreSQL para conexiones remotas (si es necesario)
-echo "📦 Configurando PostgreSQL..."
-if ! sudo grep -q "enutritrack" /var/lib/pgsql/data/pg_hba.conf; then
-    echo "  Configurando acceso a la base de datos..."
-    # Configurar pg_hba.conf para permitir conexiones
-    sudo tee -a /var/lib/pgsql/data/pg_hba.conf > /dev/null << 'PG_CONFIG'
-# Enutritrack - Permitir conexiones desde Docker
-host    all             all             172.0.0.0/8            md5
-host    all             all             127.0.0.1/32           md5
-PG_CONFIG
+# 10. Configurar PostgreSQL para conexiones remotas (si es necesario) - Esto ya no es necesario porque usamos Docker
+# Pero por si acaso, eliminamos la configuración anterior y no hacemos nada en el PostgreSQL nativo.
+echo "📦 Saltando configuración de PostgreSQL nativo (usando Docker)..."
 
-    # Configurar postgresql.conf para escuchar en todas las interfaces
-    sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /var/lib/pgsql/data/postgresql.conf
-    sudo systemctl restart postgresql
-fi
-
-# 11. Crear base de datos y usuario si no existen
-echo "📦 Configurando base de datos..."
-sudo -i -u postgres psql -c "CREATE USER enutritrack WITH PASSWORD 'enutritrack2024';" 2>/dev/null || true
-sudo -i -u postgres psql -c "CREATE DATABASE enutritrack OWNER enutritrack;" 2>/dev/null || true
-sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE enutritrack TO enutritrack;" 2>/dev/null || true
-
-# 12. Levantar bases de datos con Docker
-echo "📦 Levantando bases de datos..."
+# 11. Crear base de datos y usuario en PostgreSQL Docker
+echo "📦 Configurando base de datos en PostgreSQL Docker..."
 cd "$PROJECT_ROOT/enutritrack-server"
+
+# Levantar bases de datos con Docker
+echo "📦 Levantando bases de datos con Docker..."
 
 # Verificar si los contenedores ya están corriendo
 if ! docker compose ps 2>/dev/null | grep -q "Up"; then
@@ -177,7 +168,7 @@ if ! docker compose ps 2>/dev/null | grep -q "Up"; then
     docker compose up -d
 fi
 
-# 13. Esperar y verificar que PostgreSQL esté corriendo
+# Esperar y verificar que PostgreSQL esté corriendo
 echo "⏳ Esperando que PostgreSQL se inicie correctamente..."
 MAX_RETRIES=12
 RETRY_COUNT=0
@@ -195,7 +186,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     fi
     
     # Verificar si PostgreSQL está listo para conexiones
-    if docker exec enutritrack_postgres pg_isready -U postgres -d enutritrack > /dev/null 2>&1; then
+    if docker exec enutritrack_postgres pg_isready -U postgres > /dev/null 2>&1; then
         POSTGRES_READY=true
         echo "✅ PostgreSQL está listo después de $((RETRY_COUNT * 5)) segundos"
         break
@@ -216,8 +207,13 @@ if [ "$POSTGRES_READY" = false ]; then
     exit 1
 fi
 
+# Ahora creamos la base de datos y el usuario en el contenedor Docker
+echo "📦 Creando usuario y base de datos en PostgreSQL Docker..."
+docker exec enutritrack_postgres psql -U postgres -c "CREATE USER enutritrack WITH PASSWORD 'enutritrack2024';" 2>/dev/null || echo "✅ Usuario ya existe"
+docker exec enutritrack_postgres psql -U postgres -c "CREATE DATABASE enutritrack OWNER enutritrack;" 2>/dev/null || echo "✅ Base de datos ya existe"
+docker exec enutritrack_postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE enutritrack TO enutritrack;" 2>/dev/null || echo "✅ Permisos ya configurados"
 
-# 13. Inicializar PostgreSQL con manejo de errores
+# 12. Inicializar PostgreSQL con manejo de errores
 echo "📦 Inicializando PostgreSQL..."
 INIT_SUCCESS=false
 MAX_INIT_RETRIES=3
@@ -226,7 +222,7 @@ INIT_RETRY_COUNT=0
 while [ $INIT_RETRY_COUNT -lt $MAX_INIT_RETRIES ]; do
     INIT_RETRY_COUNT=$((INIT_RETRY_COUNT + 1))
     
-    if docker exec -i enutritrack_postgres psql -U postgres -d enutritrack < "$PROJECT_ROOT/enutritrack-server/scripts/init-db.sql" 2>&1; then
+    if docker exec -i enutritrack_postgres psql -U enutritrack -d enutritrack < "$PROJECT_ROOT/enutritrack-server/scripts/init-db.sql" 2>&1; then
         INIT_SUCCESS=true
         echo "✅ Base de datos inicializada correctamente"
         break
@@ -242,7 +238,7 @@ while [ $INIT_RETRY_COUNT -lt $MAX_INIT_RETRIES ]; do
     fi
 done
 
-# 14. Modificar frontend para usar rutas relativas a través de Nginx
+# 13. Modificar frontend para usar rutas relativas a través de Nginx
 echo "📦 Configurando frontend para usar rutas relativas..."
 cd "$PROJECT_ROOT/enutritrack-client/src/api"
 
@@ -262,7 +258,7 @@ else
     echo "⚠️  Archivo axios.jsx no encontrado, continuando..."
 fi
 
-# 15. Compilar aplicaciones
+# 14. Compilar aplicaciones
 echo "📦 Compilando aplicaciones..."
 cd "$PROJECT_ROOT/enutritrack-client"
 npm run build
@@ -273,7 +269,7 @@ npm run build
 cd "$PROJECT_ROOT/enutritrack-microservices"
 npm run build
 
-# 16. Obtener IP externa de la VM
+# 15. Obtener IP externa de la VM
 VM_IP=$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google" 2>/dev/null || true)
 if [ -z "$VM_IP" ]; then
     VM_IP=$(curl -s ifconfig.me 2>/dev/null || echo "IP-DESCONOCIDA")
@@ -281,7 +277,7 @@ fi
 
 echo "🌐 IP externa de la VM: $VM_IP"
 
-# 17. Configurar Nginx
+# 16. Configurar Nginx
 echo "📦 Configurando Nginx..."
 sudo tee /etc/nginx/conf.d/enutritrack.conf > /dev/null << NGINX_CONFIG
 server {
@@ -404,7 +400,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 
-# 18. Configurar firewall (si está activo)
+# 17. Configurar firewall (si está activo)
 if command_exists firewall-cmd; then
     echo "📦 Configurando firewall..."
     sudo firewall-cmd --permanent --add-service=http
@@ -413,7 +409,7 @@ if command_exists firewall-cmd; then
     echo "✅ Firewall configurado"
 fi
 
-# 19. Crear ecosystem de PM2
+# 18. Crear ecosystem de PM2
 echo "📦 Configurando PM2..."
 mkdir -p "$PROJECT_ROOT/logs"
 
@@ -512,7 +508,7 @@ module.exports = {
 };
 PM2_CONFIG
 
-# 20. Iniciar servicios con PM2
+# 19. Iniciar servicios con PM2
 echo "📦 Iniciando servicios..."
 cd "$PROJECT_ROOT"
 pm2 start ecosystem.config.js
