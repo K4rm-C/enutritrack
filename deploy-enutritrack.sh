@@ -14,6 +14,12 @@ package_installed() {
     dnf list installed "$1" &> /dev/null
 }
 
+# Obtener el directorio actual del script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
+
+echo "📁 Ruta del proyecto: $PROJECT_ROOT"
+
 # 2. Instalar Node.js 20
 echo "📦 Instalando Node.js 20..."
 if ! command_exists node; then
@@ -73,15 +79,23 @@ fi
 
 # 7. Verificar que el proyecto existe
 echo "📦 Verificando proyecto..."
-if [ ! -d "/enutritrack" ]; then
-    echo "❌ Error: El proyecto no se encuentra en /enutritrack"
-    echo "   Por favor, sube el proyecto (ZIP) y extráelo"
+if [ ! -d "$PROJECT_ROOT/enutritrack-client" ]; then
+    echo "❌ Error: Estructura del proyecto no encontrada"
+    echo "   Se esperaban los directorios:"
+    echo "   - $PROJECT_ROOT/enutritrack-client"
+    echo "   - $PROJECT_ROOT/enutritrack-server" 
+    echo "   - $PROJECT_ROOT/enutritrack-microservices"
+    echo ""
+    echo "   Estructura actual:"
+    ls -la "$PROJECT_ROOT"
     exit 1
 fi
 
+echo "✅ Estructura del proyecto verificada"
+
 # 8. Instalar dependencias
 echo "📦 Instalando dependencias..."
-cd /enutritrack
+cd "$PROJECT_ROOT"
 
 echo "  - Frontend..."
 cd enutritrack-client
@@ -122,7 +136,7 @@ sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE enutritrack TO enu
 
 # 11. Levantar bases de datos con Docker
 echo "📦 Levantando bases de datos..."
-cd /enutritrack/enutritrack-server
+cd "$PROJECT_ROOT/enutritrack-server"
 
 # Verificar si los contenedores ya están corriendo
 if ! docker compose ps | grep -q "Up"; then
@@ -162,7 +176,7 @@ if [ "$POSTGRES_READY" = false ]; then
     docker logs enutritrack_postgres --tail 50
     echo ""
     echo "   Intenta reiniciar manualmente:"
-    echo "   cd /enutritrack/enutritrack-server"
+    echo "   cd $PROJECT_ROOT/enutritrack-server"
     echo "   docker compose restart postgres"
     echo "   docker logs -f enutritrack_postgres"
     exit 1
@@ -177,7 +191,7 @@ INIT_RETRY_COUNT=0
 while [ $INIT_RETRY_COUNT -lt $MAX_INIT_RETRIES ]; do
     INIT_RETRY_COUNT=$((INIT_RETRY_COUNT + 1))
     
-    if docker exec -i enutritrack_postgres psql -U postgres -d enutritrack < /enutritrack/enutritrack-server/scripts/init-db.sql 2>&1; then
+    if docker exec -i enutritrack_postgres psql -U postgres -d enutritrack < "$PROJECT_ROOT/enutritrack-server/scripts/init-db.sql" 2>&1; then
         INIT_SUCCESS=true
         echo "✅ Base de datos inicializada correctamente"
         break
@@ -195,7 +209,7 @@ done
 
 # 14. Modificar frontend para usar rutas relativas a través de Nginx
 echo "📦 Configurando frontend para usar rutas relativas..."
-cd /enutritrack/enutritrack-client/src/api
+cd "$PROJECT_ROOT/enutritrack-client/src/api"
 
 # Verificar si el archivo existe antes de modificarlo
 if [ -f "axios.jsx" ]; then
@@ -215,13 +229,13 @@ fi
 
 # 15. Compilar aplicaciones
 echo "📦 Compilando aplicaciones..."
-cd /enutritrack/enutritrack-client
+cd "$PROJECT_ROOT/enutritrack-client"
 npm run build
 
-cd /enutritrack/enutritrack-server
+cd "$PROJECT_ROOT/enutritrack-server"
 npm run build
 
-cd /enutritrack/enutritrack-microservices
+cd "$PROJECT_ROOT/enutritrack-microservices"
 npm run build
 
 # 16. Obtener IP externa de la VM
@@ -234,113 +248,113 @@ echo "🌐 IP externa de la VM: $VM_IP"
 
 # 17. Configurar Nginx
 echo "📦 Configurando Nginx..."
-sudo tee /etc/nginx/conf.d/enutritrack.conf > /dev/null << 'NGINX_CONFIG'
+sudo tee /etc/nginx/conf.d/enutritrack.conf > /dev/null << NGINX_CONFIG
 server {
     listen 80;
     server_name _;
 
     # CMS/Dashboard del Backend - Rutas específicas del CMS (prioridad alta)
-    location ~ ^/auth/(login|dashboard|refresh)$ {
+    location ~ ^/auth/(login|dashboard|refresh)\$ {
         proxy_pass http://localhost:4000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_cache_bypass \$http_upgrade;
     }
 
     # Otras rutas del CMS del backend (páginas HTML)
     location ~ ^/(dashboard|patients-crud|doctors-crud|appointments|food|health|history-medical|medications|allergies|states|types|gender|specialties-crud) {
         proxy_pass http://localhost:4000;
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     # Backend API
     location /api/ {
         proxy_pass http://localhost:4000/;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_cache_bypass \$http_upgrade;
     }
 
     # Microservicios - rutas corregidas para coincidir con los controladores
     location /users/ {
         proxy_pass http://localhost:3001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     location /medical-history/ {
         proxy_pass http://localhost:3002;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     location /nutrition/ {
         proxy_pass http://localhost:3003;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     location /physical-activity/ {
         proxy_pass http://localhost:3005;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     location /recommendations/ {
         proxy_pass http://localhost:3006;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     location /doctors/ {
         proxy_pass http://localhost:3007;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     location /citas-medicas/ {
         proxy_pass http://localhost:3008;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     location /alerts/ {
         proxy_pass http://localhost:3009;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     # Microservicio de auth
     location /auth/ {
         proxy_pass http://localhost:3004;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 
     # Frontend (debe ir al final para capturar todo lo demás)
     location / {
-        root /enutritrack/enutritrack-client/dist;
-        try_files $uri $uri/ /index.html;
+        root $PROJECT_ROOT/enutritrack-client/dist;
+        try_files \$uri \$uri/ /index.html;
     }
 
     client_max_body_size 50M;
@@ -366,15 +380,15 @@ fi
 
 # 19. Crear ecosystem de PM2
 echo "📦 Configurando PM2..."
-mkdir -p /enutritrack/logs
+mkdir -p "$PROJECT_ROOT/logs"
 
-cat > /enutritrack/ecosystem.config.js << 'PM2_CONFIG'
+cat > "$PROJECT_ROOT/ecosystem.config.js" << PM2_CONFIG
 module.exports = {
   apps: [
     {
       name: 'enutritrack-backend',
       script: './enutritrack-server/dist/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 4000 },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
@@ -382,7 +396,7 @@ module.exports = {
     {
       name: 'enutritrack-gateway',
       script: './enutritrack-microservices/dist/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3000 },
       error_file: './logs/gateway-error.log',
       out_file: './logs/gateway-out.log',
@@ -390,7 +404,7 @@ module.exports = {
     {
       name: 'enutritrack-auth',
       script: './enutritrack-microservices/dist/auth/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3004 },
       error_file: './logs/auth-error.log',
       out_file: './logs/auth-out.log',
@@ -398,7 +412,7 @@ module.exports = {
     {
       name: 'enutritrack-user',
       script: './enutritrack-microservices/dist/users/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3001 },
       error_file: './logs/user-error.log',
       out_file: './logs/user-out.log',
@@ -406,7 +420,7 @@ module.exports = {
     {
       name: 'enutritrack-doctor',
       script: './enutritrack-microservices/dist/doctor/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3007 },
       error_file: './logs/doctor-error.log',
       out_file: './logs/doctor-out.log',
@@ -414,7 +428,7 @@ module.exports = {
     {
       name: 'enutritrack-nutrition',
       script: './enutritrack-microservices/dist/nutrition/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3003 },
       error_file: './logs/nutrition-error.log',
       out_file: './logs/nutrition-out.log',
@@ -422,7 +436,7 @@ module.exports = {
     {
       name: 'enutritrack-activity',
       script: './enutritrack-microservices/dist/activity/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3005 },
       error_file: './logs/activity-error.log',
       out_file: './logs/activity-out.log',
@@ -430,7 +444,7 @@ module.exports = {
     {
       name: 'enutritrack-recommendation',
       script: './enutritrack-microservices/dist/recommendation/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3006 },
       error_file: './logs/recommendation-error.log',
       out_file: './logs/recommendation-out.log',
@@ -438,7 +452,7 @@ module.exports = {
     {
       name: 'enutritrack-medical',
       script: './enutritrack-microservices/dist/medical-history/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3002 },
       error_file: './logs/medical-error.log',
       out_file: './logs/medical-out.log',
@@ -446,7 +460,7 @@ module.exports = {
     {
       name: 'enutritrack-citas',
       script: './enutritrack-microservices/dist/citas/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3008 },
       error_file: './logs/citas-error.log',
       out_file: './logs/citas-out.log',
@@ -454,7 +468,7 @@ module.exports = {
     {
       name: 'enutritrack-alertas',
       script: './enutritrack-microservices/dist/alertas/main.js',
-      cwd: '/enutritrack',
+      cwd: '$PROJECT_ROOT',
       env: { NODE_ENV: 'production', PORT: 3009 },
       error_file: './logs/alertas-error.log',
       out_file: './logs/alertas-out.log',
@@ -465,7 +479,7 @@ PM2_CONFIG
 
 # 20. Iniciar servicios con PM2
 echo "📦 Iniciando servicios..."
-cd /enutritrack
+cd "$PROJECT_ROOT"
 pm2 start ecosystem.config.js
 pm2 save
 sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
@@ -522,6 +536,6 @@ echo "   docker logs enutritrack_postgres"
 echo "   sudo journalctl -u postgresql -f"
 echo ""
 echo "   Reiniciar bases de datos:"
-echo "   cd /enutritrack/enutritrack-server"
+echo "   cd $PROJECT_ROOT/enutritrack-server"
 echo "   docker compose restart"
 echo ""
