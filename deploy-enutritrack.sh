@@ -2,7 +2,7 @@
 
 set -e  # Salir si hay error
 
-echo "🚀 Iniciando despliegue de Enutritrack en CentOS 9..."
+echo "1.🚀 Iniciando despliegue de Enutritrack en CentOS 9..."
 
 # Función para verificar si un comando existe
 command_exists() {
@@ -13,10 +13,6 @@ command_exists() {
 package_installed() {
     dnf list installed "$1" &> /dev/null
 }
-
-# 1. Actualizar sistema
-echo "📦 Actualizando sistema..."
-sudo dnf update -y
 
 # 2. Instalar Node.js 20
 echo "📦 Instalando Node.js 20..."
