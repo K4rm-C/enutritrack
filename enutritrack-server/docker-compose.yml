@@ -4,8 +4,8 @@ services:
     container_name: enutritrack_postgres
     environment:
       POSTGRES_DB: enutritrack
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: juanjose10
+      POSTGRES_USER: enutritrack
+      POSTGRES_PASSWORD: enutritrack2024
     ports:
       - '5433:5432'
     volumes:
