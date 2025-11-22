@@ -249,6 +249,47 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO enutritrack;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO enutritrack;
 "
 
+# 12.2 Aplicar Stored Procedures para el Dashboard
+echo "📦 Aplicando Stored Procedures para el Dashboard..."
+
+# Verificar que el archivo de stored procedures existe
+STORED_PROCEDURES_FILE="$PROJECT_ROOT/enutritrack-server/scripts/stored-procedures.sql"
+if [ -f "$STORED_PROCEDURES_FILE" ]; then
+    echo "  Aplicando stored procedures desde: $STORED_PROCEDURES_FILE"
+    
+    # Ejecutar el archivo SQL en el contenedor PostgreSQL
+    if docker exec -i enutritrack_postgres psql -U postgres -d enutritrack -f - < "$STORED_PROCEDURES_FILE"; then
+        echo "✅ Stored procedures aplicados exitosamente"
+        echo ""
+        echo "Procedimientos principales creados:" 
+        echo "  - sp_get_all_patients()"
+        echo "  - sp_get_patient_details(patient_id)"
+        echo "  - sp_update_patient_doctor(patient_id, doctor_id)"
+        echo "  - sp_toggle_patient_status(patient_id)"
+        echo "  - sp_get_all_doctors()"
+        echo "  - sp_get_doctor_patients(doctor_id)"
+        echo "  - sp_create_doctor(...)"
+        echo "  - sp_update_doctor(...)"
+        echo "  - sp_get_all_admins()"
+        echo "  - sp_get_admin_details(email)"
+        echo "  - sp_get_dashboard_stats()"
+        echo "  - sp_get_patients_by_gender()"
+        echo "  - sp_get_recent_registrations()"
+        echo "  - obtener_historial_medico_completo()"
+        echo "  - analisis_progreso_peso()"
+        echo "  - reporte_consumo_mensual()"
+        echo "  - dashboard_estadisticas_generales()"
+        echo "  - buscar_usuarios_por_patron_medico()"
+        echo "  - buscar_usuarios_por_perfil()"
+        echo "  - buscar_staff_por_patron()"
+        echo ""
+    else
+        echo "⚠️  Error al aplicar stored procedures, continuando..."
+    fi
+else
+    echo "⚠️  Archivo de stored procedures no encontrado en $STORED_PROCEDURES_FILE, continuando..."
+fi
+
 echo "✅ Permisos otorgados al usuario enutritrack"
 # 13. Configurar Couchbase
 echo "📦 Configurando Couchbase..."
