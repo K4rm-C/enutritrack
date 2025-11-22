@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/models/user.model';
 import { FoodRecordItem } from './registro-comida-item.model';
+import { TipoComidaEnum } from '../../shared/enums';
 
 @Entity('registro_comida')
 export class FoodRecord {
@@ -24,8 +25,12 @@ export class FoodRecord {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   fecha: Date;
 
-  @Column({ type: 'varchar', length: 50 })
-  tipo_comida: string;
+  @Column({
+    type: 'enum',
+    enum: TipoComidaEnum,
+    enumName: 'registro_comida_tipo_enum',
+  })
+  tipo_comida: TipoComidaEnum;
 
   @Column({ type: 'text', nullable: true })
   notas: string;

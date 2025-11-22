@@ -218,7 +218,7 @@ interface HealthApiService {
     /**
      * Actualiza una actividad física existente
      */
-    @PATCH("physical-activity/{id}")
+    @PUT("physical-activity/{id}")
     suspend fun updateActividadFisica(
         @Path("id") id: String,
         @Body request: com.example.enutritrack_app.data.remote.dto.CreateActividadFisicaRequest
@@ -237,7 +237,7 @@ interface HealthApiService {
     /**
      * Obtiene todos los tipos de actividad física
      */
-    @GET("tipos-actividad")
+    @GET("physical-activity/types")
     suspend fun getTiposActividad(): Response<List<com.example.enutritrack_app.data.remote.dto.TipoActividadResponse>>
 }
 

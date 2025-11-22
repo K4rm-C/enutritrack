@@ -193,6 +193,94 @@ const UsersListDashboard = () => {
     setShowFormModal(true);
   };
 
+  // CORREGIR: Carga de usuarios del doctor
+  useEffect(() => {
+    const loadUsers = async () => {
+      // Usar authUser.userId que es el ID del doctor autenticado
+      if (!user?.userId) {
+        console.log("No hay usuario logueado o no tiene userId");
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        console.log("Cargando pacientes del doctor:", user.userId);
+
+        // Usar el endpoint optimizado para obtener solo los pacientes de este doctor
+        const usersData = await getUsersByDoctorId(user.userId);
+        console.log("Pacientes recibidos del doctor:", usersData);
+
+        setUsers(Array.isArray(usersData) ? usersData : []);
+      } catch (error) {
+        console.error("Error cargando pacientes del doctor:", error);
+        toast.error("Error al cargar los pacientes");
+        setUsers([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadUsers();
+  }, [user?.userId]); // Dependencia corregida
+
+  // CORREGIR: Función para enviar datos del paciente
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Preparar los datos para enviar
+      const userData = {
+        nombre: formData.nombre,
+        email: formData.email,
+        email_1: formData.email_1,
+        email_2: formData.email_2,
+        contraseña: formData.contraseña,
+        genero_id: formData.genero, // Asegurar que sea genero_id
+        fecha_nacimiento: formData.fecha_nacimiento,
+        altura: formData.altura ? parseFloat(formData.altura) : null,
+        peso_actual: formData.peso_actual
+          ? parseFloat(formData.peso_actual)
+          : null,
+        objetivo_peso: formData.objetivo_peso
+          ? parseFloat(formData.objetivo_peso)
+          : null,
+        nivel_actividad: formData.nivel_actividad,
+        telefono: formData.telefono,
+        telefono_1: formData.telefono_1,
+        telefono_2: formData.telefono_2,
+        doctorId: formData.doctorId, // Asegurar que sea doctor_id
+      };
+
+      console.log("Enviando datos del paciente:", userData);
+
+      if (editingUser) {
+        // Verificar que tenemos un ID válido antes de actualizar
+        if (!editingUser.id) {
+          console.error("Error: editingUser.id es undefined", editingUser);
+          toast.error("Error: ID de usuario no válido para actualización");
+          return;
+        }
+
+        // Actualizar usuario existente
+        const updatedUser = await updateUser(editingUser.id, userData);
+        setUsers(
+          users.map((user) => (user.id === editingUser.id ? updatedUser : user))
+        );
+        toast.success("Usuario actualizado correctamente");
+      } else {
+        // Crear nuevo usuario
+        const newUser = await createUser(userData);
+        setUsers([...users, newUser]);
+        toast.success("Usuario creado correctamente");
+      }
+      setShowFormModal(false);
+    } catch (error) {
+      console.error("Error al guardar usuario:", error);
+      toast.error(
+        "Error al guardar el usuario: " +
+          (error.response?.data?.message || error.message)
+      );
+    }
+  };
+
   // Función para calcular edad
   const calcularEdad = (fechaNacimiento) => {
     if (!fechaNacimiento) return null;

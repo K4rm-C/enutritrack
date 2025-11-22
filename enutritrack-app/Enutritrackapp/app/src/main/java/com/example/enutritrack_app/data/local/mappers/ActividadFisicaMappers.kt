@@ -41,6 +41,8 @@ fun ActividadFisicaResponse.toEntity(): ActividadFisicaEntity {
         tipo_actividad_id = tipoActividadId,
         duracion_min = duracionMin,
         calorias_quemadas = caloriasQuemadas,
+        intensidad = intensidad,
+        notas = notas,
         fecha = fechaMillis,
         syncStatus = SyncStatus.SYNCED,
         serverId = id,
@@ -60,6 +62,8 @@ fun ActividadFisicaEntity.toCreateRequest(): CreateActividadFisicaRequest {
         tipo_actividad_id = tipo_actividad_id,
         duracion_min = duracion_min,
         calorias_quemadas = calorias_quemadas,
+        intensidad = intensidad,
+        notas = notas,
         fecha = Date(fecha)
     )
 }

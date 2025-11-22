@@ -17,6 +17,12 @@ data class ActividadFisicaResponse(
     @SerializedName("calorias_quemadas")
     val caloriasQuemadas: Double,
     
+    @SerializedName("intensidad")
+    val intensidad: String? = null,
+    
+    @SerializedName("notas")
+    val notas: String? = null,
+    
     val fecha: String, // ISO 8601 format
     
     @SerializedName("created_at")

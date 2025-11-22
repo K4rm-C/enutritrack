@@ -13,6 +13,11 @@ import com.example.enutritrack_app.data.local.entities.*
 /**
  * Base de datos Room principal para la aplicación
  * 
+ * Version 10: Actualizada ActividadFisicaEntity con campos opcionales
+ * - intensidad: String? (opcional)
+ * - notas: String? (opcional)
+ * - calorias_quemadas ahora puede ser calculado por el servidor si no se proporciona
+ * 
  * Version 9: Agregadas entidades del módulo de Citas y Alertas
  * - CitaMedicaEntity, CitaMedicaVitalesEntity, CitaMedicaDocumentosEntity
  * - TipoConsultaEntity, EstadoCitaEntity
@@ -70,7 +75,7 @@ import com.example.enutritrack_app.data.local.entities.*
         NivelPrioridadAlertaEntity::class,
         EstadoAlertaEntity::class
     ],
-    version = 9, // Incremented version - Added Citas and Alertas entities
+    version = 10, // Incremented version - Added optional fields to ActividadFisicaEntity
     exportSchema = false
 )
 @TypeConverters(Converters::class)

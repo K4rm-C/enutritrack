@@ -14,11 +14,13 @@ import {
 import { PhysicalActivityService } from './activity.service';
 import express from 'express';
 import { JwtAuthGuard } from '../couchbase/auth/guards/jwt-auth.guard';
+import { TiposActividadService } from '../tipo-actividad/tipo-actividad.service';
 
 @Controller('physical-activity')
 export class PhysicalActivityController {
   constructor(
     private readonly physicalActivityService: PhysicalActivityService,
+    private readonly tiposActividadService: TiposActividadService,
   ) {}
 
   @UseGuards(JwtAuthGuard)
@@ -71,6 +73,20 @@ export class PhysicalActivityController {
 
     const targetDate = startDate ? new Date(startDate) : new Date();
     return this.physicalActivityService.getWeeklySummary(userId, targetDate);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('types')
+  async getActivityTypes(@Req() req: express.Request) {
+    const authToken =
+      req.cookies?.access_token ||
+      req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      throw new Error('Authentication token not found');
+    }
+
+    return this.tiposActividadService.findAll();
   }
 
   @UseGuards(JwtAuthGuard)

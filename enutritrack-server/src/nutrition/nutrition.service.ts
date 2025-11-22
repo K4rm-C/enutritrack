@@ -44,7 +44,7 @@ export class RegistroComidaService {
 
   async findByUsuarioId(usuarioId: string): Promise<RegistroComida[]> {
     return await this.registroComidaRepository.find({
-      where: { usuario_id: usuarioId },
+      where: { usuario: { id: usuarioId } },
       relations: ['usuario', 'items', 'items.alimento'],
       order: { fecha: 'DESC' },
     });
@@ -55,7 +55,7 @@ export class RegistroComidaService {
     tipoComida: TipoComidaEnum, // Cambiar de string a TipoComidaEnum
   ): Promise<RegistroComida[]> {
     return await this.registroComidaRepository.find({
-      where: { usuario_id: usuarioId, tipo_comida: tipoComida },
+      where: { usuario: { id: usuarioId }, tipo_comida: tipoComida },
       relations: ['usuario', 'items', 'items.alimento'],
       order: { fecha: 'DESC' },
     });
@@ -68,7 +68,7 @@ export class RegistroComidaService {
   ): Promise<RegistroComida[]> {
     return await this.registroComidaRepository.find({
       where: {
-        usuario_id: usuarioId,
+        usuario: { id: usuarioId },
         fecha: Between(fechaInicio, fechaFin),
       },
       relations: ['usuario', 'items', 'items.alimento'],
