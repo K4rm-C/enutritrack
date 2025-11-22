@@ -2,42 +2,80 @@
 
 set -e  # Salir si hay error
 
-echo "🚀 Iniciando despliegue de Enutritrack..."
+echo "🚀 Iniciando despliegue de Enutritrack en CentOS 9..."
+
+# Función para verificar si un comando existe
+command_exists() {
+    command -v "$1" &> /dev/null
+}
+
+# Función para verificar si un paquete está instalado
+package_installed() {
+    dnf list installed "$1" &> /dev/null
+}
 
 # 1. Actualizar sistema
 echo "📦 Actualizando sistema..."
-sudo apt update && sudo apt upgrade -y
+sudo dnf update -y
 
 # 2. Instalar Node.js 20
 echo "📦 Instalando Node.js 20..."
-if ! command -v node &> /dev/null; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+if ! command_exists node; then
+    sudo dnf install -y curl 
+    curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo -E bash -
+    sudo dnf install -y nodejs
+    echo "✅ Node.js $(node -v) instalado"
+else
+    echo "✅ Node.js $(node -v) ya está instalado"
 fi
-echo "✅ Node.js $(node -v) instalado"
 
 # 3. Instalar Docker
 echo "📦 Instalando Docker..."
-if ! command -v docker &> /dev/null; then
-    sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt update
-    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+if ! command_exists docker; then
+    sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    sudo systemctl start docker
+    sudo systemctl enable docker
     sudo usermod -aG docker $USER
     newgrp docker
+    echo "✅ Docker instalado"
+else
+    echo "✅ Docker ya está instalado"
 fi
-echo "✅ Docker instalado"
 
-# 4. Instalar Nginx
+# 4. Instalar PostgreSQL
+echo "📦 Instalando PostgreSQL..."
+if ! command_exists psql; then
+    sudo dnf install -y postgresql-server postgresql-contrib
+    sudo postgresql-setup --initdb
+    sudo systemctl start postgresql
+    sudo systemctl enable postgresql
+    echo "✅ PostgreSQL instalado"
+else
+    echo "✅ PostgreSQL ya está instalado"
+fi
+
+# 5. Instalar Nginx
 echo "📦 Instalando Nginx..."
-sudo apt install -y nginx
+if ! command_exists nginx; then
+    sudo dnf install -y nginx
+    sudo systemctl start nginx
+    sudo systemctl enable nginx
+    echo "✅ Nginx instalado"
+else
+    echo "✅ Nginx ya está instalado"
+fi
 
-# 5. Instalar PM2
+# 6. Instalar PM2
 echo "📦 Instalando PM2..."
-sudo npm install -g pm2
+if ! command_exists pm2; then
+    sudo npm install -g pm2
+    echo "✅ PM2 instalado"
+else
+    echo "✅ PM2 ya está instalado"
+fi
 
-# 6. Verificar que el proyecto existe
+# 7. Verificar que el proyecto existe
 echo "📦 Verificando proyecto..."
 if [ ! -d "/opt/enutritrack" ]; then
     echo "❌ Error: El proyecto no se encuentra en /opt/enutritrack"
@@ -49,7 +87,7 @@ if [ ! -d "/opt/enutritrack" ]; then
     exit 1
 fi
 
-# 7. Instalar dependencias
+# 8. Instalar dependencias
 echo "📦 Instalando dependencias..."
 cd /opt/enutritrack
 
@@ -68,13 +106,38 @@ cd enutritrack-microservices
 npm install
 cd ..
 
-# 8. Levantar bases de datos con Docker
+# 9. Configurar PostgreSQL para conexiones remotas (si es necesario)
+echo "📦 Configurando PostgreSQL..."
+if ! sudo grep -q "enutritrack" /var/lib/pgsql/data/pg_hba.conf; then
+    echo "  Configurando acceso a la base de datos..."
+    # Configurar pg_hba.conf para permitir conexiones
+    sudo tee -a /var/lib/pgsql/data/pg_hba.conf > /dev/null << 'PG_CONFIG'
+# Enutritrack - Permitir conexiones desde Docker
+host    all             all             172.0.0.0/8            md5
+host    all             all             127.0.0.1/32           md5
+PG_CONFIG
+
+    # Configurar postgresql.conf para escuchar en todas las interfaces
+    sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /var/lib/pgsql/data/postgresql.conf
+    sudo systemctl restart postgresql
+fi
+
+# 10. Crear base de datos y usuario si no existen
+echo "📦 Configurando base de datos..."
+sudo -i -u postgres psql -c "CREATE USER enutritrack WITH PASSWORD 'enutritrack2024';" 2>/dev/null || true
+sudo -i -u postgres psql -c "CREATE DATABASE enutritrack OWNER enutritrack;" 2>/dev/null || true
+sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE enutritrack TO enutritrack;" 2>/dev/null || true
+
+# 11. Levantar bases de datos con Docker
 echo "📦 Levantando bases de datos..."
 cd /opt/enutritrack/enutritrack-server
 
-docker compose up -d
+# Verificar si los contenedores ya están corriendo
+if ! docker compose ps | grep -q "Up"; then
+    docker compose up -d
+fi
 
-# 9. Esperar y verificar que PostgreSQL esté corriendo
+# 12. Esperar y verificar que PostgreSQL esté corriendo
 echo "⏳ Esperando que PostgreSQL se inicie correctamente..."
 MAX_RETRIES=12
 RETRY_COUNT=0
@@ -113,7 +176,7 @@ if [ "$POSTGRES_READY" = false ]; then
     exit 1
 fi
 
-# 10. Inicializar PostgreSQL con manejo de errores
+# 13. Inicializar PostgreSQL con manejo de errores
 echo "📦 Inicializando PostgreSQL..."
 INIT_SUCCESS=false
 MAX_INIT_RETRIES=3
@@ -138,21 +201,27 @@ while [ $INIT_RETRY_COUNT -lt $MAX_INIT_RETRIES ]; do
     fi
 done
 
-# 11. Modificar frontend para usar rutas relativas a través de Nginx
+# 14. Modificar frontend para usar rutas relativas a través de Nginx
 echo "📦 Configurando frontend para usar rutas relativas..."
 cd /opt/enutritrack/enutritrack-client/src/api
 
-# Modificar axios.jsx para usar rutas relativas que coincidan con los controladores
-sed -i 's|const API_BASE_URL_USER = "http://localhost:3001/";|const API_BASE_URL_USER = "/users/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_MEDICAL = "http://localhost:3002/";|const API_BASE_URL_MEDICAL = "/medical-history/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_NUTRITION = "http://localhost:3003/";|const API_BASE_URL_NUTRITION = "/nutrition/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_AUTH = "http://localhost:3004/";|const API_BASE_URL_AUTH = "/auth/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_ACTIVITY = "http://localhost:3005/";|const API_BASE_URL_ACTIVITY = "/physical-activity/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_RECOMMENDATION = "http://localhost:3006/";|const API_BASE_URL_RECOMMENDATION = "/recommendations/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_CITAS_MEDIAS = "http://localhost:3008/";|const API_BASE_URL_CITAS_MEDIAS = "/citas-medicas/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_ALERTAS = "http://localhost:3009/";|const API_BASE_URL_ALERTAS = "/alerts/";|g' axios.jsx
+# Verificar si el archivo existe antes de modificarlo
+if [ -f "axios.jsx" ]; then
+    # Modificar axios.jsx para usar rutas relativas que coincidan con los controladores
+    sed -i 's|const API_BASE_URL_USER = "http://localhost:3001/";|const API_BASE_URL_USER = "/users/";|g' axios.jsx
+    sed -i 's|const API_BASE_URL_MEDICAL = "http://localhost:3002/";|const API_BASE_URL_MEDICAL = "/medical-history/";|g' axios.jsx
+    sed -i 's|const API_BASE_URL_NUTRITION = "http://localhost:3003/";|const API_BASE_URL_NUTRITION = "/nutrition/";|g' axios.jsx
+    sed -i 's|const API_BASE_URL_AUTH = "http://localhost:3004/";|const API_BASE_URL_AUTH = "/auth/";|g' axios.jsx
+    sed -i 's|const API_BASE_URL_ACTIVITY = "http://localhost:3005/";|const API_BASE_URL_ACTIVITY = "/physical-activity/";|g' axios.jsx
+    sed -i 's|const API_BASE_URL_RECOMMENDATION = "http://localhost:3006/";|const API_BASE_URL_RECOMMENDATION = "/recommendations/";|g' axios.jsx
+    sed -i 's|const API_BASE_URL_CITAS_MEDIAS = "http://localhost:3008/";|const API_BASE_URL_CITAS_MEDIAS = "/citas-medicas/";|g' axios.jsx
+    sed -i 's|const API_BASE_URL_ALERTAS = "http://localhost:3009/";|const API_BASE_URL_ALERTAS = "/alerts/";|g' axios.jsx
+    echo "✅ Configuración de frontend completada"
+else
+    echo "⚠️  Archivo axios.jsx no encontrado, continuando..."
+fi
 
-# 12. Compilar aplicaciones
+# 15. Compilar aplicaciones
 echo "📦 Compilando aplicaciones..."
 cd /opt/enutritrack/enutritrack-client
 npm run build
@@ -163,17 +232,17 @@ npm run build
 cd /opt/enutritrack/enutritrack-microservices
 npm run build
 
-# 13. Obtener IP externa de la VM
-VM_IP=$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google")
+# 16. Obtener IP externa de la VM
+VM_IP=$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google" 2>/dev/null || true)
 if [ -z "$VM_IP" ]; then
-    VM_IP=$(curl -s ifconfig.me)
+    VM_IP=$(curl -s ifconfig.me 2>/dev/null || echo "IP-DESCONOCIDA")
 fi
 
 echo "🌐 IP externa de la VM: $VM_IP"
 
-# 14. Configurar Nginx
+# 17. Configurar Nginx
 echo "📦 Configurando Nginx..."
-sudo tee /etc/nginx/sites-available/enutritrack > /dev/null << 'NGINX_CONFIG'
+sudo tee /etc/nginx/conf.d/enutritrack.conf > /dev/null << 'NGINX_CONFIG'
 server {
     listen 80;
     server_name _;
@@ -191,7 +260,6 @@ server {
     }
 
     # Otras rutas del CMS del backend (páginas HTML)
-    # Nota: No incluir rutas que coincidan con microservicios (physical-activity, alerts, etc.)
     location ~ ^/(dashboard|patients-crud|doctors-crud|appointments|food|health|history-medical|medications|allergies|states|types|gender|specialties-crud) {
         proxy_pass http://localhost:4000;
         proxy_http_version 1.1;
@@ -213,8 +281,6 @@ server {
     }
 
     # Microservicios - rutas corregidas para coincidir con los controladores
-    # Nota: proxy_pass sin barra final preserva la ruta completa
-    # IMPORTANTE: Estas rutas deben ir ANTES de location / para tener prioridad
     location /users/ {
         proxy_pass http://localhost:3001;
         proxy_set_header Host $host;
@@ -271,8 +337,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
-    # Microservicio de auth - debe ir después de las rutas específicas del CMS
-    # Esta ruta captura /auth/ que no sea login, dashboard o refresh (para el microservicio)
+    # Microservicio de auth
     location /auth/ {
         proxy_pass http://localhost:3004;
         proxy_set_header Host $host;
@@ -290,13 +355,24 @@ server {
 }
 NGINX_CONFIG
 
-sudo ln -sf /etc/nginx/sites-available/enutritrack /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+# Eliminar configuración por defecto si existe
+sudo rm -f /etc/nginx/conf.d/default.conf
+
+# Verificar configuración de Nginx
 sudo nginx -t
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 
-# 15. Crear ecosystem de PM2
+# 18. Configurar firewall (si está activo)
+if command_exists firewall-cmd; then
+    echo "📦 Configurando firewall..."
+    sudo firewall-cmd --permanent --add-service=http
+    sudo firewall-cmd --permanent --add-service=https
+    sudo firewall-cmd --reload
+    echo "✅ Firewall configurado"
+fi
+
+# 19. Crear ecosystem de PM2
 echo "📦 Configurando PM2..."
 mkdir -p /opt/enutritrack/logs
 
@@ -395,15 +471,15 @@ module.exports = {
 };
 PM2_CONFIG
 
-# 16. Iniciar servicios con PM2
+# 20. Iniciar servicios con PM2
 echo "📦 Iniciando servicios..."
 cd /opt/enutritrack
 pm2 start ecosystem.config.js
 pm2 save
-pm2 startup
+sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
 
 echo ""
-echo "✅ ¡Despliegue completado!"
+echo "✅ ¡Despliegue completado en CentOS 9!"
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo "🌐 URLs de acceso:"
@@ -451,6 +527,7 @@ echo "   pm2 restart all"
 echo ""
 echo "   Ver logs de PostgreSQL:"
 echo "   docker logs enutritrack_postgres"
+echo "   sudo journalctl -u postgresql -f"
 echo ""
 echo "   Reiniciar bases de datos:"
 echo "   cd /opt/enutritrack/enutritrack-server"
