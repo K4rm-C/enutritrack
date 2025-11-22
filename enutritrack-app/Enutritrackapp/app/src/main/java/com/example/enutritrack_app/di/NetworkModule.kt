@@ -2,6 +2,7 @@ package com.example.enutritrack_app.di
 
 import android.content.Context
 import com.example.enutritrack_app.BuildConfig
+import com.example.enutritrack_app.config.ApiConfig
 import com.example.enutritrack_app.data.remote.api.AuthApiService
 import com.example.enutritrack_app.data.remote.api.HealthApiService
 import com.example.enutritrack_app.data.remote.api.MedicalHistoryApiService
@@ -23,7 +24,7 @@ object NetworkModule {
 
     fun createAuthApiService(context: Context): AuthApiService {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_AUTH)
+            .baseUrl(ApiConfig.BASE_URL_AUTH)
             .client(createOkHttpClient(context))
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -32,7 +33,7 @@ object NetworkModule {
 
     fun createUserApiService(context: Context): UserApiService {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_USERS)
+            .baseUrl(ApiConfig.BASE_URL_USERS)
             .client(createOkHttpClientForUsers(context))
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -49,7 +50,7 @@ object NetworkModule {
         val gson = GsonBuilder().create()
         
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_SERVER)  // Servidor principal, no microservicio
+            .baseUrl(ApiConfig.BASE_URL_SERVER)  // Servidor principal, no microservicio
             .client(createOkHttpClient(context))  // Con autenticación
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
@@ -62,7 +63,7 @@ object NetworkModule {
      */
     fun createNutritionApiService(context: Context): NutritionApiService {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_SERVER)  // Servidor principal
+            .baseUrl(ApiConfig.BASE_URL_SERVER)  // Servidor principal
             .client(createOkHttpClient(context))  // Con autenticación
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -74,7 +75,7 @@ object NetworkModule {
      */
     fun createMedicalHistoryApiService(context: Context): MedicalHistoryApiService {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_MEDICAL)
+            .baseUrl(ApiConfig.BASE_URL_MEDICAL)
             .client(createOkHttpClient(context))  // Con autenticación
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -91,7 +92,7 @@ object NetworkModule {
      */
     fun createProfileApiServiceForUsers(context: Context): ProfileApiService {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_USERS)
+            .baseUrl(ApiConfig.BASE_URL_USERS)
             .client(createOkHttpClient(context))  // Con autenticación para usuarios autenticados
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -104,7 +105,7 @@ object NetworkModule {
      */
     fun createProfileApiServiceForServer(context: Context): ProfileApiService {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_SERVER)
+            .baseUrl(ApiConfig.BASE_URL_SERVER)
             .client(createOkHttpClient(context))  // Con autenticación
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -117,7 +118,7 @@ object NetworkModule {
      */
     fun createAppointmentsApiService(context: Context): AppointmentsApiService {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_SERVER)  // Servidor principal
+            .baseUrl(ApiConfig.BASE_URL_SERVER)  // Servidor principal
             .client(createOkHttpClient(context))  // Con autenticación
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -130,7 +131,7 @@ object NetworkModule {
      */
     fun createAlertsApiService(context: Context): AlertsApiService {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL_SERVER)  // Servidor principal
+            .baseUrl(ApiConfig.BASE_URL_SERVER)  // Servidor principal
             .client(createOkHttpClient(context))  // Con autenticación
             .addConverterFactory(GsonConverterFactory.create())
             .build()
