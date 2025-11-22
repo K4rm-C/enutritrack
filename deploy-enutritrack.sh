@@ -73,19 +73,15 @@ fi
 
 # 7. Verificar que el proyecto existe
 echo "📦 Verificando proyecto..."
-if [ ! -d "/opt/enutritrack" ]; then
-    echo "❌ Error: El proyecto no se encuentra en /opt/enutritrack"
-    echo "   Por favor, sube el proyecto (ZIP) y extráelo en /opt/enutritrack"
-    echo "   Ejemplo:"
-    echo "     sudo mkdir -p /opt/enutritrack"
-    echo "     sudo unzip proyecto.zip -d /opt/"
-    echo "     sudo chown -R $USER:$USER /opt/enutritrack"
+if [ ! -d "/enutritrack" ]; then
+    echo "❌ Error: El proyecto no se encuentra en /enutritrack"
+    echo "   Por favor, sube el proyecto (ZIP) y extráelo"
     exit 1
 fi
 
 # 8. Instalar dependencias
 echo "📦 Instalando dependencias..."
-cd /opt/enutritrack
+cd /enutritrack
 
 echo "  - Frontend..."
 cd enutritrack-client
@@ -126,7 +122,7 @@ sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE enutritrack TO enu
 
 # 11. Levantar bases de datos con Docker
 echo "📦 Levantando bases de datos..."
-cd /opt/enutritrack/enutritrack-server
+cd /enutritrack/enutritrack-server
 
 # Verificar si los contenedores ya están corriendo
 if ! docker compose ps | grep -q "Up"; then
@@ -166,7 +162,7 @@ if [ "$POSTGRES_READY" = false ]; then
     docker logs enutritrack_postgres --tail 50
     echo ""
     echo "   Intenta reiniciar manualmente:"
-    echo "   cd /opt/enutritrack/enutritrack-server"
+    echo "   cd /enutritrack/enutritrack-server"
     echo "   docker compose restart postgres"
     echo "   docker logs -f enutritrack_postgres"
     exit 1
@@ -181,7 +177,7 @@ INIT_RETRY_COUNT=0
 while [ $INIT_RETRY_COUNT -lt $MAX_INIT_RETRIES ]; do
     INIT_RETRY_COUNT=$((INIT_RETRY_COUNT + 1))
     
-    if docker exec -i enutritrack_postgres psql -U postgres -d enutritrack < /opt/enutritrack/enutritrack-server/scripts/init-db.sql 2>&1; then
+    if docker exec -i enutritrack_postgres psql -U postgres -d enutritrack < /enutritrack/enutritrack-server/scripts/init-db.sql 2>&1; then
         INIT_SUCCESS=true
         echo "✅ Base de datos inicializada correctamente"
         break
@@ -199,7 +195,7 @@ done
 
 # 14. Modificar frontend para usar rutas relativas a través de Nginx
 echo "📦 Configurando frontend para usar rutas relativas..."
-cd /opt/enutritrack/enutritrack-client/src/api
+cd /enutritrack/enutritrack-client/src/api
 
 # Verificar si el archivo existe antes de modificarlo
 if [ -f "axios.jsx" ]; then
@@ -219,13 +215,13 @@ fi
 
 # 15. Compilar aplicaciones
 echo "📦 Compilando aplicaciones..."
-cd /opt/enutritrack/enutritrack-client
+cd /enutritrack/enutritrack-client
 npm run build
 
-cd /opt/enutritrack/enutritrack-server
+cd /enutritrack/enutritrack-server
 npm run build
 
-cd /opt/enutritrack/enutritrack-microservices
+cd /enutritrack/enutritrack-microservices
 npm run build
 
 # 16. Obtener IP externa de la VM
@@ -343,7 +339,7 @@ server {
 
     # Frontend (debe ir al final para capturar todo lo demás)
     location / {
-        root /opt/enutritrack/enutritrack-client/dist;
+        root /enutritrack/enutritrack-client/dist;
         try_files $uri $uri/ /index.html;
     }
 
@@ -370,15 +366,15 @@ fi
 
 # 19. Crear ecosystem de PM2
 echo "📦 Configurando PM2..."
-mkdir -p /opt/enutritrack/logs
+mkdir -p /enutritrack/logs
 
-cat > /opt/enutritrack/ecosystem.config.js << 'PM2_CONFIG'
+cat > /enutritrack/ecosystem.config.js << 'PM2_CONFIG'
 module.exports = {
   apps: [
     {
       name: 'enutritrack-backend',
       script: './enutritrack-server/dist/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 4000 },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
@@ -386,7 +382,7 @@ module.exports = {
     {
       name: 'enutritrack-gateway',
       script: './enutritrack-microservices/dist/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3000 },
       error_file: './logs/gateway-error.log',
       out_file: './logs/gateway-out.log',
@@ -394,7 +390,7 @@ module.exports = {
     {
       name: 'enutritrack-auth',
       script: './enutritrack-microservices/dist/auth/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3004 },
       error_file: './logs/auth-error.log',
       out_file: './logs/auth-out.log',
@@ -402,7 +398,7 @@ module.exports = {
     {
       name: 'enutritrack-user',
       script: './enutritrack-microservices/dist/users/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3001 },
       error_file: './logs/user-error.log',
       out_file: './logs/user-out.log',
@@ -410,7 +406,7 @@ module.exports = {
     {
       name: 'enutritrack-doctor',
       script: './enutritrack-microservices/dist/doctor/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3007 },
       error_file: './logs/doctor-error.log',
       out_file: './logs/doctor-out.log',
@@ -418,7 +414,7 @@ module.exports = {
     {
       name: 'enutritrack-nutrition',
       script: './enutritrack-microservices/dist/nutrition/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3003 },
       error_file: './logs/nutrition-error.log',
       out_file: './logs/nutrition-out.log',
@@ -426,7 +422,7 @@ module.exports = {
     {
       name: 'enutritrack-activity',
       script: './enutritrack-microservices/dist/activity/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3005 },
       error_file: './logs/activity-error.log',
       out_file: './logs/activity-out.log',
@@ -434,7 +430,7 @@ module.exports = {
     {
       name: 'enutritrack-recommendation',
       script: './enutritrack-microservices/dist/recommendation/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3006 },
       error_file: './logs/recommendation-error.log',
       out_file: './logs/recommendation-out.log',
@@ -442,7 +438,7 @@ module.exports = {
     {
       name: 'enutritrack-medical',
       script: './enutritrack-microservices/dist/medical-history/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3002 },
       error_file: './logs/medical-error.log',
       out_file: './logs/medical-out.log',
@@ -450,7 +446,7 @@ module.exports = {
     {
       name: 'enutritrack-citas',
       script: './enutritrack-microservices/dist/citas/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3008 },
       error_file: './logs/citas-error.log',
       out_file: './logs/citas-out.log',
@@ -458,7 +454,7 @@ module.exports = {
     {
       name: 'enutritrack-alertas',
       script: './enutritrack-microservices/dist/alertas/main.js',
-      cwd: '/opt/enutritrack',
+      cwd: '/enutritrack',
       env: { NODE_ENV: 'production', PORT: 3009 },
       error_file: './logs/alertas-error.log',
       out_file: './logs/alertas-out.log',
@@ -469,7 +465,7 @@ PM2_CONFIG
 
 # 20. Iniciar servicios con PM2
 echo "📦 Iniciando servicios..."
-cd /opt/enutritrack
+cd /enutritrack
 pm2 start ecosystem.config.js
 pm2 save
 sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
@@ -526,6 +522,6 @@ echo "   docker logs enutritrack_postgres"
 echo "   sudo journalctl -u postgresql -f"
 echo ""
 echo "   Reiniciar bases de datos:"
-echo "   cd /opt/enutritrack/enutritrack-server"
+echo "   cd /enutritrack/enutritrack-server"
 echo "   docker compose restart"
 echo ""
