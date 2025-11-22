@@ -42,7 +42,7 @@ import { MedicalHistoryModule } from './medical-history/medical-history.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
-      port: 5433,
+      port: 5432,
       username: 'enutritrack',
       password: 'enutritrack2024',
       database: 'enutritrack',
