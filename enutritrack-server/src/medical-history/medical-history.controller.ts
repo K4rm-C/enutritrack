@@ -11,17 +11,15 @@ import {
 } from '@nestjs/common';
 import { MedicalHistoryService } from './medical-history.service';
 import express from 'express';
-import { JwtAuthGuard } from '../couchbase/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('medical-history')
 export class MedicalHistoryController {
-  constructor(private readonly medicalHistoryService: MedicalHistoryService) { }
+  constructor(private readonly medicalHistoryService: MedicalHistoryService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(
-    @Body() createMedicalHistoryDto: any,
-  ) {
+  async create(@Body() createMedicalHistoryDto: any) {
     // El usuarioId ahora viene directamente del DTO del frontend
     const { usuarioId } = createMedicalHistoryDto;
 
@@ -32,12 +30,11 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.create(createMedicalHistoryDto);
   }
 
-
   @UseGuards(JwtAuthGuard)
   @Get(':userId')
   async findByUser(
     @Param('userId') userId: string,
-    @Req() req: express.Request
+    @Req() req: express.Request,
   ) {
     // Ahora userId viene del parámetro de ruta
     return this.medicalHistoryService.findByUser(userId);
@@ -58,6 +55,9 @@ export class MedicalHistoryController {
       throw new Error('Authentication token not found');
     }
 
-    return this.medicalHistoryService.update(usuarioId, updateMedicalHistoryDto);
+    return this.medicalHistoryService.update(
+      usuarioId,
+      updateMedicalHistoryDto,
+    );
   }
 }
