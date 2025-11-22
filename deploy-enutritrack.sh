@@ -238,6 +238,18 @@ while [ $INIT_RETRY_COUNT -lt $MAX_INIT_RETRIES ]; do
     fi
 done
 
+# 12.1 Otorgar permisos completos al usuario enutritrack
+echo "📦 Otorgando permisos en PostgreSQL..."
+docker exec enutritrack_postgres psql -U postgres -d enutritrack -c "
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO enutritrack;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO enutritrack;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO enutritrack;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO enutritrack;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO enutritrack;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO enutritrack;
+"
+
+echo "✅ Permisos otorgados al usuario enutritrack"
 # 13. Configurar Couchbase
 echo "📦 Configurando Couchbase..."
 COUCHBASE_URL="http://localhost:8091"
