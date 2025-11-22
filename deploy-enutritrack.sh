@@ -238,7 +238,142 @@ while [ $INIT_RETRY_COUNT -lt $MAX_INIT_RETRIES ]; do
     fi
 done
 
-# 13. Modificar frontend para usar rutas relativas a través de Nginx
+# 13. Configurar Couchbase
+echo "📦 Configurando Couchbase..."
+COUCHBASE_URL="http://localhost:8091"
+USERNAME="Alfredo"
+PASSWORD="alfredo124"
+BUCKET_NAME="enutritrack"
+
+# Esperar a que Couchbase esté listo
+echo "⏳ Esperando que Couchbase esté listo..."
+
+MAX_ATTEMPTS=30
+ATTEMPT=1
+COUCHBASE_READY=false
+
+while [ $ATTEMPT -le $MAX_ATTEMPTS ] && [ "$COUCHBASE_READY" = false ]; do
+    if curl -s -f "$COUCHBASE_URL" > /dev/null 2>&1; then
+        echo "✅ Couchbase está respondiendo"
+        COUCHBASE_READY=true
+    else
+        echo "⏳ Intento $ATTEMPT de $MAX_ATTEMPTS: Couchbase no responde, esperando 10 segundos..."
+        sleep 10
+        ATTEMPT=$((ATTEMPT + 1))
+    fi
+done
+
+if [ "$COUCHBASE_READY" = false ]; then
+    echo "❌ Couchbase no respondió después de $MAX_ATTEMPTS intentos"
+    echo "   Continuando sin Couchbase..."
+else
+    # Inicializar el cluster
+    echo "📦 Inicializando cluster de Couchbase..."
+
+    # Configurar memoria
+    if curl -s -X POST "$COUCHBASE_URL/pools/default" -d "memoryQuota=512" -d "indexMemoryQuota=512" > /dev/null 2>&1; then
+        echo "✅ Memoria configurada"
+    else
+        echo "⚠️  No se pudo configurar memoria (puede que ya esté configurado)"
+    fi
+
+    # Configurar servicios
+    if curl -s -X POST "$COUCHBASE_URL/node/controller/setupServices" -d "services=kv,n1ql,index,fts" > /dev/null 2>&1; then
+        echo "✅ Servicios configurados"
+    else
+        echo "⚠️  No se pudo configurar servicios (puede que ya estén configurados)"
+    fi
+
+    # Configurar credenciales
+    if curl -s -X POST "$COUCHBASE_URL/settings/web" -d "port=8091" -d "username=$USERNAME" -d "password=$PASSWORD" > /dev/null 2>&1; then
+        echo "✅ Credenciales configuradas"
+    else
+        echo "⚠️  No se pudo configurar credenciales (puede que ya estén configuradas)"
+    fi
+
+    # Esperar a que las credenciales estén activas
+    echo "⏳ Esperando que las credenciales se activen..."
+    sleep 15
+
+    # Verificar que podemos autenticar
+    AUTH_ATTEMPTS=10
+    AUTH_ATTEMPT=1
+    AUTH_READY=false
+
+    while [ $AUTH_ATTEMPT -le $AUTH_ATTEMPTS ] && [ "$AUTH_READY" = false ]; do
+        if curl -s -u "$USERNAME:$PASSWORD" "$COUCHBASE_URL/pools" > /dev/null 2>&1; then
+            echo "✅ Autenticación exitosa"
+            AUTH_READY=true
+        else
+            echo "⏳ Intento $AUTH_ATTEMPT de $AUTH_ATTEMPTS: Autenticación fallida, reintentando en 5 segundos..."
+            sleep 5
+            AUTH_ATTEMPT=$((AUTH_ATTEMPT + 1))
+        fi
+    done
+
+    if [ "$AUTH_READY" = false ]; then
+        echo "❌ No se pudo autenticar después de $AUTH_ATTEMPTS intentos"
+        echo "   Continuando sin Couchbase..."
+    else
+        # Crear el bucket
+        echo "📦 Creando bucket $BUCKET_NAME..."
+
+        MAX_BUCKET_ATTEMPTS=10
+        BUCKET_ATTEMPT=1
+        BUCKET_CREATED=false
+
+        while [ $BUCKET_ATTEMPT -le $MAX_BUCKET_ATTEMPTS ] && [ "$BUCKET_CREATED" = false ]; do
+            if curl -s -X POST -u "$USERNAME:$PASSWORD" "$COUCHBASE_URL/pools/default/buckets" \
+                -d "name=$BUCKET_NAME" \
+                -d "ramQuotaMB=128" \
+                -d "authType=none" \
+                -d "bucketType=couchbase" > /dev/null 2>&1; then
+                echo "✅ Bucket $BUCKET_NAME creado exitosamente"
+                BUCKET_CREATED=true
+            else
+                echo "⏳ Intento $BUCKET_ATTEMPT de $MAX_BUCKET_ATTEMPTS: Error creando bucket, reintentando en 10 segundos..."
+                sleep 10
+                BUCKET_ATTEMPT=$((BUCKET_ATTEMPT + 1))
+            fi
+        done
+
+        if [ "$BUCKET_CREATED" = false ]; then
+            echo "❌ No se pudo crear el bucket después de $MAX_BUCKET_ATTEMPTS intentos"
+            echo "   Continuando sin bucket de Couchbase..."
+        else
+            # Esperar a que el bucket esté listo
+            echo "⏳ Esperando que el bucket esté listo..."
+
+            MAX_READY_ATTEMPTS=20
+            READY_ATTEMPT=1
+            BUCKET_READY=false
+
+            while [ $READY_ATTEMPT -le $MAX_READY_ATTEMPTS ] && [ "$BUCKET_READY" = false ]; do
+                if curl -s -u "$USERNAME:$PASSWORD" "$COUCHBASE_URL/pools/default/buckets/$BUCKET_NAME" | grep -q "healthy"; then
+                    echo "✅ Bucket está listo y saludable"
+                    BUCKET_READY=true
+                else
+                    echo "⏳ Intento $READY_ATTEMPT de $MAX_READY_ATTEMPTS: Bucket no listo, esperando 5 segundos..."
+                    sleep 5
+                    READY_ATTEMPT=$((READY_ATTEMPT + 1))
+                fi
+            done
+
+            if [ "$BUCKET_READY" = false ]; then
+                echo "⚠️  Bucket no está completamente listo después de $MAX_READY_ATTEMPTS intentos"
+            fi
+        fi
+    fi
+
+    echo ""
+    echo "✅ Couchbase configurado correctamente"
+    echo "   URL: http://localhost:8091"
+    echo "   Usuario: $USERNAME"
+    echo "   Password: $PASSWORD"
+    echo "   Bucket: $BUCKET_NAME"
+fi
+
+# 14. Modificar frontend para usar rutas relativas a través de Nginx
 echo "📦 Configurando frontend para usar rutas relativas..."
 cd "$PROJECT_ROOT/enutritrack-client/src/api"
 
@@ -258,7 +393,7 @@ else
     echo "⚠️  Archivo axios.jsx no encontrado, continuando..."
 fi
 
-# 14. Compilar aplicaciones
+# 15. Compilar aplicaciones
 echo "📦 Compilando aplicaciones..."
 cd "$PROJECT_ROOT/enutritrack-client"
 npm run build
@@ -269,7 +404,7 @@ npm run build
 cd "$PROJECT_ROOT/enutritrack-microservices"
 npm run build
 
-# 15. Obtener IP externa de la VM
+# 16. Obtener IP externa de la VM
 VM_IP=$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google" 2>/dev/null || true)
 if [ -z "$VM_IP" ]; then
     VM_IP=$(curl -s ifconfig.me 2>/dev/null || echo "IP-DESCONOCIDA")
@@ -277,7 +412,7 @@ fi
 
 echo "🌐 IP externa de la VM: $VM_IP"
 
-# 16. Configurar Nginx
+# 17. Configurar Nginx
 echo "📦 Configurando Nginx..."
 sudo tee /etc/nginx/conf.d/enutritrack.conf > /dev/null << NGINX_CONFIG
 server {
@@ -400,7 +535,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 
-# 17. Configurar firewall (si está activo)
+# 18. Configurar firewall (si está activo)
 if command_exists firewall-cmd; then
     echo "📦 Configurando firewall..."
     sudo firewall-cmd --permanent --add-service=http
@@ -409,7 +544,7 @@ if command_exists firewall-cmd; then
     echo "✅ Firewall configurado"
 fi
 
-# 18. Crear ecosystem de PM2
+# 19. Crear ecosystem de PM2
 echo "📦 Configurando PM2..."
 mkdir -p "$PROJECT_ROOT/logs"
 
@@ -508,7 +643,7 @@ module.exports = {
 };
 PM2_CONFIG
 
-# 19. Iniciar servicios con PM2
+# 20. Iniciar servicios con PM2
 echo "📦 Iniciando servicios..."
 cd "$PROJECT_ROOT"
 pm2 start ecosystem.config.js
@@ -531,6 +666,11 @@ echo "      Credenciales: admin@enutritrack.com / admin123"
 echo ""
 echo "   📚 Documentación API (Swagger):"
 echo "      http://${VM_IP}/api/docs"
+echo ""
+echo "   🗄️  Consola Couchbase:"
+echo "      http://${VM_IP}:8091"
+echo "      Usuario: Alfredo"
+echo "      Password: alfredo124"
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo "📱 CONFIGURACIÓN DE APP MÓVIL (IMPORTANTE)"
@@ -565,6 +705,9 @@ echo ""
 echo "   Ver logs de PostgreSQL:"
 echo "   docker logs enutritrack_postgres"
 echo "   sudo journalctl -u postgresql -f"
+echo ""
+echo "   Ver logs de Couchbase:"
+echo "   docker logs enutritrack_couchbase"
 echo ""
 echo "   Reiniciar bases de datos:"
 echo "   cd $PROJECT_ROOT/enutritrack-server"
