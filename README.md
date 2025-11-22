@@ -145,6 +145,10 @@ O manualmente con pgAdmin ejecutando `scripts/stored-procedures.sql`
 
 #### 7️⃣ Iniciar Servicios
 
+> **⚠️ IMPORTANTE - App Móvil:** Antes de iniciar los servicios, verifica que en el archivo `enutritrack-app/Enutritrackapp/app/src/main/java/com/example/enutritrack_app/config/ApiConfig.kt` la configuración esté en modo desarrollo local:
+> - `USE_PRODUCTION = false` (para usar localhost)
+> - `PROD_IP = "[TU_IP_GCP]"` (no importa el valor si USE_PRODUCTION es false)
+
 Abre **10 terminales** y ejecuta en cada una:
 
 ```powershell
@@ -208,6 +212,201 @@ npm run dev
 
 **Documentación API**
 - Swagger: `http://localhost:4000/api/docs`
+
+
+
+
+## ☁️ Despliegue en Google Cloud Platform (GCP)
+
+### Prerrequisitos
+
+- **Cuenta de Google Cloud Platform** con facturación habilitada
+- **Proyecto comprimido (ZIP)** del repositorio
+- **Acceso SSH** a la VM de GCP
+
+### Paso a Paso - Despliegue en GCP
+
+#### 1️⃣ Crear Instancia VM en GCP
+
+1. Ve a [Google Cloud Console](https://console.cloud.google.com/)
+2. Navega a **Compute Engine** > **VM instances**
+3. Crea una nueva instancia con:
+   - **Nombre**: `enutritrack-vm`
+   - **Región**: La más cercana a tu ubicación
+   - **Tipo de máquina**: `e2-standard-4` (4 vCPU, 16 GB RAM)
+   - **Boot disk**: Ubuntu 22.04 LTS, 50 GB SSD
+   - **Firewall**: Marca "Allow HTTP traffic" y "Allow HTTPS traffic"
+4. Haz clic en **Create**
+
+#### 2️⃣ Configurar Firewall en GCP
+
+En la consola de GCP, crea una regla de firewall:
+
+1. Ve a **VPC network** > **Firewall**
+2. Crea regla de firewall:
+   - **Nombre**: `allow-enutritrack`
+   - **Dirección**: Entrada
+   - **Acción**: Permitir
+   - **Destinos**: Todas las instancias en la red
+   - **Filtros**: `0.0.0.0/0`
+   - **Protocolos y puertos**: `TCP: 80, 443, 3000-3009, 4000`
+3. Guarda la regla
+
+O desde la línea de comandos:
+```bash
+gcloud compute firewall-rules create allow-enutritrack \
+    --allow tcp:80,tcp:443,tcp:3000-3009,tcp:4000 \
+    --source-ranges 0.0.0.0/0 \
+    --description "Allow all HTTP traffic for Enutritrack"
+```
+
+#### 3️⃣ Subir Proyecto a la VM
+
+1. **Comprime el proyecto** en un archivo ZIP (incluye todas las carpetas: `enutritrack-client`, `enutritrack-server`, `enutritrack-microservices`, `enutritrack-app`)
+
+2. **Sube el ZIP a la VM** usando uno de estos métodos:
+
+   **Opción A: Desde la consola de GCP (recomendado)**
+   - En la VM, haz clic en **SSH** para abrir la terminal
+   - En tu máquina local, usa `gcloud compute scp`:
+     ```bash
+     gcloud compute scp proyecto.zip enutritrack-vm:/tmp/ --zone=tu-zona
+     ```
+
+   **Opción B: Usando SCP**
+   ```bash
+   scp proyecto.zip usuario@IP_VM:/tmp/
+   ```
+
+3. **Extrae el proyecto en la VM**:
+   ```bash
+   sudo mkdir -p /opt/enutritrack
+   sudo unzip /tmp/proyecto.zip -d /opt/
+   sudo chown -R $USER:$USER /opt/enutritrack
+   ```
+
+#### 4️⃣ Ejecutar Script de Despliegue
+
+1. **Sube el script de despliegue** a la VM:
+   ```bash
+   gcloud compute scp deploy-enutritrack.sh enutritrack-vm:/tmp/ --zone=tu-zona
+   ```
+
+2. **Conecta a la VM por SSH**:
+   ```bash
+   gcloud compute ssh enutritrack-vm --zone=tu-zona
+   ```
+
+3. **Ejecuta el script**:
+   ```bash
+   sudo chmod +x /tmp/deploy-enutritrack.sh
+   /tmp/deploy-enutritrack.sh
+   ```
+
+   El script automáticamente:
+   - Instala todas las dependencias (Node.js, Docker, Nginx, PM2)
+   - Levanta las bases de datos (PostgreSQL, Couchbase, Redis)
+   - Compila todas las aplicaciones
+   - Configura Nginx como reverse proxy
+   - Inicia todos los servicios con PM2
+
+#### 5️⃣ Obtener IP Externa de la VM
+
+En la consola de GCP, ve a **Compute Engine** > **VM instances** y copia la **IP externa** de tu VM.
+
+O desde la terminal:
+```bash
+gcloud compute instances describe enutritrack-vm --zone=tu-zona --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
+```
+
+#### 6️⃣ Acceder a las Aplicaciones
+
+Una vez completado el despliegue, accede a:
+
+**Portal de Doctores (Frontend)**
+- URL: `http://[IP_EXTERNA_DE_LA_VM]/`
+- Ejemplo: `http://34.123.45.67/`
+
+**CMS/Dashboard de Administrador**
+- URL: `http://[IP_EXTERNA_DE_LA_VM]/auth/login`
+- Credenciales: `admin@enutritrack.com` / `admin123`
+
+**Documentación API (Swagger)**
+- URL: `http://[IP_EXTERNA_DE_LA_VM]/api/docs`
+
+#### 7️⃣ Configurar App Móvil para GCP
+
+Para que la app móvil funcione con el despliegue en GCP:
+
+1. Abre Android Studio
+2. Abre el archivo:
+   ```
+   enutritrack-app/Enutritrackapp/app/src/main/java/com/example/enutritrack_app/config/ApiConfig.kt
+   ```
+3. Cambia estas dos líneas:
+   ```kotlin
+   private const val PROD_IP = "34.123.45.67"  // Reemplaza con tu IP de GCP
+   private const val USE_PRODUCTION = true    // Cambiar a true
+   ```
+4. Recompila la app: **Build** > **Rebuild Project**
+5. Instala el APK en tu dispositivo
+
+### Comandos Útiles en GCP
+
+```bash
+# Ver logs de los servicios
+pm2 logs
+
+# Ver estado de servicios
+pm2 status
+
+# Reiniciar servicios
+pm2 restart all
+
+# Ver logs de PostgreSQL
+docker logs enutritrack_postgres
+
+# Reiniciar bases de datos
+cd /opt/enutritrack/enutritrack-server
+docker compose restart
+
+# Ver IP externa de la VM
+curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google"
+```
+
+### Troubleshooting en GCP
+
+#### PostgreSQL no inicia correctamente
+El script tiene manejo automático de errores con reintentos. Si aún falla:
+```bash
+cd /opt/enutritrack/enutritrack-server
+docker compose logs postgres
+docker compose restart postgres
+```
+
+#### Los servicios no responden
+```bash
+# Verificar que PM2 esté corriendo
+pm2 status
+
+# Ver logs de errores
+pm2 logs --err
+
+# Reiniciar todos los servicios
+pm2 restart all
+```
+
+#### Nginx no funciona
+```bash
+# Verificar configuración
+sudo nginx -t
+
+# Ver logs
+sudo tail -f /var/log/nginx/error.log
+
+# Reiniciar Nginx
+sudo systemctl restart nginx
+```
 
 ## 📁 Estructura del Proyecto
 
