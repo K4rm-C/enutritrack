@@ -249,6 +249,70 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO enutritrack;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO enutritrack;
 "
 
+# 12.3 Transferir propiedad de todas las tablas al usuario enutritrack
+echo "📦 Transferiendo propiedad de tablas al usuario enutritrack..."
+docker exec enutritrack_postgres psql -U postgres -d enutritrack -c "
+-- Transferir propiedad de todas las tablas existentes
+DO \$\$ 
+DECLARE 
+    r RECORD;
+BEGIN
+    FOR r IN 
+        SELECT tablename 
+        FROM pg_tables 
+        WHERE schemaname = 'public' 
+    LOOP
+        EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' OWNER TO enutritrack';
+    END LOOP;
+END \$\$;
+
+-- Transferir propiedad de todas las secuencias
+DO \$\$ 
+DECLARE 
+    r RECORD;
+BEGIN
+    FOR r IN 
+        SELECT sequence_name 
+        FROM information_schema.sequences 
+        WHERE sequence_schema = 'public' 
+    LOOP
+        EXECUTE 'ALTER SEQUENCE public.' || quote_ident(r.sequence_name) || ' OWNER TO enutritrack';
+    END LOOP;
+END \$\$;
+
+-- Transferir propiedad de todas las vistas
+DO \$\$ 
+DECLARE 
+    r RECORD;
+BEGIN
+    FOR r IN 
+        SELECT table_name 
+        FROM information_schema.views 
+        WHERE table_schema = 'public' 
+    LOOP
+        EXECUTE 'ALTER VIEW public.' || quote_ident(r.table_name) || ' OWNER TO enutritrack';
+    END LOOP;
+END \$\$;
+"
+
+echo "✅ Propiedad de tablas transferida a enutritrack"
+
+# 12.4 Configurar permisos por defecto para futuras tablas
+echo "📦 Configurando permisos por defecto..."
+docker exec enutritrack_postgres psql -U postgres -d enutritrack -c "
+-- Asegurar que el usuario enutritrack sea propietario de objetos futuros
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO enutritrack;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO enutritrack;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO enutritrack;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TYPES TO enutritrack;
+
+-- También configurar para el usuario enutritrack mismo
+ALTER DEFAULT PRIVILEGES FOR ROLE enutritrack IN SCHEMA public GRANT ALL ON TABLES TO enutritrack;
+ALTER DEFAULT PRIVILEGES FOR ROLE enutritrack IN SCHEMA public GRANT ALL ON SEQUENCES TO enutritrack;
+ALTER DEFAULT PRIVILEGES FOR ROLE enutritrack IN SCHEMA public GRANT ALL ON FUNCTIONS TO enutritrack;
+ALTER DEFAULT PRIVILEGES FOR ROLE enutritrack IN SCHEMA public GRANT ALL ON TYPES TO enutritrack;
+"
+
 # 12.2 Aplicar Stored Procedures para el Dashboard
 echo "📦 Aplicando Stored Procedures para el Dashboard..."
 
@@ -289,6 +353,8 @@ if [ -f "$STORED_PROCEDURES_FILE" ]; then
 else
     echo "⚠️  Archivo de stored procedures no encontrado en $STORED_PROCEDURES_FILE, continuando..."
 fi
+
+echo "✅ Permisos por defecto configurados"
 
 echo "✅ Permisos otorgados al usuario enutritrack"
 # 13. Configurar Couchbase
