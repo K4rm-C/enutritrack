@@ -43,8 +43,8 @@ import { MedicalHistoryModule } from './medical-history/medical-history.module';
       type: 'postgres',
       host: 'localhost',
       port: 5433,
-      username: 'postgres',
-      password: '1234',
+      username: 'enutritrack',
+      password: 'enutritrack2024',
       database: 'enutritrack',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: false, // Usar migraciones en lugar de sync

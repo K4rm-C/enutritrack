@@ -31,18 +31,33 @@ else
     echo "✅ Node.js $(node -v) ya está instalado"
 fi
 
-# 3. Instalar Docker
+# 3. Instalar Docker y configurar permisos
 echo "📦 Instalando Docker..."
 if ! command_exists docker; then
     sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
     sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
     sudo systemctl start docker
     sudo systemctl enable docker
+    
+    # Configurar permisos de Docker
+    echo "🔧 Configurando permisos de Docker..."
+    sudo groupadd docker 2>/dev/null || true
     sudo usermod -aG docker $USER
-    newgrp docker
-    echo "✅ Docker instalado"
+    sudo chown root:docker /var/run/docker.sock
+    sudo chmod 666 /var/run/docker.sock
+    echo "✅ Docker instalado y configurado"
 else
     echo "✅ Docker ya está instalado"
+    
+    # Verificar y configurar permisos si es necesario
+    if ! docker ps > /dev/null 2>&1; then
+        echo "🔧 Configurando permisos de Docker..."
+        sudo groupadd docker 2>/dev/null || true
+        sudo usermod -aG docker $USER
+        sudo chown root:docker /var/run/docker.sock
+        sudo chmod 666 /var/run/docker.sock
+        echo "✅ Permisos de Docker configurados"
+    fi
 fi
 
 # 4. Instalar PostgreSQL
@@ -93,7 +108,25 @@ fi
 
 echo "✅ Estructura del proyecto verificada"
 
-# 8. Instalar dependencias
+# 8. Verificar permisos de Docker antes de continuar
+echo "🔍 Verificando permisos de Docker..."
+if ! docker ps > /dev/null 2>&1; then
+    echo "❌ Error: Sin permisos para Docker"
+    echo "   Solución:"
+    echo "   1. Cerrar sesión y volver a entrar"
+    echo "   2. O ejecutar: newgrp docker"
+    echo "   3. Luego ejecutar este script de nuevo"
+    echo ""
+    echo "   Como solución temporal, usando sudo para comandos Docker..."
+    # Definir función docker con sudo para uso temporal
+    docker() {
+        sudo docker "$@"
+    }
+else
+    echo "✅ Permisos de Docker verificados"
+fi
+
+# 9. Instalar dependencias
 echo "📦 Instalando dependencias..."
 cd "$PROJECT_ROOT"
 
@@ -112,7 +145,7 @@ cd enutritrack-microservices
 npm install
 cd ..
 
-# 9. Configurar PostgreSQL para conexiones remotas (si es necesario)
+# 10. Configurar PostgreSQL para conexiones remotas (si es necesario)
 echo "📦 Configurando PostgreSQL..."
 if ! sudo grep -q "enutritrack" /var/lib/pgsql/data/pg_hba.conf; then
     echo "  Configurando acceso a la base de datos..."
@@ -128,22 +161,23 @@ PG_CONFIG
     sudo systemctl restart postgresql
 fi
 
-# 10. Crear base de datos y usuario si no existen
+# 11. Crear base de datos y usuario si no existen
 echo "📦 Configurando base de datos..."
 sudo -i -u postgres psql -c "CREATE USER enutritrack WITH PASSWORD 'enutritrack2024';" 2>/dev/null || true
 sudo -i -u postgres psql -c "CREATE DATABASE enutritrack OWNER enutritrack;" 2>/dev/null || true
 sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE enutritrack TO enutritrack;" 2>/dev/null || true
 
-# 11. Levantar bases de datos con Docker
+# 12. Levantar bases de datos con Docker
 echo "📦 Levantando bases de datos..."
 cd "$PROJECT_ROOT/enutritrack-server"
 
 # Verificar si los contenedores ya están corriendo
-if ! docker compose ps | grep -q "Up"; then
+if ! docker compose ps 2>/dev/null | grep -q "Up"; then
+    echo "  Iniciando contenedores Docker..."
     docker compose up -d
 fi
 
-# 12. Esperar y verificar que PostgreSQL esté corriendo
+# 13. Esperar y verificar que PostgreSQL esté corriendo
 echo "⏳ Esperando que PostgreSQL se inicie correctamente..."
 MAX_RETRIES=12
 RETRY_COUNT=0
@@ -181,6 +215,7 @@ if [ "$POSTGRES_READY" = false ]; then
     echo "   docker logs -f enutritrack_postgres"
     exit 1
 fi
+
 
 # 13. Inicializar PostgreSQL con manejo de errores
 echo "📦 Inicializando PostgreSQL..."
