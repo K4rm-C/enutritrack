@@ -15,34 +15,31 @@ import { JwtAuthGuard } from '../couchbase/auth/guards/jwt-auth.guard';
 
 @Controller('medical-history')
 export class MedicalHistoryController {
-  constructor(private readonly medicalHistoryService: MedicalHistoryService) {}
+  constructor(private readonly medicalHistoryService: MedicalHistoryService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(
-    @Req() req: express.Request,
     @Body() createMedicalHistoryDto: any,
   ) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    // El usuarioId ahora viene directamente del DTO del frontend
+    const { usuarioId } = createMedicalHistoryDto;
 
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-    const dtoWithUserId = {
-      ...createMedicalHistoryDto,
-      usuarioId: userId,
-    };
-    return this.medicalHistoryService.create(dtoWithUserId);
+    if (!usuarioId) {
+      throw new Error('Patient ID (usuarioId) is required');
+    }
+
+    return this.medicalHistoryService.create(createMedicalHistoryDto);
   }
+
 
   @UseGuards(JwtAuthGuard)
   @Get(':userId')
-  async findByUser(@Req() req: express.Request) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
-    const authToken =
-      req.cookies?.access_token ||
-      req.headers.authorization?.replace('Bearer ', '');
-
+  async findByUser(
+    @Param('userId') userId: string,
+    @Req() req: express.Request
+  ) {
+    // Ahora userId viene del parámetro de ruta
     return this.medicalHistoryService.findByUser(userId);
   }
 
@@ -52,7 +49,7 @@ export class MedicalHistoryController {
     @Req() req: express.Request,
     @Body() updateMedicalHistoryDto: any,
   ) {
-    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const { usuarioId } = updateMedicalHistoryDto;
     const authToken =
       req.cookies?.access_token ||
       req.headers.authorization?.replace('Bearer ', '');
@@ -61,6 +58,6 @@ export class MedicalHistoryController {
       throw new Error('Authentication token not found');
     }
 
-    return this.medicalHistoryService.update(userId, updateMedicalHistoryDto);
+    return this.medicalHistoryService.update(usuarioId, updateMedicalHistoryDto);
   }
 }

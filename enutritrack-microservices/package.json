@@ -15,6 +15,9 @@
     "start:activity": "ts-node src/activity/main.ts",
     "start:recommendation": "ts-node src/recommendation/main.ts",
     "start:user": "ts-node src/users/main.ts",
+    "start:alertas": "ts-node src/alertas/main.ts",
+    "start:citas": "ts-node src/citas/main.ts",
+    "start:doctor": "ts-node src/doctor/main.ts",
     "dev:gateway": "nodemon --exec ts-node src/main.ts",
     "dev:auth": "nodemon --exec ts-node src/auth/main.ts",
     "dev:nutrition": "nodemon --exec ts-node src/nutrition/main.ts",
@@ -35,6 +38,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@google/genai": "^1.30.0",
     "@google/generative-ai": "^0.24.1",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/cache-manager": "^3.0.1",

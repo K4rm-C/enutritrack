@@ -32,6 +32,7 @@ import { AlertasModule } from './alertas/alertas.module';
 import { AlertasAccionesModule } from './alertas-acciones/alertas-acciones.module';
 import { ConfiguracionAlertasAutomaticasModule } from './configuracion-alertas-automaticas/configuracion-alertas-automaticas.module';
 import { CouchbaseAlertsCitasModule } from './couchbase-alerts-citas/couchbase-alerts-citas.module';
+import { MedicalHistoryModule } from './medical-history/medical-history.module';
 
 @Module({
   imports: [
@@ -46,7 +47,8 @@ import { CouchbaseAlertsCitasModule } from './couchbase-alerts-citas/couchbase-a
       password: '1234',
       database: 'enutritrack',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: false, // Deshabilitado para evitar conflictos con funciones almacenadas y datos existentes
+      synchronize: false, // Usar migraciones en lugar de sync
+      migrations: ['src/migration/*.ts'],
       autoLoadEntities: true,
     }),
     AuthModule,
@@ -62,6 +64,7 @@ import { CouchbaseAlertsCitasModule } from './couchbase-alerts-citas/couchbase-a
     CondicionesMedicasModule,
     AlergiasModule,
     MedicamentosModule,
+    MedicalHistoryModule,
     PhysicalActivityModule,
     RegistroComidaModule,
     RegistroComidaItemsModule,

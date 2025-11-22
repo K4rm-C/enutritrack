@@ -18,9 +18,12 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { MedicalHistoryService } from './medical-history.service';
-import { CreateMedicalHistoryDto } from './dto/create-medical-history.dto';
-import { UpdateMedicalHistoryDto } from './dto/update-medical-history.dto';
+import {
+  CreateMedicalHistoryDto,
+  UpdateMedicalHistoryDto,
+} from './dto/create-medical-history.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import express from 'express';
 
 @ApiTags('Medical History')
 @ApiBearerAuth()
@@ -187,18 +190,14 @@ export class MedicalHistoryController {
     status: 401,
     description: 'No autorizado - Token JWT requerido',
   })
-  create(
-    @Body() createMedicalHistoryDto: CreateMedicalHistoryDto,
-    @Req() req: any,
+  async create(
+    @Req() req: express.Request,
+    @Body() createMedicalHistoryDto: any,
   ) {
-    // Obtener ID del doctor del token
-    const doctorId = req.user?.userId || req.user?.sub;
-
-    console.log(
-      `Doctor ${doctorId} creando historial para paciente ${createMedicalHistoryDto.pacienteId}`,
-    );
-
-    return this.medicalHistoryService.create(createMedicalHistoryDto, doctorId);
+    const dtoWithUserId = {
+      ...createMedicalHistoryDto,
+    };
+    return this.medicalHistoryService.create(dtoWithUserId);
   }
 
   @UseGuards(JwtAuthGuard)

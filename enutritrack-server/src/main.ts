@@ -24,16 +24,6 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), 'public'));
   app.setBaseViewsDir(join(process.cwd(), 'views'));
   app.setViewEngine('html');
-
-  const config = new DocumentBuilder()
-    .setTitle('Enutritrack Backend API')
-    .setDescription('API para el sistema de nutrición preventiva')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-
   await app.listen(4000);
 }
 bootstrap();
