@@ -57,7 +57,7 @@ const createAxiosInstance = (baseURL) => {
     baseURL,
     withCredentials: true,
     headers: {
-      "Content-Type": "application/xml", // Cambiar a XML
+      "Content-Type": "application/json",
     },
   });
 
@@ -73,11 +73,6 @@ const createAxiosInstance = (baseURL) => {
         config.headers.Authorization = `Bearer ${token}`;
       }
 
-      // Convertir data de JSON a XML antes de enviar
-      if (config.data && typeof config.data === "object") {
-        config.data = objectToXml(config.data, "request");
-      }
-
       return config;
     },
     (error) => {
@@ -86,25 +81,7 @@ const createAxiosInstance = (baseURL) => {
   );
 
   instance.interceptors.response.use(
-    (response) => {
-      // Si la respuesta es XML, convertir a JSON
-      if (
-        response.headers["content-type"]?.includes("application/xml") &&
-        typeof response.data === "string"
-      ) {
-        try {
-          const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(
-            response.data,
-            "application/xml"
-          );
-          response.data = xmlToJson(xmlDoc);
-        } catch (error) {
-          console.error("Error parsing XML response:", error);
-        }
-      }
-      return response;
-    },
+    (response) => response,
     (error) => {
       if (error.response?.status === 401) {
         console.error("Error de autenticación:", error.response.data);
@@ -114,44 +91,6 @@ const createAxiosInstance = (baseURL) => {
   );
 
   return instance;
-};
-
-// Función para convertir XML a JSON
-const xmlToJson = (xml) => {
-  let obj = {};
-
-  if (xml.nodeType === 1) {
-    // element node
-    if (xml.attributes.length > 0) {
-      obj["@attributes"] = {};
-      for (let j = 0; j < xml.attributes.length; j++) {
-        const attribute = xml.attributes.item(j);
-        obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
-      }
-    }
-  } else if (xml.nodeType === 3) {
-    // text node
-    obj = xml.nodeValue;
-  }
-
-  if (xml.hasChildNodes()) {
-    for (let i = 0; i < xml.childNodes.length; i++) {
-      const item = xml.childNodes.item(i);
-      const nodeName = item.nodeName;
-      if (typeof obj[nodeName] === "undefined") {
-        obj[nodeName] = xmlToJson(item);
-      } else {
-        if (typeof obj[nodeName].push === "undefined") {
-          const old = obj[nodeName];
-          obj[nodeName] = [];
-          obj[nodeName].push(old);
-        }
-        obj[nodeName].push(xmlToJson(item));
-      }
-    }
-  }
-
-  return obj;
 };
 
 export const userAPI = createAxiosInstance(API_BASE_URL_USER);
