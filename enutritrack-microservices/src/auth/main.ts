@@ -14,7 +14,7 @@ async function bootstrap() {
   app.use('/auth', xmlParser);
   app.useGlobalInterceptors(new XmlInterceptor());
   app.enableCors({
-    origin: ['http://localhost:5174'],
+    origin: '*',
     credentials: true,
   });
 
