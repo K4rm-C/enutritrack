@@ -470,7 +470,7 @@ npm run build
 cd "$PROJECT_ROOT/enutritrack-microservices"
 npm run build
 
-# 16. Obtener IP externa de la VM
+# 15. Obtener IP externa de la VM
 VM_IP=$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google" 2>/dev/null || true)
 if [ -z "$VM_IP" ]; then
     VM_IP=$(curl -s ifconfig.me 2>/dev/null || echo "IP-DESCONOCIDA")
@@ -595,7 +595,8 @@ echo "   📱 Portal de Doctores (Frontend):"
 echo "      http://${VM_IP}:5174/ (Vite dev server)"
 echo ""
 echo "   🏥 CMS/Dashboard de Administrador:"
-echo "      http://${VM_IP}:4000/auth/login"
+echo "      http://${VM_IP}/auth/login (puerto 80)"
+echo "      http://${VM_IP}:5174/auth/login (puerto 5174 - alternativo)"
 echo "      Credenciales: admin@enutritrack.com / admin123"
 echo ""
 echo "   📚 Documentación API (Swagger):"

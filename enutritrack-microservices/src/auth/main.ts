@@ -14,7 +14,7 @@ async function bootstrap() {
   app.use('/auth', xmlParser);
   app.useGlobalInterceptors(new XmlInterceptor());
   app.enableCors({
-    origin: true, // Permite cualquier origen (funciona con credenciales)
+    origin: true,
     credentials: true,
   });
 

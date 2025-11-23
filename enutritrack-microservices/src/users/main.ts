@@ -22,7 +22,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: true, // Permite cualquier origen (funciona con credenciales)
+    origin: true,
     credentials: true,
   });
   const config = new DocumentBuilder()
