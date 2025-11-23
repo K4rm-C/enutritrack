@@ -1,14 +1,14 @@
 import axios from "axios";
 
 // URLs base para cada microservicio (mantener igual)
-const API_BASE_URL_USER = "http://localhost:3001/";
-const API_BASE_URL_MEDICAL = "http://localhost:3002/";
-const API_BASE_URL_NUTRITION = "http://localhost:3003/";
-const API_BASE_URL_AUTH = "http://localhost:3004/";
-const API_BASE_URL_ACTIVITY = "http://localhost:3005/";
-const API_BASE_URL_RECOMMENDATION = "http://localhost:3006/";
-const API_BASE_URL_CITAS_MEDIAS = "http://localhost:3008/";
-const API_BASE_URL_ALERTAS = "http://localhost:3009/";
+const API_BASE_URL_USER = "http://35.239.67.227:3001/";
+const API_BASE_URL_MEDICAL = "http://35.239.67.227:3002/";
+const API_BASE_URL_NUTRITION = "http://35.239.67.227:3003/";
+const API_BASE_URL_AUTH = "http://35.239.67.227:3004/";
+const API_BASE_URL_ACTIVITY = "http://35.239.67.227:3005/";
+const API_BASE_URL_RECOMMENDATION = "http://35.239.67.227:3006/";
+const API_BASE_URL_CITAS_MEDIAS = "http://35.239.67.227:3008/";
+const API_BASE_URL_ALERTAS = "http://35.239.67.227:3009/";
 
 // Función para convertir objeto a XML
 const objectToXml = (obj, rootName = "root") => {
