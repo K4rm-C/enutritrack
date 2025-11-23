@@ -138,21 +138,7 @@ while [ $INIT_RETRY_COUNT -lt $MAX_INIT_RETRIES ]; do
     fi
 done
 
-# 11. Modificar frontend para usar rutas relativas a través de Nginx
-echo "📦 Configurando frontend para usar rutas relativas..."
-cd /opt/enutritrack/enutritrack-client/src/api
-
-# Modificar axios.jsx para usar rutas relativas que coincidan con los controladores
-sed -i 's|const API_BASE_URL_USER = "http://localhost:3001/";|const API_BASE_URL_USER = "/users/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_MEDICAL = "http://localhost:3002/";|const API_BASE_URL_MEDICAL = "/medical-history/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_NUTRITION = "http://localhost:3003/";|const API_BASE_URL_NUTRITION = "/nutrition/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_AUTH = "http://localhost:3004/";|const API_BASE_URL_AUTH = "/auth/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_ACTIVITY = "http://localhost:3005/";|const API_BASE_URL_ACTIVITY = "/physical-activity/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_RECOMMENDATION = "http://localhost:3006/";|const API_BASE_URL_RECOMMENDATION = "/recommendations/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_CITAS_MEDIAS = "http://localhost:3008/";|const API_BASE_URL_CITAS_MEDIAS = "/citas-medicas/";|g' axios.jsx
-sed -i 's|const API_BASE_URL_ALERTAS = "http://localhost:3009/";|const API_BASE_URL_ALERTAS = "/alerts/";|g' axios.jsx
-
-# 12. Compilar aplicaciones
+# 11. Compilar aplicaciones
 echo "📦 Compilando aplicaciones..."
 cd /opt/enutritrack/enutritrack-client
 npm run build
@@ -212,59 +198,58 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Microservicios - rutas corregidas para coincidir con los controladores
-    # Nota: proxy_pass sin barra final preserva la ruta completa
+    # Microservicios - rutas que capturan con y sin barra final
     # IMPORTANTE: Estas rutas deben ir ANTES de location / para tener prioridad
-    location /users/ {
+    location ~ ^/users(/|$) {
         proxy_pass http://localhost:3001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
-    location /medical-history/ {
+    location ~ ^/medical-history(/|$) {
         proxy_pass http://localhost:3002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
-    location /nutrition/ {
+    location ~ ^/nutrition(/|$) {
         proxy_pass http://localhost:3003;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
-    location /physical-activity/ {
+    location ~ ^/physical-activity(/|$) {
         proxy_pass http://localhost:3005;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
-    location /recommendations/ {
+    location ~ ^/recommendations(/|$) {
         proxy_pass http://localhost:3006;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
-    location /doctors/ {
+    location ~ ^/doctors(/|$) {
         proxy_pass http://localhost:3007;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
-    location /citas-medicas/ {
+    location ~ ^/citas-medicas(/|$) {
         proxy_pass http://localhost:3008;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
-    location /alerts/ {
+    location ~ ^/alerts(/|$) {
         proxy_pass http://localhost:3009;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
