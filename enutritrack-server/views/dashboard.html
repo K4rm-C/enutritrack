@@ -1808,7 +1808,7 @@
                     type="text"
                     class="form-control"
                     id="db-host"
-                    placeholder="localhost"
+                    placeholder="35.239.67.227"
                   />
                 </div>
                 <div class="form-group">
@@ -3347,7 +3347,7 @@
 
       function getBackendConfig() {
         return {
-          host: 'localhost',
+          host: '35.239.67.227',
           port: localStorage.getItem('backend_port') || '4000',
           protocol: localStorage.getItem('backend_protocol') || 'http',
           timeout: localStorage.getItem('backend_timeout') || '5000',
@@ -3580,7 +3580,7 @@
         try {
           const startTime = performance.now();
 
-          // Verificar backend en localhost:4000/auth/health
+          // Verificar backend en 35.239.67.227:4000/auth/health
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000);
 
