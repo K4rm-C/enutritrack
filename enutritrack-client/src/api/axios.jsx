@@ -1,29 +1,34 @@
 import axios from "axios";
 
-// Detectar si estamos en desarrollo local o producción
-const isLocalDevelopment = () => {
-  if (typeof window === "undefined") return true; // SSR fallback
-  const hostname = window.location.hostname;
+// Construir URL base usando la IP/hostname actual y el puerto del microservicio
+const getBaseUrl = (microservicePort) => {
+  if (typeof window === "undefined") {
+    // SSR fallback - usar localhost
+    return `http://localhost:${microservicePort}`;
+  }
   
-  // Solo considerar desarrollo local si es localhost o 127.0.0.1
-  // Cualquier otra IP (incluida GCP) se trata como producción
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "";
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  // Si es localhost o 127.0.0.1, usar localhost
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "") {
+    return `http://localhost:${microservicePort}`;
+  }
+  
+  // Para cualquier otra IP (GCP u otra), usar esa IP con el puerto del microservicio
+  // Sin slash final - los archivos .api.jsx ya agregan las rutas con slash
+  return `${protocol}//${hostname}:${microservicePort}`;
 };
 
-// Función helper para obtener la URL base según el entorno
-const getBaseUrl = (localUrl, relativePath) => {
-  return isLocalDevelopment() ? localUrl : relativePath;
-};
-
-// URLs base para cada microservicio (híbrido: local o producción automático)
-const API_BASE_URL_USER = getBaseUrl("http://localhost:3001/", "/");
-const API_BASE_URL_MEDICAL = getBaseUrl("http://localhost:3002/", "/");
-const API_BASE_URL_NUTRITION = getBaseUrl("http://localhost:3003/", "/");
-const API_BASE_URL_AUTH = getBaseUrl("http://localhost:3004/auth/", "/auth/");
-const API_BASE_URL_ACTIVITY = getBaseUrl("http://localhost:3005/", "/");
-const API_BASE_URL_RECOMMENDATION = getBaseUrl("http://localhost:3006/", "/");
-const API_BASE_URL_CITAS_MEDIAS = getBaseUrl("http://localhost:3008/", "/");
-const API_BASE_URL_ALERTAS = getBaseUrl("http://localhost:3009/", "/");
+// URLs base para cada microservicio (sin slash final)
+const API_BASE_URL_USER = getBaseUrl(3001);
+const API_BASE_URL_MEDICAL = getBaseUrl(3002);
+const API_BASE_URL_NUTRITION = getBaseUrl(3003);
+const API_BASE_URL_AUTH = getBaseUrl(3004);
+const API_BASE_URL_ACTIVITY = getBaseUrl(3005);
+const API_BASE_URL_RECOMMENDATION = getBaseUrl(3006);
+const API_BASE_URL_CITAS_MEDIAS = getBaseUrl(3008);
+const API_BASE_URL_ALERTAS = getBaseUrl(3009);
 
 // Función para convertir objeto a XML
 const objectToXml = (obj, rootName = "root") => {
