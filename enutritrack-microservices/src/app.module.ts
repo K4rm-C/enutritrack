@@ -25,7 +25,8 @@ import { AlertsModule } from './alertas/alertas.module';
       password: 'enutritrack2024',
       database: 'enutritrack',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
+      synchronize: false, // Usar migraciones en lugar de sync
+      migrations: ['src/migration/*.ts'],
       autoLoadEntities: true,
     }),
     UserModule,
