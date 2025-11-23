@@ -204,10 +204,10 @@ const UsersListDashboard = () => {
 
       setIsLoading(true);
       try {
-        console.log("Cargando pacientes del doctor:", user.userId);
+        console.log("Cargando pacientes del doctor:", currentUser.userId);
 
         // Usar el endpoint optimizado para obtener solo los pacientes de este doctor
-        const usersData = await getUsersByDoctorId(user.userId);
+        const usersData = await getUsersByDoctorId(currentUser.userId);
         console.log("Pacientes recibidos del doctor:", usersData);
 
         setUsers(Array.isArray(usersData) ? usersData : []);
