@@ -160,6 +160,17 @@ O manualmente con pgAdmin ejecutando `scripts/stored-procedures.sql`
 > - `USE_PRODUCTION = false` (para usar localhost)
 > - `PROD_IP = "[TU_IP_GCP]"` (no importa el valor si USE_PRODUCTION es false)
 
+**Opción A: Script automatizado para Windows (Recomendado)**
+
+```powershell
+# Desde la raíz del proyecto
+.\start-services.ps1
+```
+
+El script automáticamente abre 10 ventanas de PowerShell, una para cada servicio.
+
+**Opción B: Manualmente (10 terminales)**
+
 Abre **10 terminales** y ejecuta en cada una:
 
 ```powershell
@@ -260,23 +271,23 @@ En la consola de GCP, crea una regla de firewall:
    - **Acción**: Permitir
    - **Destinos**: Todas las instancias en la red
    - **Filtros**: `0.0.0.0/0`
-   - **Protocolos y puertos**: `TCP: 80, 443, 3000-3009, 4000`
+   - **Protocolos y puertos**: `TCP: 3001-3009, 4000, 5174, 8091`
 3. Guarda la regla
 
 O desde la línea de comandos:
 
 ```bash
 gcloud compute firewall-rules create allow-enutritrack \
-    --allow tcp:80,tcp:443,tcp:3000-3009,tcp:4000 \
+    --allow tcp:3001-3009,tcp:4000,tcp:5174,tcp:8091 \
     --source-ranges 0.0.0.0/0 \
-    --description "Allow all HTTP traffic for Enutritrack"
+    --description "Allow traffic for Enutritrack services"
 ```
 
 #### 3️⃣ Subir Proyecto a la VM
 
 1. **Comprime el proyecto** en un archivo ZIP (incluye todas las carpetas: `enutritrack-client`, `enutritrack-server`, `enutritrack-microservices`, `enutritrack-app`)
 
-2. **Sube el ZIP a la VM** usando uno de estos métodos:
+2. **Sube el ZIP a la VM** usando uno de estos métodos o alternativamente conectar por github y traer el proyecto directo a la VM:
 
    **Opción A: Desde la consola de GCP (recomendado)**
 
@@ -299,12 +310,12 @@ gcloud compute firewall-rules create allow-enutritrack \
    sudo chown -R $USER:$USER /opt/enutritrack
    ```
 
-#### 4️⃣ Ejecutar Script de Despliegue
+#### 4️⃣ Ejecutar Scripts de Despliegue
 
-1. **Sube el script de despliegue** a la VM:
+1. **Sube los scripts de despliegue** a la VM:
 
    ```bash
-   gcloud compute scp deploy-enutritrack.sh enutritrack-vm:/tmp/ --zone=tu-zona
+   gcloud compute scp deploy-enutritrack.sh start-services.sh enutritrack-vm:/tmp/ --zone=tu-zona
    ```
 
 2. **Conecta a la VM por SSH**:
@@ -313,20 +324,41 @@ gcloud compute firewall-rules create allow-enutritrack \
    gcloud compute ssh enutritrack-vm --zone=tu-zona
    ```
 
-3. **Ejecuta el script**:
+3. **Mueve los scripts al directorio del proyecto**:
 
    ```bash
-   sudo chmod +x /tmp/deploy-enutritrack.sh
-   /tmp/deploy-enutritrack.sh
+   cd /opt/enutritrack
+   sudo mv /tmp/deploy-enutritrack.sh /tmp/start-services.sh .
+   sudo chmod +x deploy-enutritrack.sh start-services.sh
    ```
 
-   El script automáticamente:
+4. **Ejecuta el script de construcción**:
 
-   - Instala todas las dependencias (Node.js, Docker, Nginx, PM2)
+   ```bash
+   ./deploy-enutritrack.sh
+   ```
+
+   Este script:
+   - Instala todas las dependencias (Node.js, Docker, PM2)
    - Levanta las bases de datos (PostgreSQL, Couchbase, Redis)
+   - Inicializa la base de datos PostgreSQL
+   - Aplica stored procedures
+   - Configura Couchbase
+   - Ejecuta TypeORM en modo dev para validar entidades
    - Compila todas las aplicaciones
-   - Configura Nginx como reverse proxy
-   - Inicia todos los servicios con PM2
+
+5. **Inicia los servicios**:
+
+   ```bash
+   ./start-services.sh
+   ```
+
+   Este script:
+   - Verifica que Docker esté corriendo
+   - Levanta los contenedores si no están corriendo
+   - Inicia todos los servicios con PM2 (backend, microservicios, frontend)
+
+   Alternativamente se puede abrir distitnas terminales de SSH y abrir cada una individual como mencionado en deploy local
 
 #### 5️⃣ Obtener IP Externa de la VM
 
@@ -344,17 +376,35 @@ Una vez completado el despliegue, accede a:
 
 **Portal de Doctores (Frontend)**
 
-- URL: `http://[IP_EXTERNA_DE_LA_VM]/`
-- Ejemplo: `http://34.123.45.67/`
+- URL: `http://[IP_EXTERNA_DE_LA_VM]:5174/`
+- Ejemplo: `http://34.123.45.67:5174/`
 
 **CMS/Dashboard de Administrador**
 
-- URL: `http://[IP_EXTERNA_DE_LA_VM]/auth/login`
+- URL: `http://[IP_EXTERNA_DE_LA_VM]:4000/auth/login`
 - Credenciales: `admin@enutritrack.com` / `admin123`
 
 **Documentación API (Swagger)**
 
-- URL: `http://[IP_EXTERNA_DE_LA_VM]/api/docs`
+- URL: `http://[IP_EXTERNA_DE_LA_VM]:4000/api/docs`
+
+**Microservicios (acceso directo)**
+
+- Auth: `http://[IP_EXTERNA_DE_LA_VM]:3004`
+- Users: `http://[IP_EXTERNA_DE_LA_VM]:3001`
+- Medical: `http://[IP_EXTERNA_DE_LA_VM]:3002`
+- Nutrition: `http://[IP_EXTERNA_DE_LA_VM]:3003`
+- Activity: `http://[IP_EXTERNA_DE_LA_VM]:3005`
+- Recommendation: `http://[IP_EXTERNA_DE_LA_VM]:3006`
+- Doctors: `http://[IP_EXTERNA_DE_LA_VM]:3007`
+- Citas: `http://[IP_EXTERNA_DE_LA_VM]:3008`
+- Alertas: `http://[IP_EXTERNA_DE_LA_VM]:3009`
+
+**Consola Couchbase**
+
+- URL: `http://[IP_EXTERNA_DE_LA_VM]:8091`
+- Usuario: `Alfredo`
+- Password: `alfredo124`
 
 #### 7️⃣ Configurar App Móvil para GCP
 
@@ -421,17 +471,21 @@ pm2 logs --err
 pm2 restart all
 ```
 
-#### Nginx no funciona
+#### Los servicios no inician con PM2
 
 ```bash
-# Verificar configuración
-sudo nginx -t
+# Verificar que PM2 esté instalado
+pm2 --version
 
-# Ver logs
-sudo tail -f /var/log/nginx/error.log
+# Ver logs detallados
+pm2 logs --lines 100
 
-# Reiniciar Nginx
-sudo systemctl restart nginx
+# Reiniciar todos los servicios
+pm2 restart all
+
+# Si hay problemas, eliminar y volver a iniciar
+pm2 delete all
+./start-services.sh
 ```
 
 ## 📁 Estructura del Proyecto
@@ -491,7 +545,10 @@ enutritrack/enutritrack-server/src/
 | MICROSERVICIOS ACTIVIDAD FISICA   | 3005   | Gestion de actividades fiscias del usuario |
 | MICROSERVICIOS RECOMENDACIONES IA | 3006   | Gestion de recomendaciones hechas por IA   |
 | MICROSERVICIOS DOCTORES           | 3007   | Microservicio para los doctores            |
-| FRONTEND                          | 5174   | Gestión de usuarios por el doctor          |
+| MICROSERVICIOS CITAS              | 3008   | Gestión de citas médicas                   |
+| MICROSERVICIOS ALERTAS           | 3009   | Gestión de alertas del sistema             |
+| FRONTEND                          | 5174   | Portal de doctores (Vite dev server)        |
+| COUCHBASE                         | 8091   | Consola web de Couchbase                    |
 
 ## 🔧 Troubleshooting
 
