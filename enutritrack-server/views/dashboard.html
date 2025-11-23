@@ -4429,17 +4429,6 @@
           alert('Error al cargar pacientes del doctor');
         }
       }
-      // Doctors
-      async function loadDoctors() {
-        try {
-          const doctors = await apiCall('/dashboard/doctors');
-          allDoctors = doctors;
-          renderDoctors(doctors);
-        } catch (error) {
-          document.getElementById('doctors-table').innerHTML =
-            '<tr><td colspan="6" class="empty-state">Error al cargar doctores</td></tr>';
-        }
-      }
 
       function renderDoctors(doctors) {
         const tbody = document.getElementById('doctors-table');

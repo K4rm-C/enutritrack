@@ -2,9 +2,11 @@ import axios from "axios";
 
 // Detectar si estamos en desarrollo local o producción
 const isLocalDevelopment = () => {
-  if (typeof window === 'undefined') return true; // SSR fallback
+  if (typeof window === "undefined") return true; // SSR fallback
   const hostname = window.location.hostname;
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+  return (
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === ""
+  );
 };
 
 // Función helper para obtener la URL base según el entorno
@@ -13,16 +15,29 @@ const getBaseUrl = (localUrl, relativePath) => {
 };
 
 // URLs base para cada microservicio (híbrido: local o producción automático)
-// En producción usamos "/" para que las rutas en los .api.jsx funcionen directamente
-// En local usamos las URLs completas con puertos
-const API_BASE_URL_USER = getBaseUrl("http://localhost:3001/", "/");
-const API_BASE_URL_MEDICAL = getBaseUrl("http://localhost:3002/", "/");
-const API_BASE_URL_NUTRITION = getBaseUrl("http://localhost:3003/", "/");
-const API_BASE_URL_AUTH = getBaseUrl("http://localhost:3004/auth/", "/auth/");
-const API_BASE_URL_ACTIVITY = getBaseUrl("http://localhost:3005/", "/");
-const API_BASE_URL_RECOMMENDATION = getBaseUrl("http://localhost:3006/", "/");
-const API_BASE_URL_CITAS_MEDIAS = getBaseUrl("http://localhost:3008/", "/");
-const API_BASE_URL_ALERTAS = getBaseUrl("http://localhost:3009/", "/");
+const API_BASE_URL_USER = getBaseUrl("http://localhost:3001/", "/users/");
+const API_BASE_URL_MEDICAL = getBaseUrl(
+  "http://localhost:3002/",
+  "/medical-history/"
+);
+const API_BASE_URL_NUTRITION = getBaseUrl(
+  "http://localhost:3003/",
+  "/nutrition/"
+);
+const API_BASE_URL_AUTH = getBaseUrl("http://localhost:3004/", "/auth/");
+const API_BASE_URL_ACTIVITY = getBaseUrl(
+  "http://localhost:3005/",
+  "/physical-activity/"
+);
+const API_BASE_URL_RECOMMENDATION = getBaseUrl(
+  "http://localhost:3006/",
+  "/recommendations/"
+);
+const API_BASE_URL_CITAS_MEDIAS = getBaseUrl(
+  "http://localhost:3008/",
+  "/citas-medicas/"
+);
+const API_BASE_URL_ALERTAS = getBaseUrl("http://localhost:3009/", "/alerts/");
 
 // Función para convertir objeto a XML
 const objectToXml = (obj, rootName = "root") => {

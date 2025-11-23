@@ -197,7 +197,7 @@ const UsersListDashboard = () => {
   useEffect(() => {
     const loadUsers = async () => {
       // Usar authUser.userId que es el ID del doctor autenticado
-      if (!user?.userId) {
+      if (!currentUser?.userId) {
         console.log("No hay usuario logueado o no tiene userId");
         return;
       }
@@ -316,65 +316,6 @@ const UsersListDashboard = () => {
     if (valorIMC < 25) return { estado: "Normal", color: "green" };
     if (valorIMC < 30) return { estado: "Sobrepeso", color: "yellow" };
     return { estado: "Obesidad", color: "red" };
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      // Preparar datos para el backend
-      const submitData = {
-        ...formData,
-        // Asegurar que los campos numéricos sean números
-        altura: formData.altura ? parseFloat(formData.altura) : undefined,
-        peso_actual: formData.peso_actual
-          ? parseFloat(formData.peso_actual)
-          : undefined,
-        objetivo_peso: formData.objetivo_peso
-          ? parseFloat(formData.objetivo_peso)
-          : undefined,
-        // Si no hay password en edición, no enviarlo
-        password:
-          editingUser && !formData.password ? undefined : formData.password,
-      };
-      // Eliminar campos undefined para evitar problemas con el backend
-      Object.keys(submitData).forEach((key) => {
-        if (submitData[key] === undefined) {
-          delete submitData[key];
-        }
-      });
-
-      if (editingUser) {
-        if (!editingUser.id) {
-          console.error("Error: editingUser.id es undefined", editingUser);
-          toast.error("Error: ID de usuario no válido para actualización");
-          return;
-        }
-
-        console.log("🔄 Actualizando usuario con ID:", editingUser.id);
-        const updatedUser = await updateUser(editingUser.id, submitData);
-        console.log("✅ Usuario actualizado:", updatedUser);
-
-        // Recargar la lista completa de usuarios desde el backend
-        const refreshedUsers = await getUsersByDoctorId(currentUser?.id);
-        setUsers(Array.isArray(refreshedUsers) ? refreshedUsers : []);
-
-        toast.success("Usuario actualizado correctamente");
-      } else {
-        const newUser = await createUser(submitData);
-        console.log("✅ Usuario creado:", newUser);
-
-        // Recargar la lista completa de usuarios desde el backend
-        const refreshedUsers = await getUsersByDoctorId(currentUser?.id);
-        setUsers(Array.isArray(refreshedUsers) ? refreshedUsers : []);
-
-        toast.success("Usuario creado correctamente");
-      }
-      setShowFormModal(false);
-      setEditingUser(null);
-    } catch (error) {
-      console.error("Error al guardar usuario:", error);
-      toast.error(error.message || "Error al guardar el usuario");
-    }
   };
 
   useEffect(() => {

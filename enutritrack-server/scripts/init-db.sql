@@ -4,6 +4,39 @@
 
 -- DROP TABLE public.alimentos;
 
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+DO $$ BEGIN
+    CREATE TYPE tipo_cuenta_enum AS ENUM ('admin', 'doctor', 'usuario');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE registro_comida_tipo_enum AS ENUM ('desayuno', 'almuerzo', 'cena', 'merienda');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE alergia_severidad_enum AS ENUM ('leve', 'moderada', 'severa');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE condicion_medica_severidad_enum AS ENUM ('leve', 'moderada', 'severa');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE nivel_actividad_enum AS ENUM ('sedentario', 'moderado', 'activo', 'muy_activo');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+
 CREATE TABLE public.alimentos (
 	id uuid DEFAULT uuid_generate_v4() NOT NULL,
 	nombre varchar(200) NOT NULL,

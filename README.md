@@ -12,22 +12,26 @@
 ## ✨ Características Principales
 
 ### 🍎 Gestión Nutricional Avanzada
+
 - **Registro de alimentos** con base de datos completa
 - **Seguimiento calórico** y de macronutrientes
 - **Planes alimenticios** personalizados por IA
 - **Recomendaciones inteligentes** basadas en objetivos
 
 ### 🏃‍♂️ Monitoreo de Actividad Física
+
 - **Registro de ejercicios** y actividades
 - **Cálculo de calorías** quemadas
 
 ### 👤 Perfiles Personalizados
+
 - **Historial médico completo**
 - **Objetivos personalizados** de salud
 - **Preferencias alimenticias** y restricciones
 - **Seguimiento de evolución** de peso y medidas
 
 ### 📊 Analytics y Reportes
+
 - **Dashboards interactivos** con métricas de salud
 - **Reportes personalizados** exportables
 - **Análisis predictivo** de progreso
@@ -36,6 +40,7 @@
 ## 🏗️ Arquitectura del Sistema
 
 ### Bases de Datos
+
 - **PostgreSQL**: Datos transaccionales y relaciones complejas https://www.postgresql.org/download/
 - **Couchbase**: Documentos JSON y perfiles de usuarios
 - **Redis**: Caché, sesiones y colas de mensajes
@@ -53,20 +58,22 @@ Descarga la última versión LTS desde la página oficial:
 
 Verifica la instalación:
 Verifica las instalaciones:
+
 ```bash
 node -v
 npm -v
 docker --version
 docker-compose --version
 ```
- Verifica:
-  nest --version
+
+Verifica:
+nest --version
+
 ### Paso a Paso - Primera Configuración
 
 - **Docker** y **Docker Compose** - deberia dejar abierto DOCKER
 - **npm (para la instalacion de dependencias)**
 - **VSCODE**
-
 
 #### 1️⃣ Clonar el Repositorio
 
@@ -120,15 +127,18 @@ Espera 30-60 segundos para que los servicios se inicialicen completamente.
 #### 5️⃣ Inicializar Base de Datos PostgreSQL
 
 **Opción A: Con pgAdmin**
+
 1. Conecta a PostgreSQL (`localhost:5433`, user: `postgres`, password: `1234`)
 2. Abre y ejecuta `enutritrack-server/scripts/init-db.sql`
 
 **Opción B: Con psql (si está en PATH)**
+
 ```bash
 psql -U postgres -d enutritrack -p 5433 -f scripts/init-db.sql
 ```
 
 Esto crea:
+
 - Todas las tablas del sistema
 - El primer superusuario con credenciales:
   - Email: `admin@enutritrack.com`
@@ -146,6 +156,7 @@ O manualmente con pgAdmin ejecutando `scripts/stored-procedures.sql`
 #### 7️⃣ Iniciar Servicios
 
 > **⚠️ IMPORTANTE - App Móvil:** Antes de iniciar los servicios, verifica que en el archivo `enutritrack-app/Enutritrackapp/app/src/main/java/com/example/enutritrack_app/config/ApiConfig.kt` la configuración esté en modo desarrollo local:
+>
 > - `USE_PRODUCTION = false` (para usar localhost)
 > - `PROD_IP = "[TU_IP_GCP]"` (no importa el valor si USE_PRODUCTION es false)
 
@@ -196,6 +207,7 @@ npm run dev
 #### 8️⃣ Acceder a las Aplicaciones
 
 **Dashboard de Superusuario (Backend)**
+
 - URL: `http://localhost:4000/auth/login`
 - Email: `admin@enutritrack.com`
 - Password: `admin123`
@@ -207,14 +219,13 @@ npm run dev
   - ⚡ Acceso directo a BD mediante stored procedures
 
 **Aplicación de Doctores (Frontend)**
+
 - URL: `http://localhost:5174`
 - Credenciales: Crear doctor desde el dashboard de superusuario primero
 
 **Documentación API**
+
 - Swagger: `http://localhost:4000/api/docs`
-
-
-
 
 ## ☁️ Despliegue en Google Cloud Platform (GCP)
 
@@ -253,6 +264,7 @@ En la consola de GCP, crea una regla de firewall:
 3. Guarda la regla
 
 O desde la línea de comandos:
+
 ```bash
 gcloud compute firewall-rules create allow-enutritrack \
     --allow tcp:80,tcp:443,tcp:3000-3009,tcp:4000 \
@@ -267,6 +279,7 @@ gcloud compute firewall-rules create allow-enutritrack \
 2. **Sube el ZIP a la VM** usando uno de estos métodos:
 
    **Opción A: Desde la consola de GCP (recomendado)**
+
    - En la VM, haz clic en **SSH** para abrir la terminal
    - En tu máquina local, usa `gcloud compute scp`:
      ```bash
@@ -274,6 +287,7 @@ gcloud compute firewall-rules create allow-enutritrack \
      ```
 
    **Opción B: Usando SCP**
+
    ```bash
    scp proyecto.zip usuario@IP_VM:/tmp/
    ```
@@ -288,22 +302,26 @@ gcloud compute firewall-rules create allow-enutritrack \
 #### 4️⃣ Ejecutar Script de Despliegue
 
 1. **Sube el script de despliegue** a la VM:
+
    ```bash
    gcloud compute scp deploy-enutritrack.sh enutritrack-vm:/tmp/ --zone=tu-zona
    ```
 
 2. **Conecta a la VM por SSH**:
+
    ```bash
    gcloud compute ssh enutritrack-vm --zone=tu-zona
    ```
 
 3. **Ejecuta el script**:
+
    ```bash
    sudo chmod +x /tmp/deploy-enutritrack.sh
    /tmp/deploy-enutritrack.sh
    ```
 
    El script automáticamente:
+
    - Instala todas las dependencias (Node.js, Docker, Nginx, PM2)
    - Levanta las bases de datos (PostgreSQL, Couchbase, Redis)
    - Compila todas las aplicaciones
@@ -315,6 +333,7 @@ gcloud compute firewall-rules create allow-enutritrack \
 En la consola de GCP, ve a **Compute Engine** > **VM instances** y copia la **IP externa** de tu VM.
 
 O desde la terminal:
+
 ```bash
 gcloud compute instances describe enutritrack-vm --zone=tu-zona --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
 ```
@@ -324,14 +343,17 @@ gcloud compute instances describe enutritrack-vm --zone=tu-zona --format='get(ne
 Una vez completado el despliegue, accede a:
 
 **Portal de Doctores (Frontend)**
+
 - URL: `http://[IP_EXTERNA_DE_LA_VM]/`
 - Ejemplo: `http://34.123.45.67/`
 
 **CMS/Dashboard de Administrador**
+
 - URL: `http://[IP_EXTERNA_DE_LA_VM]/auth/login`
 - Credenciales: `admin@enutritrack.com` / `admin123`
 
 **Documentación API (Swagger)**
+
 - URL: `http://[IP_EXTERNA_DE_LA_VM]/api/docs`
 
 #### 7️⃣ Configurar App Móvil para GCP
@@ -377,7 +399,9 @@ curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-inte
 ### Troubleshooting en GCP
 
 #### PostgreSQL no inicia correctamente
+
 El script tiene manejo automático de errores con reintentos. Si aún falla:
+
 ```bash
 cd /opt/enutritrack/enutritrack-server
 docker compose logs postgres
@@ -385,6 +409,7 @@ docker compose restart postgres
 ```
 
 #### Los servicios no responden
+
 ```bash
 # Verificar que PM2 esté corriendo
 pm2 status
@@ -397,6 +422,7 @@ pm2 restart all
 ```
 
 #### Nginx no funciona
+
 ```bash
 # Verificar configuración
 sudo nginx -t
@@ -451,26 +477,28 @@ enutritrack/enutritrack-server/src/
 ```
 
 ## 🔧 Configuración
+
 ### Puertos de los Servicios
 
-| Servicio | Puerto | Descripción |
-|----------|--------|-------------|
-| BACKEND | 4000 | Punto de entrada principal |
-| MICROSERVICIOS MAIN | 3000 | MAIN Principal |
-| MICROSERVICIOS USUARIO | 3001 | Gestion de usuario |
-| MICROSERVICIOS HISTORIAL MEDICO | 3002 | Gestion de historial medico |
-| MICROSERVICIOS NUTRICION | 3003 | Gestion de registro de comida |
-| MICROSERVICIOS AUTENTICACION | 3004 | Autorizacion y validacion de usuario |
-| MICROSERVICIOS ACTIVIDAD FISICA | 3005 | Gestion de actividades fiscias del usuario |
-| MICROSERVICIOS RECOMENDACIONES IA | 3006 | Gestion de recomendaciones hechas por IA |
-| MICROSERVICIOS DOCTORES | 3007 | Microservicio para los doctores |
-| FRONTEND | 5174 | Gestión de usuarios por el doctor |
+| Servicio                          | Puerto | Descripción                                |
+| --------------------------------- | ------ | ------------------------------------------ |
+| BACKEND                           | 4000   | Punto de entrada principal                 |
+| MICROSERVICIOS MAIN               | 3000   | MAIN Principal                             |
+| MICROSERVICIOS USUARIO            | 3001   | Gestion de usuario                         |
+| MICROSERVICIOS HISTORIAL MEDICO   | 3002   | Gestion de historial medico                |
+| MICROSERVICIOS NUTRICION          | 3003   | Gestion de registro de comida              |
+| MICROSERVICIOS AUTENTICACION      | 3004   | Autorizacion y validacion de usuario       |
+| MICROSERVICIOS ACTIVIDAD FISICA   | 3005   | Gestion de actividades fiscias del usuario |
+| MICROSERVICIOS RECOMENDACIONES IA | 3006   | Gestion de recomendaciones hechas por IA   |
+| MICROSERVICIOS DOCTORES           | 3007   | Microservicio para los doctores            |
+| FRONTEND                          | 5174   | Gestión de usuarios por el doctor          |
 
 ## 🔧 Troubleshooting
 
 ### Problemas Comunes y Soluciones
 
 #### Error de conexión a Couchbase
+
 ```bash
 # Reinicia el contenedor
 docker-compose restart couchbase
@@ -481,6 +509,7 @@ docker-compose restart couchbase
 ```
 
 #### Error de conexión a PostgreSQL
+
 ```bash
 # Reinicia el contenedor
 docker-compose restart postgres
@@ -490,18 +519,22 @@ docker-compose restart postgres
 ```
 
 #### Error de conexión a Redis
+
 ```bash
 docker-compose restart redis
 ```
 
 #### El backend no arranca - Error con stored procedures
+
 Asegúrate de haber ejecutado:
+
 ```powershell
 cd enutritrack-server/scripts
 .\apply-stored-procedures.ps1
 ```
 
 #### No puedo acceder al dashboard de superusuario
+
 1. Verifica que el backend esté corriendo en `http://localhost:4000`
 2. Verifica que el superusuario exista en la base de datos:
    ```sql
@@ -510,6 +543,7 @@ cd enutritrack-server/scripts
 3. Si no existe, ejecuta `scripts/init-db.sql` o `scripts/create-admin.ps1`
 
 #### Error 401 en el frontend
+
 Borra las cookies y vuelve a hacer login. El token JWT puede haber expirado.
 
 ### Crear Superusuario Adicional
@@ -522,6 +556,7 @@ cd enutritrack-server/scripts
 ```
 
 O ejecuta directamente en PostgreSQL:
+
 ```sql
 -- 1. Crear cuenta
 INSERT INTO cuentas (email, password_hash, tipo_cuenta, activa)
@@ -544,7 +579,7 @@ docker logs enutritrack_postgres
 docker logs enutritrack_couchbase
 docker logs enutritrack_redis
 ```
-   
+
 ## 🏆 Equipo
 
 - **Alfredo José** - Project Manager

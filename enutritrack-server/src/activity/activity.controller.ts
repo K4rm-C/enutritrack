@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { PhysicalActivityService } from './activity.service';
 import express from 'express';
-import { JwtAuthGuard } from '../couchbase/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TiposActividadService } from '../tipo-actividad/tipo-actividad.service';
 
 @Controller('physical-activity')
