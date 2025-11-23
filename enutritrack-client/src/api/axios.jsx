@@ -4,9 +4,10 @@ import axios from "axios";
 const isLocalDevelopment = () => {
   if (typeof window === "undefined") return true; // SSR fallback
   const hostname = window.location.hostname;
-  return (
-    hostname === "localhost" || hostname === "127.0.0.1" || hostname === ""
-  );
+  
+  // Solo considerar desarrollo local si es localhost o 127.0.0.1
+  // Cualquier otra IP (incluida GCP) se trata como producción
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "";
 };
 
 // Función helper para obtener la URL base según el entorno
@@ -15,29 +16,14 @@ const getBaseUrl = (localUrl, relativePath) => {
 };
 
 // URLs base para cada microservicio (híbrido: local o producción automático)
-const API_BASE_URL_USER = getBaseUrl("http://localhost:3001/", "/users/");
-const API_BASE_URL_MEDICAL = getBaseUrl(
-  "http://localhost:3002/",
-  "/medical-history/"
-);
-const API_BASE_URL_NUTRITION = getBaseUrl(
-  "http://localhost:3003/",
-  "/nutrition/"
-);
-const API_BASE_URL_AUTH = getBaseUrl("http://localhost:3004/", "/auth/");
-const API_BASE_URL_ACTIVITY = getBaseUrl(
-  "http://localhost:3005/",
-  "/physical-activity/"
-);
-const API_BASE_URL_RECOMMENDATION = getBaseUrl(
-  "http://localhost:3006/",
-  "/recommendations/"
-);
-const API_BASE_URL_CITAS_MEDIAS = getBaseUrl(
-  "http://localhost:3008/",
-  "/citas-medicas/"
-);
-const API_BASE_URL_ALERTAS = getBaseUrl("http://localhost:3009/", "/alerts/");
+const API_BASE_URL_USER = getBaseUrl("http://localhost:3001/", "/");
+const API_BASE_URL_MEDICAL = getBaseUrl("http://localhost:3002/", "/");
+const API_BASE_URL_NUTRITION = getBaseUrl("http://localhost:3003/", "/");
+const API_BASE_URL_AUTH = getBaseUrl("http://localhost:3004/auth/", "/auth/");
+const API_BASE_URL_ACTIVITY = getBaseUrl("http://localhost:3005/", "/");
+const API_BASE_URL_RECOMMENDATION = getBaseUrl("http://localhost:3006/", "/");
+const API_BASE_URL_CITAS_MEDIAS = getBaseUrl("http://localhost:3008/", "/");
+const API_BASE_URL_ALERTAS = getBaseUrl("http://localhost:3009/", "/");
 
 // Función para convertir objeto a XML
 const objectToXml = (obj, rootName = "root") => {

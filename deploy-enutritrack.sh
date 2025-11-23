@@ -492,27 +492,7 @@ else
     echo "   Bucket: $BUCKET_NAME"
 fi
 
-# 14. Modificar frontend para usar rutas relativas a través de Nginx
-echo "📦 Configurando frontend para usar rutas relativas..."
-cd "$PROJECT_ROOT/enutritrack-client/src/api"
-
-# Verificar si el archivo existe antes de modificarlo
-if [ -f "axios.jsx" ]; then
-    # Modificar axios.jsx para usar rutas relativas que coincidan con los controladores
-    sed -i 's|const API_BASE_URL_USER = "http://localhost:3001/";|const API_BASE_URL_USER = "/users/";|g' axios.jsx
-    sed -i 's|const API_BASE_URL_MEDICAL = "http://localhost:3002/";|const API_BASE_URL_MEDICAL = "/medical-history/";|g' axios.jsx
-    sed -i 's|const API_BASE_URL_NUTRITION = "http://localhost:3003/";|const API_BASE_URL_NUTRITION = "/nutrition/";|g' axios.jsx
-    sed -i 's|const API_BASE_URL_AUTH = "http://localhost:3004/";|const API_BASE_URL_AUTH = "/auth/";|g' axios.jsx
-    sed -i 's|const API_BASE_URL_ACTIVITY = "http://localhost:3005/";|const API_BASE_URL_ACTIVITY = "/physical-activity/";|g' axios.jsx
-    sed -i 's|const API_BASE_URL_RECOMMENDATION = "http://localhost:3006/";|const API_BASE_URL_RECOMMENDATION = "/recommendations/";|g' axios.jsx
-    sed -i 's|const API_BASE_URL_CITAS_MEDIAS = "http://localhost:3008/";|const API_BASE_URL_CITAS_MEDIAS = "/citas-medicas/";|g' axios.jsx
-    sed -i 's|const API_BASE_URL_ALERTAS = "http://localhost:3009/";|const API_BASE_URL_ALERTAS = "/alerts/";|g' axios.jsx
-    echo "✅ Configuración de frontend completada"
-else
-    echo "⚠️  Archivo axios.jsx no encontrado, continuando..."
-fi
-
-# 15. Compilar aplicaciones
+# 14. Compilar aplicaciones
 echo "📦 Compilando aplicaciones..."
 cd "$PROJECT_ROOT/enutritrack-client"
 npm run build
@@ -523,7 +503,7 @@ npm run build
 cd "$PROJECT_ROOT/enutritrack-microservices"
 npm run build
 
-# 16. Obtener IP externa de la VM
+# 15. Obtener IP externa de la VM
 VM_IP=$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google" 2>/dev/null || true)
 if [ -z "$VM_IP" ]; then
     VM_IP=$(curl -s ifconfig.me 2>/dev/null || echo "IP-DESCONOCIDA")
@@ -531,9 +511,17 @@ fi
 
 echo "🌐 IP externa de la VM: $VM_IP"
 
-# 17. Configurar Nginx
+# 16. Configurar Nginx
 echo "📦 Configurando Nginx..."
+
+# Definir ruta del frontend para usar en la configuración de Nginx
+FRONTEND_ROOT="$PROJECT_ROOT/enutritrack-client/dist"
+
 sudo tee /etc/nginx/conf.d/enutritrack.conf > /dev/null << NGINX_CONFIG
+# Configuración compartida para ambos servidores
+# Se define una función común para evitar duplicación
+
+# Servidor en puerto 80 (producción estándar)
 server {
     listen 80;
     server_name _;
@@ -571,8 +559,8 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
 
-    # Microservicios - rutas corregidas para coincidir con los controladores
-    location /users/ {
+    # Microservicios - rutas que capturan con y sin barra final
+    location ~ ^/users(/|$) {
         proxy_pass http://localhost:3001;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -638,7 +626,119 @@ server {
 
     # Frontend (debe ir al final para capturar todo lo demás)
     location / {
-        root $PROJECT_ROOT/enutritrack-client/dist;
+        root ${FRONTEND_ROOT};
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    client_max_body_size 50M;
+}
+
+# Servidor en puerto 5174 (para compatibilidad con Vite dev)
+server {
+    listen 5174;
+    server_name _;
+
+    # CMS/Dashboard del Backend - Rutas específicas del CMS (prioridad alta)
+    location ~ ^/auth/(login|dashboard|refresh)\$ {
+        proxy_pass http://localhost:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_cache_bypass \$http_upgrade;
+    }
+
+    # Otras rutas del CMS del backend (páginas HTML)
+    location ~ ^/(dashboard|patients-crud|doctors-crud|appointments|food|health|history-medical|medications|allergies|states|types|gender|specialties-crud) {
+        proxy_pass http://localhost:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://localhost:4000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_cache_bypass \$http_upgrade;
+    }
+
+    # Microservicios - rutas que capturan con y sin barra final
+    location ~ ^/users(/|$) {
+        proxy_pass http://localhost:3001;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~ ^/medical-history(/|$) {
+        proxy_pass http://localhost:3002;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~ ^/nutrition(/|$) {
+        proxy_pass http://localhost:3003;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~ ^/physical-activity(/|$) {
+        proxy_pass http://localhost:3005;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~ ^/recommendations(/|$) {
+        proxy_pass http://localhost:3006;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~ ^/doctors(/|$) {
+        proxy_pass http://localhost:3007;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~ ^/citas-medicas(/|$) {
+        proxy_pass http://localhost:3008;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~ ^/alerts(/|$) {
+        proxy_pass http://localhost:3009;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    # Microservicio de auth
+    location /auth/ {
+        proxy_pass http://localhost:3004;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    # Frontend (debe ir al final para capturar todo lo demás)
+    location / {
+        root ${FRONTEND_ROOT};
         try_files \$uri \$uri/ /index.html;
     }
 
@@ -654,7 +754,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 
-# 18. Configurar firewall (si está activo)
+# 17. Configurar firewall (si está activo)
 if command_exists firewall-cmd; then
     echo "📦 Configurando firewall..."
     sudo firewall-cmd --permanent --add-service=http
@@ -663,7 +763,7 @@ if command_exists firewall-cmd; then
     echo "✅ Firewall configurado"
 fi
 
-# 19. Crear ecosystem de PM2
+# 18. Crear ecosystem de PM2
 echo "📦 Configurando PM2..."
 mkdir -p "$PROJECT_ROOT/logs"
 
@@ -762,7 +862,7 @@ module.exports = {
 };
 PM2_CONFIG
 
-# 20. Iniciar servicios con PM2
+# 19. Iniciar servicios con PM2
 echo "📦 Iniciando servicios..."
 cd "$PROJECT_ROOT"
 pm2 start ecosystem.config.js
@@ -777,19 +877,24 @@ echo "🌐 URLs de acceso:"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 echo "   📱 Portal de Doctores (Frontend):"
-echo "      http://${VM_IP}:5174/"
+echo "      http://${VM_IP}/ (puerto 80)"
+echo "      http://${VM_IP}:5174/ (puerto 5174 - alternativo)"
 echo ""
 echo "   🏥 CMS/Dashboard de Administrador:"
-echo "      http://${VM_IP}:4000/auth/login"
+echo "      http://${VM_IP}/auth/login (puerto 80)"
+echo "      http://${VM_IP}:5174/auth/login (puerto 5174 - alternativo)"
 echo "      Credenciales: admin@enutritrack.com / admin123"
 echo ""
 echo "   📚 Documentación API (Swagger):"
-echo "      http://${VM_IP}puerto_del_microservicio/api/docs"
+echo "      http://${VM_IP}/api/docs"
 echo ""
 echo "   🗄️  Consola Couchbase:"
 echo "      http://${VM_IP}:8091"
 echo "      Usuario: Alfredo"
 echo "      Password: alfredo124"
+echo ""
+echo "   ⚠️  NOTA: Si quieres usar el puerto 5174, asegúrate de abrirlo"
+echo "      en el firewall de GCP (regla de firewall TCP:5174)"
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo "📱 CONFIGURACIÓN DE APP MÓVIL (IMPORTANTE)"
