@@ -128,13 +128,13 @@ Espera 30-60 segundos para que los servicios se inicialicen completamente.
 
 **Opción A: Con pgAdmin**
 
-1. Conecta a PostgreSQL (`localhost:5433`, user: `postgres`, password: `1234`)
+1. Conecta a PostgreSQL (`localhost:5433`, user: `enutritrack`, password: `enutritrack2024`)
 2. Abre y ejecuta `enutritrack-server/scripts/init-db.sql`
 
 **Opción B: Con psql (si está en PATH)**
 
 ```bash
-psql -U postgres -d enutritrack -p 5433 -f scripts/init-db.sql
+psql -U enutritrack -d enutritrack -p 5433 -f scripts/init-db.sql
 ```
 
 Esto crea:
@@ -572,7 +572,7 @@ docker-compose restart couchbase
 docker-compose restart postgres
 
 # Verifica que el puerto 5433 esté disponible
-# Credenciales: postgres / 1234
+# Credenciales: enutritrack / enutritrack2024
 ```
 
 #### Error de conexión a Redis
