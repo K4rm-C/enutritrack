@@ -3347,7 +3347,7 @@
 
       function getBackendConfig() {
         return {
-          host: localStorage.getItem('backend_host') || 'localhost',
+          host: 'localhost',
           port: localStorage.getItem('backend_port') || '4000',
           protocol: localStorage.getItem('backend_protocol') || 'http',
           timeout: localStorage.getItem('backend_timeout') || '5000',
