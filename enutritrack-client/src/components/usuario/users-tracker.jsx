@@ -220,7 +220,7 @@ const UsersListDashboard = () => {
       }
     };
     loadUsers();
-  }, [user?.userId]); // Dependencia corregida
+  }, [currentUser?.userId]); // Dependencia corregida
 
   // CORREGIR: Función para enviar datos del paciente
   const handleSubmit = async (e) => {
